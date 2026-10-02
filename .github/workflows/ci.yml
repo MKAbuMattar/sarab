@@ -63,7 +63,9 @@ jobs:
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: sarab-windows-installer
+          # Upload the installer itself, not a zip of it. Needs exactly one file;
+          # the artifact is named after it, for example Sarab_0.0.3_x64-setup.exe.
+          archive: false
           path: src-tauri/target/release/bundle/nsis/*-setup.exe
           if-no-files-found: error
           retention-days: 14
