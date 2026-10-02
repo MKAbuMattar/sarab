@@ -58,7 +58,15 @@ public static class DW {
 
 function Sarab-Pid { (Get-Process sarab -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $exe } | Select-Object -First 1).Id }
 
+# Single instance is keyed on the app identifier, so a launch of this build hands its arguments to
+# any Sarab already running, including one the user installed. Never let a check drive that copy.
+function Assert-NoOtherSarab {
+  $other = Get-Process sarab -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path -ne $exe }
+  if ($other) { Fail "a Sarab from $($other[0].Path) is running; quit it first, or this check would send its commands to it" }
+}
+
 function Start-Sarab([switch]$Fresh) {
+  Assert-NoOtherSarab
   if ($Fresh) {
     Stop-Sarab
     if (Test-Path $sandbox) { Remove-Item $sandbox -Recurse -Force }
@@ -83,7 +91,7 @@ function Stop-Sarab {
   }
 }
 
-function Sarab { $env:APPDATA = "$sandbox/roaming"; $env:LOCALAPPDATA = "$sandbox/local"; & $exe @args; Start-Sleep -Milliseconds 300 }
+function Sarab { Assert-NoOtherSarab; $env:APPDATA = "$sandbox/roaming"; $env:LOCALAPPDATA = "$sandbox/local"; & $exe @args; Start-Sleep -Milliseconds 300 }
 
 function Status { try { Get-Content $statusFile -Raw | ConvertFrom-Json } catch { $null } }
 
@@ -644,6 +652,9 @@ Add-Type -AssemblyName System.Windows.Forms
     $reasons = ([regex]::Match($src, 'pub enum Reason \{([^}]*)\}').Groups[1].Value -split ',') | ForEach-Object { $_.Trim() } | Where-Object { $_ } | ForEach-Object { ($_ -creplace '([a-z])([A-Z])', '$1_$2').ToLower() }
     $noWords = @($reasons | Where-Object { -not $en.ContainsKey("reason.$_") })
     Assert ($reasons.Count -ge 10 -and $noWords.Count -eq 0) "pause reasons without words: $($noWords -join ', ')"
+    # The browser's own dialogs say "tauri.localhost says" and ignore the theme; ask() in app.js replaces them.
+    $native = Select-String -Path (Join-Path $root 'ui/*.js'), (Join-Path $root 'ui/*.html') -Pattern '(?<![\w.])(confirm|alert|prompt)\s*\(' | Where-Object { $_.Line -notmatch '^\s*//' }
+    Assert (-not $native) "native browser dialog used: $($native | ForEach-Object { '{0}:{1}' -f $_.Filename, $_.LineNumber })"
     $cargo = [regex]::Match((Get-Content (Join-Path $root 'src-tauri/Cargo.toml') -Raw), '(?m)^version = "([^"]+)"').Groups[1].Value
     $conf = (Get-Content (Join-Path $root 'src-tauri/tauri.conf.json') -Raw | ConvertFrom-Json).version
     Assert ($cargo -eq $conf) "Cargo.toml says $cargo, tauri.conf.json says $conf"

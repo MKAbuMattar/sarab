@@ -71,6 +71,23 @@ function combo(sel) {
   return sel._combo;
 }
 
+// Windows 11 ContentDialog in place of the browser's confirm() and alert(), which say
+// "tauri.localhost says" and ignore the app's theme and language. Resolves true for OK.
+function ask({ title, body, ok, cancel = null, danger = false }) {
+  const d = $('#ask'), okBtn = $('#ask-ok'), cancelBtn = $('#ask-cancel');
+  $('#ask-title').textContent = title;
+  $('#ask-body').textContent = body;
+  okBtn.textContent = ok;
+  okBtn.className = danger ? 'danger-fill' : 'accent';
+  cancelBtn.hidden = !cancel;
+  cancelBtn.textContent = cancel ?? '';
+  d.returnValue = 'cancel';  // Escape keeps this, so it counts as Cancel
+  d.showModal();
+  // A destructive action starts on Cancel, so Enter alone never deletes.
+  (danger && cancel ? cancelBtn : okBtn).focus();
+  return new Promise(resolve => d.addEventListener('close', () => resolve(d.returnValue === 'ok'), { once: true }));
+}
+
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p => { p.hidden = p.id !== `page-${name}`; });
   document.querySelectorAll('.nav-item[data-page]').forEach(b => {
@@ -181,7 +198,10 @@ function render() {
       el('span', { class: 'caption' }, w.preset ? `${t(`type.${w.kind}`)} · ${t('presets.builtIn')}` : t(`type.${w.kind}`)),
       el('div', { class: 'row' },
         btn('accent', '', t('library.set'), () => run(() => invoke('set_wallpaper', { target: w.id, display: selectedDisplay() }))),
-        w.preset ? '' : btn('subtle danger', '', t('library.delete'), () => confirm(t('library.confirmDelete', { title: w.info.title || w.id })) && run(() => invoke('remove', { id: w.id }))))))));
+        w.preset ? '' : btn('subtle danger', '', t('library.delete'), async () => {
+          const ok = await ask({ title: t('library.deleteTitle', { title: w.info.title || w.id }), body: t('library.deleteBody'), ok: t('library.delete'), cancel: t('dialog.cancel'), danger: true });
+          if (ok) run(() => invoke('remove', { id: w.id }));
+        }))))));
 
   const f = $('#settings');
   const s = state.settings;
@@ -276,7 +296,7 @@ function renderUpdate() {
       : t('update.available', { v: u.available.version });
     $('#update-actions').replaceChildren(...(u.progress != null ? [] : [
       btn('accent', '\uE896', t('update.now'), () => run(() => invoke('install_update'))),
-      u.available.notes ? btn('subtle', '\uE8A5', t('update.notes'), () => alert(u.available.notes)) : '',
+      u.available.notes ? btn('subtle', '\uE8A5', t('update.notes'), () => ask({ title: t('update.notesTitle', { v: u.available.version }), body: u.available.notes, ok: t('dialog.close') })) : '',
       btn('subtle', '\uE711', t('update.later'), () => { updateLater = true; render(); }),
     ]));
   }
