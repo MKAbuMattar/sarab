@@ -104,10 +104,25 @@ pub fn library_dir(s: &Settings) -> PathBuf {
         .unwrap_or_else(|| settings::data_dir().join("Library"))
 }
 
+/// Folder of the web scenes that ship with Sarab, set once at startup from the resource dir.
+pub static PRESET_DIR: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+
+/// The user's library followed by the bundled presets.
+pub fn scan_all(settings: &Settings) -> Vec<Wallpaper> {
+    let mut lib = library::scan(&library_dir(settings));
+    if let Some(dir) = PRESET_DIR.get() {
+        lib.extend(library::scan(dir).into_iter().map(|mut w| {
+            w.preset = true;
+            w
+        }));
+    }
+    lib
+}
+
 impl Core {
     pub fn load() -> Core {
         let settings: Settings = settings::load(&cfg("settings.json"));
-        let lib = library::scan(&library_dir(&settings));
+        let lib = scan_all(&settings);
         Core {
             layout: settings::load(&cfg("layout.json")),
             restore: settings::load(&cfg("restore.json")),
@@ -173,7 +188,7 @@ fn asset_url(p: &Path) -> String {
     out
 }
 
-fn player_url(src: &str, kind: &str, fit: &str) -> String {
+fn player_url(src: &str, kind: &str, fit: &str, clip: Option<[f64; 2]>) -> String {
     let q: String = src
         .bytes()
         .map(|b| match b {
@@ -183,7 +198,8 @@ fn player_url(src: &str, kind: &str, fit: &str) -> String {
             _ => format!("%{b:02X}"),
         })
         .collect();
-    format!("{APP_ORIGIN}/player.html?kind={kind}&fit={fit}&src={q}")
+    let range = clip.map_or(String::new(), |[a, b]| format!("&start={a}&end={b}"));
+    format!("{APP_ORIGIN}/player.html?kind={kind}&fit={fit}{range}&src={q}")
 }
 
 /// Shadertoy and YouTube pages are heavy; their embed forms show only the content.
@@ -227,6 +243,7 @@ fn url_for(app: &AppHandle, w: &Wallpaper, fit: &str) -> Result<tauri::Url, Stri
                 &asset_url(&f),
                 if k == Kind::Gif { "gif" } else { "video" },
                 fit,
+                w.info.clip,
             )
         }
         (Target::File(f), Kind::Web) => {
@@ -723,6 +740,6 @@ pub fn remove(app: &AppHandle, core: &mut Core, id: &str) -> Result<(), String> 
     }
     fs::remove_dir_all(&dir).map_err(|e| e.to_string())?;
     let _ = fs::remove_dir_all(cfg("props").join(id));
-    core.lib = library::scan(&lib);
+    core.lib = scan_all(&core.settings);
     Ok(())
 }

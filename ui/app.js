@@ -170,15 +170,18 @@ function render() {
   renderMonitors();
   renderDetail();
 
+  renderUpdate();
+  renderPresets();
+
   $('#lib-empty').hidden = state.library.length > 0;
   $('#library').replaceChildren(...state.library.map(w => el('li', { class: 'tile' },
     el('div', { class: 'thumb' }, icon(ICON[w.kind] ?? '')),
     el('div', { class: 'body' },
       el('span', { class: 'name' }, w.info.title || w.id),
-      el('span', { class: 'caption' }, t(`type.${w.kind}`)),
+      el('span', { class: 'caption' }, w.preset ? `${t(`type.${w.kind}`)} · ${t('presets.builtIn')}` : t(`type.${w.kind}`)),
       el('div', { class: 'row' },
         btn('accent', '', t('library.set'), () => run(() => invoke('set_wallpaper', { target: w.id, display: selectedDisplay() }))),
-        btn('subtle danger', '', t('library.delete'), () => confirm(t('library.confirmDelete', { title: w.info.title || w.id })) && run(() => invoke('remove', { id: w.id }))))))));
+        w.preset ? '' : btn('subtle danger', '', t('library.delete'), () => confirm(t('library.confirmDelete', { title: w.info.title || w.id })) && run(() => invoke('remove', { id: w.id }))))))));
 
   const f = $('#settings');
   const s = state.settings;
@@ -193,6 +196,7 @@ function render() {
   if (document.activeElement !== f.app_pause) f.app_pause.value = s.app_pause.join('\n');
   if (document.activeElement !== f.app_play) f.app_play.value = s.app_play.join('\n');
   $('#autostart').checked = state.autostart;
+  $('#check-updates').checked = s.check_updates;
   $('#about-version').textContent = t('about.version', { v: state.version });
   $('#about-webview').textContent = state.webview;
   document.querySelectorAll('select').forEach(combo);
@@ -259,6 +263,47 @@ function control(display, key, c) {
 function fill(r) { r.style.setProperty('--fill', `${((r.value - r.min) / (r.max - r.min || 1)) * 100}%`); }
 document.addEventListener('input', e => { if (e.target.type === 'range') fill(e.target); });
 
+// Update banner: shown on every page while a newer version exists. "Later" hides it until the
+// window is opened again; the check itself repeats once a day.
+let updateLater = false;
+function renderUpdate() {
+  const u = state.update;
+  const bar = $('#update-bar');
+  bar.hidden = !u.available || (updateLater && u.progress == null);
+  if (u.available) {
+    $('#update-text').textContent = u.progress != null
+      ? t('update.downloading', { v: u.available.version, p: u.progress })
+      : t('update.available', { v: u.available.version });
+    $('#update-actions').replaceChildren(...(u.progress != null ? [] : [
+      btn('accent', '\uE896', t('update.now'), () => run(() => invoke('install_update'))),
+      u.available.notes ? btn('subtle', '\uE8A5', t('update.notes'), () => alert(u.available.notes)) : '',
+      btn('subtle', '\uE711', t('update.later'), () => { updateLater = true; render(); }),
+    ]));
+  }
+  $('#update-status').textContent = u.available
+    ? t('update.available', { v: u.available.version })
+    : u.error ? `${t('update.failed')} ${u.error}`
+    : u.checked ? t('update.latest', { v: state.version }) : t('update.never');
+}
+
+// NASA 4K videos: downloaded only when asked, and verified against a pinned checksum.
+function renderPresets() {
+  const mb = n => Math.round(n / 1e6);
+  $('#presets').replaceChildren(...state.presets.map(p => el('li', { class: 'tile' },
+    el('div', { class: 'thumb' }, icon('\uE714')),
+    el('div', { class: 'body' },
+      el('span', { class: 'name' }, p.title),
+      el('span', { class: 'caption' }, `${p.width}×${p.height} · ${p.fps} fps · ${mb(p.size)} MB`),
+      el('span', { class: 'caption' }, p.description),
+      el('span', { class: 'caption' }, p.credit),
+      el('div', { class: 'row' },
+        p.installed
+          ? btn('accent', '\uE7F4', t('library.set'), () => run(() => invoke('set_wallpaper', { target: p.id, display: selectedDisplay() })))
+          : p.progress != null
+            ? el('span', { class: 'caption' }, t('presets.downloading', { p: p.progress }))
+            : btn('', '\uE896', t('presets.get', { mb: mb(p.size) }), () => run(() => invoke('get_preset', { id: p.id }))))))));
+}
+
 function readSettings() {
   const f = $('#settings');
   const lines = v => v.split('\n').map(x => x.trim()).filter(Boolean);
@@ -276,6 +321,7 @@ function readSettings() {
     app_play: lines(f.app_play.value),
     theme: f.theme.value,
     backdrop: f.backdrop.value,
+    check_updates: $('#check-updates').checked,
     language: f.language.value,
   };
 }
@@ -288,6 +334,8 @@ $('#add').addEventListener('submit', e => {
     $('#target').value = '';
   });
 });
+$('#check-updates').addEventListener('change', () => run(() => invoke('save_settings', { new: readSettings() })));
+$('#check-now').addEventListener('click', () => run(() => invoke('check_update')));
 $('#pause').addEventListener('click', () => run(() => invoke('toggle_pause')));
 document.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => run(() => invoke('open', { which: b.dataset.open }))));
 $('#all-displays').addEventListener('click', () => { selected = null; render(); });

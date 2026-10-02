@@ -1,0 +1,30 @@
+[
+  {
+    "id": "nasa-spinning-earth-4k",
+    "title": "Spinning Earth",
+    "description": "Earth turning with clouds, atmosphere and city lights on the night side.",
+    "credit": "NASA's Scientific Visualization Studio. Visualizer: Kel Elkins (USRA). Blue Marble data: Reto Stockli (NASA/GSFC).",
+    "source": "https://svs.gsfc.nasa.gov/5570/",
+    "url": "https://svs.gsfc.nasa.gov/vis/a000000/a005500/a005570/Earth_wAtmos_spin_02_2160p30.mp4",
+    "sha256": "6dbac1f5a925b92cf119511009d32a1085952730fbef2a856995429171d34f92",
+    "size": 128742951,
+    "width": 3840,
+    "height": 2160,
+    "fps": 30
+  },
+  {
+    "id": "nasa-iss-earth-view-4k",
+    "title": "Earth from the space station",
+    "description": "4K footage of Earth's day and night side filmed from the International Space Station.",
+    "credit": "NASA, 4K Video from the ISS, April 2016 (NASA's Scientific Visualization Studio).",
+    "source": "https://svs.gsfc.nasa.gov/30771/",
+    "url": "https://svs.gsfc.nasa.gov/vis/a030000/a030700/a030771/ISS_View_of_Planet_Earth_2160p.mp4",
+    "sha256": "2a1a22185d14ca07176e6c2d071874ab5a091d4687ebd502316161136f560362",
+    "size": 112793370,
+    "width": 3840,
+    "height": 2160,
+    "fps": 24,
+    "clip": [6.0, 81.0],
+    "clipNote": "Plays 6 s to 81 s: the file opens with a title card and ends with a program logo, which NASA's media guidelines ask reusers to leave out."
+  }
+]

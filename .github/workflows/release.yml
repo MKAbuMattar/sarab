@@ -44,8 +44,12 @@ jobs:
       - name: Install Tauri CLI
         run: cargo binstall -y --locked "tauri-cli@2.12.1"
 
+      # Signs the installer for the in-app updater. Add both secrets under Settings > Secrets and variables > Actions.
       - name: Build installer
         working-directory: src-tauri
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: cargo tauri build
 
       - name: Release notes from the changelog
@@ -53,12 +57,23 @@ jobs:
           $log = Get-Content CHANGELOG.md -Raw
           $m = [regex]::Match($log, "(?ms)^## \[$([regex]::Escape($env:VERSION))\][^\n]*\n(.*?)(?=^## \[|\z)")
           if (-not $m.Success) { throw "CHANGELOG.md has no section for $env:VERSION" }
-          $m.Groups[1].Value.Trim() | Set-Content notes.md
+          $notes = $m.Groups[1].Value.Trim()
+          $notes | Set-Content notes.md
+          # The feed the in-app updater reads: releases/latest/download/latest.json.
+          $exe = "Sarab_$($env:VERSION)_x64-setup.exe"
+          $sig = (Get-Content "src-tauri/target/release/bundle/nsis/$exe.sig" -Raw).Trim()
+          @{ version = $env:VERSION; notes = $notes; pub_date = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+             platforms = @{ 'windows-x86_64' = @{ signature = $sig; url = "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/$exe" } } } |
+            ConvertTo-Json -Depth 5 | Set-Content latest.json
 
       - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           name: Sarab ${{ env.VERSION }}
           body_path: notes.md
-          prerelease: ${{ startsWith(env.VERSION, '0.') }}
-          files: src-tauri/target/release/bundle/nsis/*-setup.exe
+          # Not a prerelease: the updater's releases/latest link skips prereleases.
+          prerelease: false
+          files: |
+            src-tauri/target/release/bundle/nsis/*-setup.exe
+            src-tauri/target/release/bundle/nsis/*-setup.exe.sig
+            latest.json
           fail_on_unmatched_files: true

@@ -4,7 +4,9 @@ mod cli;
 mod library;
 mod os;
 mod pause;
+mod presets;
 mod settings;
+mod update;
 mod wallpaper;
 
 use cli::Command;
@@ -34,8 +36,8 @@ fn changed(app: &AppHandle) {
     let _ = app.emit_to("main", "changed", ());
 }
 
-fn rescan(core: &mut Core) {
-    core.lib = library::scan(&wallpaper::library_dir(&core.settings));
+pub(crate) fn rescan(core: &mut Core) {
+    core.lib = wallpaper::scan_all(&core.settings);
 }
 
 /// Resolve a CLI/UI target: a library id, or a path/URL that gets added to the library first.
@@ -109,6 +111,19 @@ fn run_command(app: &AppHandle, core: &mut Core, cmd: Command) -> Result<(), Str
         Command::Ui => open_ui(app, &core.settings.theme, &core.settings.backdrop),
         Command::Quit => app.exit(0),
         Command::Status => wallpaper::probe_pages(app, core),
+        // Network work runs on the async runtime; the main thread only starts it.
+        Command::Preset(id) => {
+            let a = app.clone();
+            tauri::async_runtime::spawn(async move { presets::download(&a, &id).await });
+        }
+        Command::CheckUpdate => {
+            let a = app.clone();
+            tauri::async_runtime::spawn(async move { update::check(&a).await });
+        }
+        Command::InstallUpdate => {
+            let a = app.clone();
+            tauri::async_runtime::spawn(async move { update::install(&a).await });
+        }
     }
     wallpaper::tick(app, core);
     wallpaper::write_status(core);
@@ -124,10 +139,17 @@ fn handle_args(app: &AppHandle, args: &[String]) {
                 log(format!("error: {e}"));
             }
         }
+        // A plain launch (desktop or Start menu shortcut, or clicking Sarab while it runs) opens the
+        // window. The login launch passes --autostart and stays in the tray.
+        Ok(None) if !args.iter().any(|a| a == AUTOSTART_FLAG) => {
+            let _ = with_core(app, |app, core| run_command(app, core, Command::Ui));
+        }
         Ok(None) => {}
         Err(e) => log(format!("error: {e}")),
     }
 }
+
+const AUTOSTART_FLAG: &str = "--autostart";
 
 fn theme_of(name: &str) -> Option<tauri::Theme> {
     match name {
@@ -200,6 +222,8 @@ async fn state(app: AppHandle) -> Value {
             "library": core.lib,
             "manual": core.manual,
             "autostart": auto,
+            "update": update::to_json(app),
+            "presets": presets::to_json(app, &core.lib),
             "displays": core.displays.iter().map(|d| json!({
                 "key": d.mon.key, "wallpaper": d.wallpaper, "state": d.state, "reason": d.reason, "error": d.error,
                 "x": d.mon.rect.left, "y": d.mon.rect.top,
@@ -353,25 +377,41 @@ async fn save_settings(app: AppHandle, new: settings::Settings) -> Result<(), St
 }
 
 #[tauri::command]
+async fn get_preset(app: AppHandle, id: String) -> Result<(), String> {
+    presets::download(&app, &id).await
+}
+
+#[tauri::command]
+async fn check_update(app: AppHandle) -> Result<Option<String>, String> {
+    update::check(&app).await
+}
+
+#[tauri::command]
+async fn install_update(app: AppHandle) -> Result<(), String> {
+    update::install(&app).await
+}
+
+#[tauri::command]
 async fn autostart(app: AppHandle, enable: bool) -> Result<(), String> {
     let al = app.autolaunch();
     if enable { al.enable() } else { al.disable() }.map_err(|e| e.to_string())
 }
 
-fn tray(app: &AppHandle, lang: &str) -> tauri::Result<()> {
-    let strings: Value = serde_json::from_str(if lang == "ar" {
+/// A UI string for text Rust shows itself (tray menu, notifications), from the same files as the window.
+pub(crate) fn ui_text(lang: &str, key: &str) -> String {
+    let file = if lang == "ar" {
         include_str!("../../ui/i18n/ar.json")
     } else {
         include_str!("../../ui/i18n/en.json")
-    })
-    .unwrap_or_default();
-    let t = |k: &str| {
-        strings
-            .get(k)
-            .and_then(Value::as_str)
-            .unwrap_or(k)
-            .to_string()
     };
+    serde_json::from_str::<Value>(file)
+        .ok()
+        .and_then(|v| v.get(key).and_then(Value::as_str).map(String::from))
+        .unwrap_or_else(|| key.to_string())
+}
+
+fn tray(app: &AppHandle, lang: &str) -> tauri::Result<()> {
+    let t = |k: &str| ui_text(lang, k);
     let menu = Menu::with_items(
         app,
         &[
@@ -423,8 +463,12 @@ fn main() {
         }))
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
-            Some(vec!["--autostart"]),
+            Some(vec![AUTOSTART_FLAG]),
         ))
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_notification::init())
+        .manage::<update::Updates>(Default::default())
+        .manage::<presets::Downloads>(Default::default())
         .manage::<Shared>(Mutex::new(Core::load()))
         .invoke_handler(tauri::generate_handler![
             state,
@@ -440,7 +484,10 @@ fn main() {
             props,
             set_prop,
             save_settings,
-            autostart
+            autostart,
+            check_update,
+            install_update,
+            get_preset
         ])
         .on_window_event(|win, ev| {
             if win.label() != "main" {
@@ -480,10 +527,16 @@ fn main() {
             }
         })
         .setup(move |app| {
+            // reqwest is built without a default TLS provider (the updater's choice); install it once for the whole app.
+            let _ = rustls::crypto::ring::default_provider().install_default();
             let h = app.handle().clone();
+            if let Ok(res) = app.path().resource_dir() {
+                let _ = wallpaper::PRESET_DIR.set(res.join("presets"));
+            }
             let lang = {
                 let st = h.state::<Shared>();
                 let mut core = st.lock().unwrap();
+                rescan(&mut core);
                 core.desktop = os::windows::find_desktop();
                 if core.desktop.is_none() {
                     log("desktop layer (WorkerW) not found; will retry");
@@ -493,6 +546,7 @@ fn main() {
                 core.settings.language.clone()
             };
             tray(&h, &lang)?;
+            update::spawn(h.clone());
             let tick_app = h.clone();
             std::thread::spawn(move || loop {
                 // ponytail: 1 s poll for every probe; move lock/power/session to OS notifications if wakeups show up in profiles.
@@ -509,6 +563,20 @@ fn main() {
                     break;
                 }
             });
+            // Start with Windows is on by default: turned on once, at the first normal launch.
+            // After that the user's choice stands; a login launch never changes it.
+            if !args.iter().any(|a| a == AUTOSTART_FLAG) {
+                let st = h.state::<Shared>();
+                let mut core = st.lock().unwrap();
+                if !core.settings.autostart_set {
+                    match h.autolaunch().enable() {
+                        Ok(()) => log("start with Windows turned on (first launch)"),
+                        Err(e) => log(format!("start with Windows: {e}")),
+                    }
+                    core.settings.autostart_set = true;
+                    let _ = settings::save(&wallpaper::cfg("settings.json"), &core.settings);
+                }
+            }
             let first = args.clone();
             std::thread::spawn(move || handle_args(&h, &first));
             Ok(())

@@ -7,6 +7,7 @@ What comes next for Sarab, roughly in order. Plans change; the [issue tracker](h
 Done in 0.0.3:
 
 - Video, GIF, web page, web address and picture wallpapers under the desktop icons, on every display.
+- Update notifications with signed, consent-only installs, and 4K NASA presets (in the next release).
 - Automatic pausing (covered display, battery, energy saver, lock, remote desktop, app rules) that freezes in place and explains why.
 - Video kept in step across displays.
 - Windows 11 style window in light and dark, Acrylic or Mica, English and Arabic.
@@ -17,7 +18,6 @@ Still to do for Windows:
 - A file picker for adding wallpapers, as an alternative to typing or dragging.
 - Thumbnails in the library.
 - Code-signed installer, so SmartScreen stops warning.
-- Update check that tells you when a new release is out.
 - Install through `winget`.
 - Remember **Pause all** across restarts (see [accessibility](ACCESSIBILITY.md)).
 - Screen reader testing with NVDA and JAWS, and layout checks at 200% text size.

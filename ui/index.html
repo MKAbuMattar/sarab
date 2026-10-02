@@ -20,6 +20,7 @@
 </nav>
 
 <main>
+  <div id="update-bar" class="infobar info" role="status" hidden><i class="icon" aria-hidden="true">&#xE895;</i><span id="update-text" class="grow"></span><span id="update-actions" class="row"></span></div>
   <div id="error" class="infobar" role="alert" hidden><i class="icon" aria-hidden="true">&#xEA39;</i><span id="error-text"></span></div>
 
   <section class="page" id="page-library" aria-labelledby="h-library">
@@ -39,6 +40,9 @@
     <p class="caption" data-t="add.hint"></p>
     <p id="lib-empty" class="empty" data-t="library.empty" hidden></p>
     <ul id="library" class="tiles"></ul>
+    <h2 data-t="presets.title"></h2>
+    <p class="caption" data-t="presets.hint"></p>
+    <ul id="presets" class="tiles"></ul>
   </section>
 
   <section class="page" id="page-settings" aria-labelledby="h-settings" hidden>
@@ -90,6 +94,9 @@
     <div class="card"><i class="icon" aria-hidden="true">&#xE774;</i><span class="title" data-t="about.webview"></span><span id="about-webview" class="caption"></span></div>
     <div class="card"><i class="icon" aria-hidden="true">&#xE71B;</i><span><span class="title" data-t="about.website"></span><br><span class="caption">sarab.mkabumattar.com</span></span><button type="button" data-open="website"><span data-t="about.visit"></span></button></div>
     <div class="card"><i class="icon" aria-hidden="true">&#xEBE8;</i><span><span class="title" data-t="about.report"></span><br><span class="caption" data-t="about.reportDesc"></span></span><button type="button" data-open="issues"><span data-t="about.visit"></span></button></div>
+    <h2 data-t="about.updates"></h2>
+    <label class="card"><i class="icon" aria-hidden="true">&#xE895;</i><span><span class="title" data-t="about.autoUpdate"></span><br><span class="caption" data-t="about.autoUpdateDesc"></span></span><input class="switch" type="checkbox" id="check-updates"></label>
+    <div class="card"><i class="icon" aria-hidden="true">&#xE946;</i><span id="update-status" class="title"></span><button type="button" id="check-now"><span data-t="about.checkNow"></span></button></div>
     <h2 data-t="about.folders"></h2>
     <div class="card"><i class="icon" aria-hidden="true">&#xE8B7;</i><span><span class="title" data-t="about.config"></span><br><span class="caption" data-t="about.configDesc"></span></span><button type="button" data-open="config"><span data-t="about.open"></span></button></div>
     <div class="card"><i class="icon" aria-hidden="true">&#xE8F1;</i><span class="title" data-t="about.library"></span><button type="button" data-open="library"><span data-t="about.open"></span></button></div>

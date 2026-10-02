@@ -25,6 +25,10 @@ pub struct Settings {
     pub theme: String,
     /// Settings window backdrop: "acrylic" (see-through), "mica", or "solid".
     pub backdrop: String,
+    /// Look for a newer release once a day. Nothing downloads without the user's consent.
+    pub check_updates: bool,
+    /// Start with Windows has been switched on once (at first launch); never forced again.
+    pub autostart_set: bool,
 }
 
 impl Default for Settings {
@@ -45,6 +49,8 @@ impl Default for Settings {
             language: "en".into(),
             theme: "system".into(),
             backdrop: "acrylic".into(),
+            check_updates: true,
+            autostart_set: false,
         }
     }
 }

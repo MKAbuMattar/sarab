@@ -37,6 +37,7 @@ A check passes only when it exits 0 and prints `<name> gate passed`. Read the ou
 
 - **Safe anywhere:** `unit`, `static`, `brand`, `about`.
 - **Need the Windows desktop** and run Sarab in a sandboxed `APPDATA` under `scripts/.sandbox`: `embed`, `media`, `pause`, `budget`, `prop`, `restore`, `kill`, `ui`, `switch`, `fullscreen`, `reasons`, `sync`, `installer`.
+- **Need secrets or network:** `updater` builds two signed versions and needs `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. The key lives outside the repo, in `%USERPROFILE%\.tauri\`; never commit it or print it. `preset` downloads about 110 MB from NASA.
 - **Ask the user first:** `picture` changes and then restores the Windows wallpaper; `explorer` restarts explorer.exe and closes File Explorer windows. Never minimize, close or move the user's windows without asking.
 - `pause` refuses to run when every display is covered by a maximized window. That is correct; do not weaken it.
 - `budget` has measured one outlier in four runs (0.024 cores against 0.02, the rest 0.002 to 0.006). Rerun before concluding anything.
@@ -54,10 +55,11 @@ A check passes only when it exits 0 and prints `<name> gate passed`. Read the ou
 4. **The `open` command takes fixed names only**, never a path or URL from the page.
 5. **Keep the package format stable.** Add fields to `sarab.json` and `properties.json`; never rename or remove one.
 6. **Every UI string goes in every `ui/i18n/*.json`.** English and Arabic must have the same keys; `static` fails otherwise. Arabic is right to left: use logical CSS properties (`inset-inline-start`, `margin-inline`), never `left` or `right`, except in the display map, which keeps physical order.
-7. **No other wallpaper app is named** anywhere in the repository, code, docs or comments. `brand` scans every file.
-8. **No email addresses.** The project has no mailbox; contact goes through GitHub (issues, private vulnerability reporting).
-9. **GitHub Actions are pinned by full commit SHA** with the version as a comment, for example `actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1`. Resolve a new pin with `gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`, and check the action's inputs at that commit.
-10. **Version** lives in `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json` and must match; `CHANGELOG.md` needs a section for it. `static` checks both.
+7. **Bundled or downloadable content must be redistributable.** Presets are public domain (NASA) or carry a GPL-3.0 compatible license with its notice. Stock sites such as Pexels and Pixabay forbid redistribution in wallpaper apps, and Shadertoy's default license is non-commercial. Downloads are pinned by size and SHA-256 in `src-tauri/src/presets.json`.
+8. **No other wallpaper app is named** anywhere in the repository, code, docs or comments. `brand` scans every file.
+9. **No email addresses.** The project has no mailbox; contact goes through GitHub (issues, private vulnerability reporting).
+10. **GitHub Actions are pinned by full commit SHA** with the version as a comment, for example `actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1`. Resolve a new pin with `gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`, and check the action's inputs at that commit.
+11. **Version** lives in `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json` and must match; `CHANGELOG.md` needs a section for it. `static` checks both.
 
 ## Traps this code has already hit
 
@@ -71,6 +73,9 @@ A check passes only when it exits 0 and prints `<name> gate passed`. Read the ou
 | WorkerW above the wallpaper on the raised desktop | Shows the Windows wallpaper. `ensure_order()` repairs and logs it every tick | `os/windows.rs` |
 | `SystemParametersInfo(SPI_SETDESKWALLPAPER)` on the raised desktop | Destroys the WorkerW. `refresh_desktop()` skips it there | `os/windows.rs` |
 | The per-user install folder is `%LOCALAPPDATA%\Sarab` | Data in that folder could go with an uninstall, so data uses the app identifier folders | `settings.rs` |
+| Installing a test copy to an 8.3 path (`MKABUM~1`, which `$env:TEMP` is) | The uninstaller only removes shortcuts whose target matches its install folder as written, so desktop and Start menu shortcuts survived and showed "Problem with Shortcut". The install checks use long paths and assert no shortcuts remain | `scripts/check.ps1` |
+| Test installs changing the installer's remembered folder | NSIS stores the last install folder in `HKCU\Software\Sarab\Sarab` and offers it to the next install, even after uninstalling. A test install made the user's real install land in `Temp`. `Save-InstallMemory` / `Restore-InstallMemory` in `scripts/check.ps1` put it back | `scripts/check.ps1` |
+| Starting a test copy without `--autostart` | A plain launch opens the window and turns on Start with Windows for that exe. Checks pass `--autostart` | `scripts/check.ps1`, `main.rs` |
 | An app identifier ending in `.app` | Clashes with macOS bundles. It is `com.mkabumattar.sarab` | `tauri.conf.json` |
 
 ## Writing

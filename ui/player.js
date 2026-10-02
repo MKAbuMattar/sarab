@@ -9,6 +9,15 @@ if (!gif) {
   el.muted = (window.__sarabVolume || 0) === 0;
 }
 el.src = q.get('src');
+// Optional range (seconds): start there, and loop back before the end, for clips that open
+// or close with title cards.
+const start = parseFloat(q.get('start')), end = parseFloat(q.get('end'));
+if (!gif && end > start) {
+  el.loop = false;
+  el.addEventListener('loadedmetadata', () => { el.currentTime = start; });
+  el.addEventListener('timeupdate', () => { if (el.currentTime >= end || el.currentTime < start - 0.5) el.currentTime = start; });
+  el.addEventListener('ended', () => { el.currentTime = start; el.play().catch(() => {}); });
+}
 document.body.appendChild(el);
 
 if (gif) {

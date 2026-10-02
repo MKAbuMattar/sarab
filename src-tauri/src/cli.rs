@@ -24,9 +24,13 @@ pub enum Command {
     Quit,
     /// Write status.json, including what each page reports about itself.
     Status,
+    /// Download a 4K preset by id.
+    Preset(String),
+    CheckUpdate,
+    InstallUpdate,
 }
 
-pub const USAGE: &str = "usage: sarab [set <file|folder|url> | close | pause | play | resume | toggle | prop <key>=<value> | volume <0-100> | next | import <zip> | ui | status | quit] [--display N]";
+pub const USAGE: &str = "usage: sarab [set <file|folder|url> | close | pause | play | resume | toggle | prop <key>=<value> | volume <0-100> | next | import <zip> | ui | status | preset <id> | check-update | install-update | quit] [--display N]";
 
 /// `args` excludes the program name. No args means "just start" (None).
 pub fn parse(args: &[String]) -> Result<Option<Command>, String> {
@@ -82,6 +86,9 @@ pub fn parse(args: &[String]) -> Result<Option<Command>, String> {
         Some("ui") => Command::Ui,
         Some("quit") => Command::Quit,
         Some("status") => Command::Status,
+        Some("preset") => Command::Preset(arg(1)?),
+        Some("check-update") => Command::CheckUpdate,
+        Some("install-update") => Command::InstallUpdate,
         Some(other) => return Err(format!("unknown command: {other}\n{USAGE}")),
     };
     Ok(Some(cmd))
@@ -139,5 +146,8 @@ mod tests {
         assert_eq!(p("toggle"), Ok(Some(Toggle)));
         assert_eq!(p("status"), Ok(Some(Status)));
         assert_eq!(p("play"), Ok(Some(Play)));
+        assert_eq!(p("preset nasa-x"), Ok(Some(Preset("nasa-x".into()))));
+        assert!(p("preset").is_err());
+        assert_eq!(p("check-update"), Ok(Some(CheckUpdate)));
     }
 }

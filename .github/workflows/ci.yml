@@ -57,9 +57,12 @@ jobs:
       - name: Install Tauri CLI
         run: cargo binstall -y --locked "tauri-cli@2.12.1"
 
+      # Pull requests cannot read the signing secret, so CI builds without updater signatures.
       - name: Build installer
         working-directory: src-tauri
-        run: cargo tauri build
+        run: |
+          '{"bundle":{"createUpdaterArtifacts":false}}' | Set-Content ci.conf.json
+          cargo tauri build --config ci.conf.json
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

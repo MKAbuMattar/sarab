@@ -46,6 +46,8 @@ pub struct Manifest {
     pub thumbnail: Option<String>,
     pub tags: Vec<String>,
     pub version: u32,
+    /// Play only this range of a video, in seconds, and loop inside it.
+    pub clip: Option<[f64; 2]>,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -55,6 +57,8 @@ pub struct Wallpaper {
     pub info: Manifest,
     pub kind: &'static str,
     pub has_props: bool,
+    /// Ships with Sarab (read-only, cannot be deleted).
+    pub preset: bool,
 }
 
 pub enum Target {
@@ -98,6 +102,7 @@ pub fn read(dir: &Path) -> Option<Wallpaper> {
         dir: dir.to_path_buf(),
         kind: info.r#type.name(),
         has_props: dir.join(PROPS).is_file(),
+        preset: false,
         info,
     })
 }

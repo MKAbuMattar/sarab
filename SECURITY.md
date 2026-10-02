@@ -26,6 +26,7 @@ Wallpapers are untrusted content, so these are in scope:
 - A `.zip` package writing outside its target folder (zip slip), or bypassing the size limit.
 - Anything that makes Sarab run code or open files the user did not choose.
 - The command line or the window opening a path or URL that is not one of Sarab's fixed targets.
+- The updater installing anything not signed with Sarab's update key, or a preset download being kept when its size or SHA-256 differs from the pinned value.
 
 Out of scope:
 

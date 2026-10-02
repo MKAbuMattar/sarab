@@ -20,6 +20,12 @@ First public release, for Windows 10 (1903 or later) and Windows 11.
 - A command line: `set`, `close`, `pause`, `play`, `resume`, `toggle`, `prop`, `volume`, `next`, `import`, `ui`, `status`, `quit`.
 - An About page with the version, license, folders and links.
 - A per-user Windows installer in English and Arabic.
+- Update notifications: Sarab checks for a new release once a day (Settings can turn this off), shows a Windows notification and a banner, and installs only when you choose **Update now**. Updates are signed and verified before they run.
+- 4K presets: public-domain NASA videos (Spinning Earth, Earth from the space station), downloaded only when you choose **Get** and checked against a pinned SHA-256.
+- `sarab.json` can set `clip` to play part of a video in a loop.
+- Command line: `preset <id>`, `check-update`, `install-update`.
+- Opening Sarab from the desktop or Start menu opens its window, also when it already runs in the background. Starting at sign-in stays in the tray.
+- Start with Windows, on by default: switched on once at the first launch, and it stays off if you turn it off. Uninstalling removes it.
 
 [Unreleased]: https://github.com/MKAbuMattar/sarab/compare/v0.0.3...HEAD
 [0.0.3]: https://github.com/MKAbuMattar/sarab/releases/tag/v0.0.3

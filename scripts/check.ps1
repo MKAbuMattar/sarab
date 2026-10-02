@@ -1,4 +1,4 @@
-# Sarab gate checks for Windows. Usage: pwsh -NoProfile -File sarab/scripts/check.ps1 <unit|embed|media|picture|pause|budget|prop|restore|kill|ui|switch|explorer|fullscreen|brand|reasons|sync|about|installer|static>
+# Sarab gate checks for Windows. Usage: pwsh -NoProfile -File sarab/scripts/check.ps1 <unit|embed|media|picture|pause|budget|prop|restore|kill|ui|switch|explorer|fullscreen|brand|reasons|sync|about|installer|static|preset|updater|launch>
 # Each check prints "<name> gate passed" only after every assertion holds, and exits 1 otherwise.
 # Sarab runs with APPDATA/LOCALAPPDATA pointed at a sandbox, so real settings are never touched.
 param([Parameter(Mandatory)][string]$Gate)
@@ -66,7 +66,8 @@ function Start-Sarab([switch]$Fresh) {
   New-Item -ItemType Directory -Force "$sandbox/roaming", "$sandbox/local" | Out-Null
   if (-not (Sarab-Pid)) {
     $env:APPDATA = "$sandbox/roaming"; $env:LOCALAPPDATA = "$sandbox/local"
-    Start-Process $exe | Out-Null
+    # --autostart: start in the tray like a login launch, so checks never open the window or turn on Start with Windows.
+    Start-Process $exe -ArgumentList '--autostart' | Out-Null
   }
   Wait-For { (Test-Path $statusFile) -and (Status).pid -eq (Sarab-Pid) } 20 'Sarab did not start'
 }
@@ -112,6 +113,16 @@ function Tree([int]$rootPid) {
     $grew = [bool]$more; $ids += $more
   }
   $ids
+}
+
+# The NSIS installer remembers its last install folder in HKCU\Software\Sarab\Sarab and offers it
+# to the next install, even after an uninstall. Test installs must put it back, or the user's own
+# install lands in the test folder.
+function Save-InstallMemory { $k = 'HKCU:\Software\Sarab\Sarab'; if (Test-Path $k) { (Get-ItemProperty $k).'(default)' } else { $null } }
+function Restore-InstallMemory($saved) {
+  $k = 'HKCU:\Software\Sarab\Sarab'
+  if ($null -ne $saved) { New-Item -Force $k | Out-Null; Set-Item $k $saved }
+  elseif (Test-Path $k) { Remove-Item $k -Recurse -Force; if (-not (Get-ChildItem 'HKCU:\Software\Sarab' -ErrorAction SilentlyContinue)) { Remove-Item 'HKCU:\Software\Sarab' -ErrorAction SilentlyContinue } }
 }
 
 # ---- fixtures ----
@@ -562,12 +573,17 @@ Add-Type -AssemblyName System.Windows.Forms
     $bytes = [IO.File]::ReadAllBytes($setup.FullName)
     Assert ([Text.Encoding]::ASCII.GetString($bytes, 0, 2) -eq 'MZ' -and [Text.Encoding]::ASCII.GetString($bytes) -match 'Nullsoft') 'installer is not an NSIS executable'
     Assert (-not (Get-Process sarab -ErrorAction SilentlyContinue)) 'a Sarab is running; the installer would close it'
+    # The test install shares the "Sarab" Apps entry and Start with Windows value with a real install.
+    Assert (-not (Test-Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Sarab')) 'Sarab is installed for real on this PC; uninstall it before this check'
     $userData = @("$env:APPDATA\com.mkabumattar.sarab", "$env:LOCALAPPDATA\com.mkabumattar.sarab\Library") | Where-Object { Test-Path $_ }
     $before = @($userData | ForEach-Object { Get-ChildItem $_ -Recurse -File -Force } ).Count
-    $dir = Join-Path $env:TEMP 'sarab-install-check'
+    # Long path on purpose: $env:TEMP is 8.3 (MKABUM~1), and the uninstaller only removes shortcuts
+    # whose target matches its install folder as written, so a short path leaves them behind.
+    $dir = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'Temp\sarab-install-check'
     if (Test-Path $dir) { Remove-Item $dir -Recurse -Force }
     $key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Sarab'
     $menu = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Sarab'
+    $memory = Save-InstallMemory
     try {
       $p = Start-Process $setup.FullName -ArgumentList '/S', "/D=$dir" -PassThru -Wait
       Assert ($p.ExitCode -eq 0) "installer exit code $($p.ExitCode)"
@@ -582,17 +598,26 @@ Add-Type -AssemblyName System.Windows.Forms
       $env:APPDATA = "$sandbox/roaming"; $env:LOCALAPPDATA = "$sandbox/local"
       if (Test-Path $sandbox) { Remove-Item $sandbox -Recurse -Force }
       New-Item -ItemType Directory -Force "$sandbox/roaming", "$sandbox/local" | Out-Null
-      $app = Start-Process "$dir\sarab.exe" -PassThru
+      $app = Start-Process "$dir\sarab.exe" -ArgumentList '--autostart' -PassThru
       Wait-For { (Test-Path $statusFile) -and (Status).pid -eq $app.Id } 20 'installed Sarab did not start'
       & "$dir\sarab.exe" quit; Start-Sleep 3
       Assert ($app.HasExited) 'installed Sarab did not quit'
+      # A plain launch turns on Start with Windows; the uninstaller must remove it again.
+      $app = Start-Process "$dir\sarab.exe" -PassThru
+      Wait-For { (Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -ErrorAction SilentlyContinue).Sarab -like "*sarab-install-check*" } 20 'installed Sarab did not turn on Start with Windows'
+      & "$dir\sarab.exe" quit; Start-Sleep 3
       $env:APPDATA = [Environment]::GetFolderPath('ApplicationData'); $env:LOCALAPPDATA = [Environment]::GetFolderPath('LocalApplicationData')
     } finally {
       $env:APPDATA = [Environment]::GetFolderPath('ApplicationData'); $env:LOCALAPPDATA = [Environment]::GetFolderPath('LocalApplicationData')
       if (Test-Path "$dir\uninstall.exe") { Start-Process "$dir\uninstall.exe" -ArgumentList '/S' -Wait | Out-Null; Start-Sleep 3 }
+      Restore-InstallMemory $memory
     }
     Assert (-not (Test-Path "$dir\sarab.exe")) 'uninstall left sarab.exe behind'
     Assert (-not (Test-Path $key)) 'uninstall left the Apps entry'
+    Assert (-not (Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -ErrorAction SilentlyContinue).Sarab) 'uninstall left the Start with Windows entry'
+    $wsh = New-Object -ComObject WScript.Shell
+    $left = @([Environment]::GetFolderPath('Desktop'), "$env:APPDATA\Microsoft\Windows\Start Menu\Programs") | ForEach-Object { Get-ChildItem $_ -Recurse -Filter *.lnk -ErrorAction SilentlyContinue } | Where-Object { $wsh.CreateShortcut($_.FullName).TargetPath -like '*\sarab-install-check\*' }
+    Assert (-not $left) "shortcuts left behind: $($left.FullName -join ', ')"
     $after = @($userData | ForEach-Object { Get-ChildItem $_ -Recurse -File -Force -ErrorAction SilentlyContinue }).Count
     Write-Host "user data files before=$before after=$after"
     Assert ($after -eq $before) 'uninstall touched the user data folders'
@@ -625,6 +650,149 @@ Add-Type -AssemblyName System.Windows.Forms
     Assert ((Get-Content (Join-Path $root 'CHANGELOG.md') -Raw) -match "## \[$([regex]::Escape($cargo))\]") "CHANGELOG.md has no entry for $cargo"
     Write-Host "$($files.Count) languages, $($en.Count) strings, $($used.Count) keys used, $($reasons.Count) reasons, version $cargo"
     'static gate passed'
+  }
+
+  'preset' {
+    # Real download from NASA, pinned checksum, then playback inside the clip range.
+    $id = 'nasa-iss-earth-view-4k'
+    $cat = Get-Content (Join-Path $root 'src-tauri/src/presets.json') -Raw | ConvertFrom-Json
+    $p = $cat | Where-Object id -eq $id
+    Assert $p "no preset $id in the catalog"
+    Start-Sarab -Fresh
+    $dir = Join-Path $sandbox "local/com.mkabumattar.sarab/Library/$id"
+    $t0 = Get-Date
+    Sarab preset $id
+    Wait-For { Test-Path "$dir/sarab.json" } 600 "preset did not finish downloading (see sarab.log)"
+    $secs = ((Get-Date) - $t0).TotalSeconds
+    $file = Join-Path $dir "$id.mp4"
+    $hash = (Get-FileHash $file -Algorithm SHA256).Hash.ToLower()
+    Assert ($hash -eq $p.sha256) "installed file hash $hash does not match the catalog"
+    Assert (-not (Get-ChildItem $dir -Filter '*.part')) 'a partial file was left behind'
+    $m = Get-Content "$dir/sarab.json" -Raw | ConvertFrom-Json
+    Assert ($m.type -eq 'video' -and $m.clip[0] -eq 6 -and $m.clip[1] -eq 81) "manifest: $($m | ConvertTo-Json -Compress)"
+    Write-Host ("downloaded {0:N0} MB in {1:N0} s, sha256 ok" -f ($p.size / 1MB), $secs)
+    Sarab set $id --display 0
+    Sarab play
+    Wait-For { $d = (Status).displays[0]; $d.loaded -and $d.wallpaper -eq $id } 30 'preset did not load'
+    Start-Sleep 3
+    $v = (Page 0).media[0]
+    Write-Host ("playing at {0:N1} s" -f $v.time)
+    Assert ($v -and -not $v.paused -and $v.time -ge 6 -and $v.time -lt 81) "not playing inside the 6 to 81 s clip: $($v | ConvertTo-Json -Compress)"
+    Sarab close; Stop-Sarab
+    'preset gate passed'
+  }
+
+  'updater' {
+    # End to end: a test 0.0.3 finds a signed 0.0.4 on a local server, downloads, verifies and installs it.
+    # Needs the signing key (TAURI_SIGNING_PRIVATE_KEY and _PASSWORD), the same one release.yml uses.
+    Assert $env:TAURI_SIGNING_PRIVATE_KEY 'set TAURI_SIGNING_PRIVATE_KEY (and _PASSWORD) to the updater signing key'
+    Assert (-not (Get-Process sarab -ErrorAction SilentlyContinue)) 'a Sarab is running; the installer would close it'
+    # The test install shares the "Sarab" Apps entry and Start with Windows value with a real install.
+    Assert (-not (Test-Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Sarab')) 'Sarab is installed for real on this PC; uninstall it before this check'
+    $port = 8765
+    # Long path on purpose; see the installer check.
+    $work = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'Temp\sarab-update-check'
+    if (Test-Path $work) { Remove-Item $work -Recurse -Force }
+    New-Item -ItemType Directory -Force "$work/feed" | Out-Null
+    $env:CARGO_TARGET_DIR = Join-Path $root 'src-tauri/target-updatetest'
+    $bundle = Join-Path $env:CARGO_TARGET_DIR 'release/bundle/nsis'
+    Push-Location (Join-Path $root 'src-tauri')
+    try {
+      # 0.0.4: the update that the feed offers.
+      '{"version":"0.0.4"}' | Set-Content "$work/new.json"
+      cargo tauri build --config "$work/new.json" 2>&1 | Out-Null
+      Assert ($LASTEXITCODE -eq 0) 'building 0.0.4 failed'
+      Copy-Item "$bundle/Sarab_0.0.4_x64-setup.exe", "$bundle/Sarab_0.0.4_x64-setup.exe.sig" "$work/feed/"
+      # Test 0.0.3: same app, but its feed is the local server. Only this build may use plain HTTP.
+      @{ version = '0.0.3'; plugins = @{ updater = @{ endpoints = @("http://127.0.0.1:$port/latest.json"); dangerousInsecureTransportProtocol = $true } } } | ConvertTo-Json -Depth 5 | Set-Content "$work/old.json"
+      cargo tauri build --config "$work/old.json" 2>&1 | Out-Null
+      Assert ($LASTEXITCODE -eq 0) 'building the test 0.0.3 failed'
+      Copy-Item "$bundle/Sarab_0.0.3_x64-setup.exe" "$work/old-setup.exe"
+    } finally { Pop-Location; Remove-Item Env:CARGO_TARGET_DIR }
+    @{ version = '0.0.4'; notes = 'Test release'; pub_date = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+       platforms = @{ 'windows-x86_64' = @{ signature = (Get-Content "$work/feed/Sarab_0.0.4_x64-setup.exe.sig" -Raw).Trim(); url = "http://127.0.0.1:$port/Sarab_0.0.4_x64-setup.exe" } } } |
+      ConvertTo-Json -Depth 5 | Set-Content "$work/feed/latest.json"
+    $server = Start-Process python -ArgumentList '-m', 'http.server', $port, '--bind', '127.0.0.1', '--directory', "$work/feed" -PassThru -WindowStyle Hidden
+    $dir = Join-Path $work 'app'   # NSIS /D= needs backslashes
+    $key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Sarab'
+    $memory = Save-InstallMemory
+    try {
+      Start-Sleep 2
+      $p = Start-Process (Join-Path $work 'old-setup.exe') -ArgumentList '/S', "/D=$dir" -PassThru -Wait
+      Assert ($p.ExitCode -eq 0 -and (Get-ItemProperty $key).DisplayVersion -eq '0.0.3') 'test 0.0.3 did not install'
+      $env:APPDATA = "$sandbox/roaming"; $env:LOCALAPPDATA = "$sandbox/local"
+      if (Test-Path $sandbox) { Remove-Item $sandbox -Recurse -Force }
+      New-Item -ItemType Directory -Force "$sandbox/roaming", "$sandbox/local" | Out-Null
+      Start-Process "$dir/sarab.exe" -ArgumentList '--autostart' | Out-Null
+      Wait-For { (Test-Path $statusFile) } 20 'installed 0.0.3 did not start'
+      & "$dir/sarab.exe" check-update
+      Wait-For { (Get-Content (Join-Path $cfg 'sarab.log') -Raw) -match 'update available: 0\.0\.4' } 30 "0.0.3 did not find 0.0.4: $((Get-Content (Join-Path $cfg 'sarab.log') -Tail 5) -join ' | ')"
+      & "$dir/sarab.exe" install-update
+      Wait-For { (Get-ItemProperty $key -ErrorAction SilentlyContinue).DisplayVersion -eq '0.0.4' } 180 "update did not install: $((Get-Content (Join-Path $cfg 'sarab.log') -Tail 5) -join ' | ')"
+      Wait-For { (Get-Item "$dir/sarab.exe").VersionInfo.ProductVersion -like '0.0.4*' } 30 'installed exe is not 0.0.4'
+      Write-Host "updated in place: $((Get-ItemProperty $key).DisplayVersion) at $dir"
+      # The update installer keeps running after the version flips (it recreates shortcuts and relaunches
+      # Sarab). Uninstalling before it exits leaves shortcuts pointing at a deleted exe.
+      Wait-For { -not (Get-Process | Where-Object { $_.Path -like "$work*" -and $_.Name -ne 'sarab' }) } 60 'update installer did not finish'
+      $log = Get-Content (Join-Path $cfg 'sarab.log') -Raw
+      Assert ($log -notmatch 'update notification:') "the update notification failed: $(($log -split "`n" | Select-String 'update notification') -join ' ')"
+    } finally {
+      Get-Process sarab -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "$work*" } | Stop-Process -Force
+      $env:APPDATA = [Environment]::GetFolderPath('ApplicationData'); $env:LOCALAPPDATA = [Environment]::GetFolderPath('LocalApplicationData')
+      Start-Sleep 2
+      if (Test-Path "$dir/uninstall.exe") { Start-Process "$dir/uninstall.exe" -ArgumentList '/S' -Wait | Out-Null; Start-Sleep 3 }
+      Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue
+      Restore-InstallMemory $memory
+    }
+    Assert (-not (Test-Path $key)) 'uninstall left the Apps entry'
+    $wsh = New-Object -ComObject WScript.Shell
+    $left = @([Environment]::GetFolderPath('Desktop'), "$env:APPDATA\Microsoft\Windows\Start Menu\Programs") | ForEach-Object { Get-ChildItem $_ -Recurse -Filter *.lnk -ErrorAction SilentlyContinue } | Where-Object { $wsh.CreateShortcut($_.FullName).TargetPath -like '*\sarab-update-check\*' }
+    Assert (-not $left) "shortcuts left behind: $($left.FullName -join ', ')"
+    'updater gate passed'
+  }
+
+  'launch' {
+    # A plain launch opens the window and turns on Start with Windows once; a login launch stays in the tray.
+    $run = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
+    $before = (Get-ItemProperty $run -ErrorAction SilentlyContinue).Sarab
+    Assert (-not $before) "a Start with Windows entry for Sarab already exists ($before); this check would change it"
+    function Window($id) { [W]::TopLevel() | Where-Object { $o = 0; [void][W]::GetWindowThreadProcessId($_, [ref]$o); $o -eq $id -and [W]::Text($_) -eq 'Sarab' -and [W]::IsWindowVisible($_) } }
+    try {
+      Stop-Sarab
+      if (Test-Path $sandbox) { Remove-Item $sandbox -Recurse -Force }
+      New-Item -ItemType Directory -Force "$sandbox/roaming", "$sandbox/local" | Out-Null
+      $env:APPDATA = "$sandbox/roaming"; $env:LOCALAPPDATA = "$sandbox/local"
+      # 1. Login launch: tray only, Start with Windows untouched.
+      $p = Start-Process $exe -ArgumentList '--autostart' -PassThru
+      Wait-For { (Test-Path $statusFile) -and (Status).pid -eq $p.Id } 20 'login launch did not start'
+      Start-Sleep 3
+      Assert (-not (Window $p.Id)) 'a login launch opened the window'
+      Assert (-not (Get-ItemProperty $run -ErrorAction SilentlyContinue).Sarab) 'a login launch turned on Start with Windows'
+      # 2. Clicking Sarab while it runs in the background opens the window.
+      Start-Process $exe | Out-Null
+      Wait-For { Window $p.Id } 15 'launching Sarab while it runs did not open the window'
+      Stop-Sarab
+      # 3. First plain launch: window opens and Start with Windows turns on, pointing at this exe.
+      $p = Start-Process $exe -PassThru
+      Wait-For { Window $p.Id } 20 'a plain launch did not open the window'
+      $val = (Get-ItemProperty $run -ErrorAction SilentlyContinue).Sarab
+      Assert ($val -and $val -like "*sarab.exe*--autostart*") "Start with Windows not turned on by default: '$val'"
+      Write-Host "start with Windows: $val"
+      Stop-Sarab
+      # 4. The user turns it off; later launches must not turn it back on.
+      Remove-ItemProperty $run -Name Sarab
+      $p = Start-Process $exe -PassThru
+      Wait-For { Window $p.Id } 20 'second plain launch did not open the window'
+      Start-Sleep 2
+      Assert (-not (Get-ItemProperty $run -ErrorAction SilentlyContinue).Sarab) 'Start with Windows was forced back on after the user turned it off'
+      Stop-Sarab
+    } finally {
+      Stop-Sarab
+      $now = (Get-ItemProperty $run -ErrorAction SilentlyContinue).Sarab
+      if ($now) { Remove-ItemProperty $run -Name Sarab }
+      Remove-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run' -Name Sarab -ErrorAction SilentlyContinue
+    }
+    'launch gate passed'
   }
 
   default { Fail "unknown gate $Gate" }

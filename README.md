@@ -21,6 +21,8 @@ Version 0.0.3, an early release for **Windows 10 (1903 or later) and Windows 11*
 - **Pauses itself:** when an app covers a display, on battery, in energy saver, when locked, during remote desktop, or for apps you list. A paused wallpaper freezes on its last frame, and the window says why it paused.
 - **Cheap when paused:** about 0.005 CPU cores on the test machine with two web wallpapers, measured by `scripts/check.ps1 budget`.
 - **Looks like Windows 11:** light and dark themes, Acrylic or Mica backdrop, English and Arabic (right to left).
+- **4K presets:** public-domain NASA Earth videos, downloaded only when you choose **Get** and checked against a pinned SHA-256 before use.
+- **Updates:** a daily check (you can turn it off) notifies you of a new version. It installs only when you choose **Update now**, and the installer's signature is verified first.
 - **Command line:** every action is also a `sarab` command, so scripts and hotkey tools can drive it.
 
 ## Install
@@ -55,7 +57,9 @@ A second `sarab` process hands its arguments to the running one and exits.
 | `sarab volume <0-100>`                                       | Wallpaper volume (0 mutes)                                        |
 | `sarab next`                                                 | Next wallpaper in the library, on every display                   |
 | `sarab import <zip>`                                         | Import a Sarab package                                            |
-| `sarab ui` / `status` / `quit`                               | Open the window, write `status.json`, exit                        |
+| `sarab preset <id>` | Download a 4K preset (ids are in `src-tauri/src/presets.json`) |
+| `sarab check-update` / `install-update` | Check for a new version now, or install it |
+| `sarab ui` / `status` / `quit` | Open the window, write `status.json`, exit |
 
 ## Wallpaper packages
 
@@ -115,7 +119,8 @@ Opening the repository in VS Code suggests the extensions it uses and adds build
 | ---------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
 | Static     | `unit`, `static`, `brand`                                                                                       | Nothing beyond Rust                             |
 | Desktop    | `embed`, `media`, `pause`, `budget`, `prop`, `restore`, `kill`, `ui`, `switch`, `fullscreen`, `reasons`, `sync` | A Windows 11 desktop; `sync` needs two displays |
-| Release    | `about`, `installer`                                                                                            | A built installer                               |
+| Release | `about`, `installer`, `updater` | A built installer. `updater` also needs the signing key in `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` |
+| Network | `preset` | Downloads about 110 MB from NASA |
 | Disruptive | `picture` changes and then restores your Windows wallpaper; `explorer` restarts explorer.exe                    | Run only when that is fine                      |
 
 Desktop checks run Sarab with a sandboxed `APPDATA` under `scripts/.sandbox`, so your own settings are never touched.

@@ -364,6 +364,7 @@ Cargo.lock
 # >>> Start of custom patterns (edit freely; igntui preserves this block) <<<
 
 src-tauri/target/
+src-tauri/target-updatetest/
 src-tauri/gen/
 scripts/.sandbox/
 scripts/fixtures/
