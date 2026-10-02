@@ -224,6 +224,13 @@ dialog .content { padding: 24px; display: grid; gap: 16px; max-height: 60vh; ove
 dialog h2 { margin: 0; font-size: 20px; line-height: 28px; }
 dialog label { display: grid; gap: 6px; }
 dialog .footer { padding: 24px; background: var(--dialog-footer); border-top: 1px solid var(--card-stroke); display: flex; justify-content: flex-end; }
+/* ContentDialog: buttons share the footer width equally, primary first */
+#ask { width: min(448px, 92vw); }
+#ask .footer { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; }
+#ask-body { margin: 0; color: var(--text-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+button.danger-fill { background: var(--jo-keffiyeh); color: #FFFFFF; border-color: transparent; }  /* 9.05:1 */
+button.danger-fill:hover { background: #9E2535; }
+@media (forced-colors: active) { button.danger-fill { background: ButtonFace; color: ButtonText; border-color: ButtonText; } }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 

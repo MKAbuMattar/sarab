@@ -17,7 +17,6 @@
   "library.set": "تعيين",
   "library.customize": "تخصيص",
   "library.delete": "حذف",
-  "library.confirmDelete": "هل تريد حذف \"{title}\" من المكتبة؟",
   "state.Play": "قيد التشغيل",
   "state.Frozen": "متوقفة مؤقتًا",
   "pause.button": "إيقاف الكل مؤقتًا",
@@ -117,5 +116,10 @@
   "presets.hint": "مقاطع فيديو بدقة 4K من ناسا في الملك العام. لا يُنزَّل أي منها إلا عندما تختار احصل عليه، ويتحقق سراب من الملف قبل استخدامه. دقة 4K ثقيلة على الأجهزة القديمة التي لا تملك مفكك فيديو.",
   "presets.get": "احصل عليه ({mb} ميغابايت)",
   "presets.downloading": "جارٍ التنزيل: {p}%",
-  "presets.builtIn": "مدمج"
+  "presets.builtIn": "مدمج",
+  "library.deleteTitle": "هل تريد حذف \"{title}\"؟",
+  "library.deleteBody": "ستُزال من مكتبتك. أما الفيديو أو الصورة التي أضفتها من مكان آخر على جهازك فتبقى في مكانها.",
+  "dialog.cancel": "إلغاء",
+  "dialog.close": "إغلاق",
+  "update.notesTitle": "ما الجديد في سراب {v}"
 }
