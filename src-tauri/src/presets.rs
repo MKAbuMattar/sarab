@@ -129,7 +129,7 @@ async fn fetch(app: &AppHandle, v: &Video, dir: &std::path::Path) -> Result<(), 
         }
     }
     drop(out);
-    let digest: String = hash.finalize().iter().map(|b| format!("{b:02x}")).collect();
+    let digest = hex(&hash.finalize());
     verify(v, got, &digest)?;
     std::fs::rename(&part, dir.join(&file)).map_err(|e| e.to_string())?;
     let info = Manifest {
@@ -147,6 +147,10 @@ async fn fetch(app: &AppHandle, v: &Video, dir: &std::path::Path) -> Result<(), 
     crate::settings::save(&dir.join(library::INFO), &info).map_err(|e| e.to_string())
 }
 
+fn hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{b:02x}")).collect()
+}
+
 /// A download is kept only when both its size and its SHA-256 match the pinned values.
 fn verify(v: &Video, got: u64, digest: &str) -> Result<(), String> {
     if got != v.size || !digest.eq_ignore_ascii_case(&v.sha256) {
@@ -160,6 +164,15 @@ fn verify(v: &Video, got: u64, digest: &str) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn sha256_known_answer() {
+        // FIPS 180-2 test vector, so a sha2 upgrade that changes output fails here, not in a user's download.
+        assert_eq!(
+            hex(&Sha256::digest(b"abc")),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
+    }
 
     #[test]
     fn checksum_mismatch_is_rejected() {
