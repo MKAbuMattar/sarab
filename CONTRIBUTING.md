@@ -59,6 +59,19 @@ Commit subjects follow `type(scope): subject`, imperative and lowercase, for exa
 
 A pull request answers four questions: what changed, why (including any approach you rejected), how a reviewer can verify it, and what is out of scope. The template asks for them.
 
+## Releasing (maintainer)
+
+1. Set the same version in `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json`, and add its section to `CHANGELOG.md`. `check.ps1 static` checks all three.
+2. Merge to `main`, then tag and push: `git tag -a v0.0.4 -m "Sarab 0.0.4"; git push origin v0.0.4`.
+3. The release workflow builds and signs the installer, publishes the GitHub release with `latest.json` (which installed copies read to offer the update), and opens the winget update pull request on `microsoft/winget-pkgs`.
+
+Repository secrets the release needs:
+
+| Secret | What |
+|---|---|
+| `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | Signs the installer for the in-app updater. Losing the key means installed copies can no longer update |
+| `WINGET_TOKEN` | A classic personal access token with the `public_repo` scope, for the winget pull request. Without it the winget step is skipped with a notice |
+
 ## License of contributions
 
 Sarab is licensed under the [GNU GPL v3.0](LICENSE). By submitting a contribution you agree that it is licensed under the same terms.

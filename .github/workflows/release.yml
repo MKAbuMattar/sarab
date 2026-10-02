@@ -77,3 +77,37 @@ jobs:
             src-tauri/target/release/bundle/nsis/*-setup.exe.sig
             latest.json
           fail_on_unmatched_files: true
+
+  winget:
+    name: Submit to winget
+    needs: windows
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # v2.87.22
+        with:
+          tool: cargo-binstall
+
+      - name: Install Komac
+        run: cargo binstall -y --locked "komac@2.16.0"
+
+      # Opens the update pull request on microsoft/winget-pkgs from the maintainer's fork.
+      # WINGET_TOKEN is a classic token with the public_repo scope: the workflow's own token
+      # cannot open pull requests on another organization's repository.
+      - name: Open the winget update pull request
+        env:
+          GITHUB_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          if (-not $env:GITHUB_TOKEN) {
+            "::notice::WINGET_TOKEN is not set, so no winget pull request was opened."
+            exit 0
+          }
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          $base = "https://github.com/${{ github.repository }}/releases"
+          komac sync
+          komac update MKAbuMattar.Sarab --version $version `
+            --urls "$base/download/${{ github.ref_name }}/Sarab_${version}_x64-setup.exe" `
+            --release-notes-url "$base/tag/${{ github.ref_name }}" `
+            --submit
