@@ -1,0 +1,29 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Sarab",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/src-tauri/target/debug/sarab.exe",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "build (debug)",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Debug Sarab (sandboxed settings)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/src-tauri/target/debug/sarab.exe",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "environment": [
+        { "name": "APPDATA", "value": "${workspaceFolder}/scripts/.sandbox/roaming" },
+        { "name": "LOCALAPPDATA", "value": "${workspaceFolder}/scripts/.sandbox/local" }
+      ],
+      "preLaunchTask": "build (debug)",
+      "console": "integratedTerminal"
+    }
+  ]
+}

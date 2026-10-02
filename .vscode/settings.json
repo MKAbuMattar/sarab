@@ -1,0 +1,24 @@
+{
+  // The Rust crate lives in src-tauri, not at the repository root.
+  "rust-analyzer.linkedProjects": ["src-tauri/Cargo.toml"],
+  "rust-analyzer.check.command": "clippy",
+  "[rust]": {
+    "editor.defaultFormatter": "rust-lang.rust-analyzer",
+    "editor.formatOnSave": true
+  },
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "files.exclude": {
+    "src-tauri/target": true,
+    "src-tauri/gen": true
+  },
+  "search.exclude": {
+    "**/target": true,
+    "scripts/.sandbox": true,
+    "scripts/fixtures": true
+  },
+  "json.schemas": [
+    { "fileMatch": ["src-tauri/tauri.conf.json"], "url": "https://schema.tauri.app/config/2" }
+  ]
+}

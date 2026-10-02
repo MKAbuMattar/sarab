@@ -1,0 +1,67 @@
+name: Bug report
+description: Something in Sarab does not work as it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Security problems go to the [security policy](https://github.com/MKAbuMattar/sarab/security/policy) instead.
+  - type: input
+    id: version
+    attributes:
+      label: Sarab version
+      description: Shown under About in the Sarab window.
+      placeholder: "0.0.3"
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      description: Run `winver` and copy the version and build.
+      placeholder: "Windows 11 24H2, build 26100"
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Wallpaper type
+      multiple: true
+      options:
+        - Video
+        - GIF
+        - Web page (folder)
+        - Web address
+        - Picture
+        - Not about a wallpaper
+    validations:
+      required: true
+  - type: input
+    id: displays
+    attributes:
+      label: Displays
+      description: How many, and their resolution and scaling.
+      placeholder: "2 displays, 1920x1080 at 100%"
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Set a video on All displays
+        2. Open a game in fullscreen
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: Open About > Settings and logs > Open, then paste the end of sarab.log or attach the file.
+      render: text

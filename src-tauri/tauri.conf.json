@@ -1,0 +1,53 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Sarab",
+  "version": "0.0.3",
+  "identifier": "com.mkabumattar.sarab",
+  "build": {
+    "frontendDist": "../ui"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' data: http://asset.localhost; media-src 'self' http://asset.localhost; style-src 'self' 'unsafe-inline'; connect-src 'self' ipc: http://ipc.localhost",
+      "assetProtocol": {
+        "enable": true,
+        "scope": []
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "publisher": "Sarab",
+    "copyright": "Sarab contributors. GNU GPL v3.",
+    "category": "Utility",
+    "shortDescription": "Animated desktop wallpapers that rest when you work",
+    "longDescription": "Sarab plays videos, GIFs, web pages and pictures behind the desktop icons on every display, and pauses itself when an app covers the screen, on battery, or when the screen is locked.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/icon.png",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": [
+          "English",
+          "Arabic"
+        ],
+        "displayLanguageSelector": true,
+        "installerIcon": "icons/icon.ico",
+        "startMenuFolder": "Sarab"
+      }
+    }
+  }
+}

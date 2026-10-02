@@ -1,0 +1,55 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build (debug)",
+      "type": "shell",
+      "command": "cargo build --manifest-path src-tauri/Cargo.toml",
+      "group": "build",
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "build (release)",
+      "type": "shell",
+      "command": "cargo build --release --manifest-path src-tauri/Cargo.toml",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "installer",
+      "type": "shell",
+      "command": "cargo tauri build",
+      "options": { "cwd": "${workspaceFolder}/src-tauri" },
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "test",
+      "type": "shell",
+      "command": "cargo test --manifest-path src-tauri/Cargo.toml",
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "lint (fmt + clippy)",
+      "type": "shell",
+      "command": "cargo fmt --check; if ($?) { cargo clippy --release -- -D warnings }",
+      "options": { "cwd": "${workspaceFolder}/src-tauri", "shell": { "executable": "pwsh" } },
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "check",
+      "type": "shell",
+      "command": "pwsh -NoProfile -File scripts/check.ps1 ${input:check}",
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "check",
+      "type": "pickString",
+      "description": "Which check (picture and explorer change your desktop)",
+      "options": ["static", "unit", "brand", "embed", "media", "pause", "budget", "prop", "restore", "kill", "ui", "switch", "fullscreen", "reasons", "sync", "about", "installer", "picture", "explorer"],
+      "default": "static"
+    }
+  ]
+}
