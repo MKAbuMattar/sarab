@@ -4,6 +4,12 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ## [Unreleased]
 
+## [0.0.4] - 2026-10-03
+
+### Fixed
+
+- Deleting a wallpaper and reading release notes now open a dialog in Sarab's own style, in light or dark mode and in English or Arabic, instead of a plain browser box titled "tauri.localhost says". Delete starts on **Cancel**, so pressing Enter never removes a wallpaper by accident.
+
 ## [0.0.3] - 2026-10-02
 
 First public release, for Windows 10 (1903 or later) and Windows 11.
@@ -27,5 +33,6 @@ First public release, for Windows 10 (1903 or later) and Windows 11.
 - Opening Sarab from the desktop or Start menu opens its window, also when it already runs in the background. Starting at sign-in stays in the tray.
 - Start with Windows, on by default: switched on once at the first launch, and it stays off if you turn it off. Uninstalling removes it.
 
-[Unreleased]: https://github.com/MKAbuMattar/sarab/compare/v0.0.3...HEAD
+[Unreleased]: https://github.com/MKAbuMattar/sarab/compare/v0.0.4...HEAD
+[0.0.4]: https://github.com/MKAbuMattar/sarab/compare/v0.0.3...v0.0.4
 [0.0.3]: https://github.com/MKAbuMattar/sarab/releases/tag/v0.0.3
