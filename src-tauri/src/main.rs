@@ -283,7 +283,7 @@ async fn toggle_pause(app: AppHandle) -> Result<(), String> {
     })
 }
 
-pub const WEBSITE: &str = "https://sarab.mkabumattar.com";
+pub const WEBSITE: &str = "https://github.com/MKAbuMattar/sarab";
 pub const ISSUES: &str = "https://github.com/MKAbuMattar/sarab/issues";
 
 /// Opens one of Sarab's folders in Explorer, or its website or issue tracker in the browser.
