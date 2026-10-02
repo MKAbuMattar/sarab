@@ -17,7 +17,6 @@
   "library.set": "Set",
   "library.customize": "Customize",
   "library.delete": "Delete",
-  "library.confirmDelete": "Delete \"{title}\" from the library?",
   "state.Play": "Playing",
   "state.Frozen": "Paused",
   "pause.button": "Pause all",
@@ -117,5 +116,10 @@
   "presets.hint": "Public-domain 4K videos from NASA. Each downloads only when you choose Get, and Sarab checks the file before using it. 4K is heavy for old PCs without a hardware video decoder.",
   "presets.get": "Get ({mb} MB)",
   "presets.downloading": "Downloading: {p}%",
-  "presets.builtIn": "Built in"
+  "presets.builtIn": "Built in",
+  "library.deleteTitle": "Delete \"{title}\"?",
+  "library.deleteBody": "It is removed from your library. A video or picture you added from elsewhere on your PC stays where it is.",
+  "dialog.cancel": "Cancel",
+  "dialog.close": "Close",
+  "update.notesTitle": "What's new in Sarab {v}"
 }
