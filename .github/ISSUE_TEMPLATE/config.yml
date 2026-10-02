@@ -3,6 +3,3 @@ contact_links:
   - name: Report a security vulnerability
     url: https://github.com/MKAbuMattar/sarab/security/advisories/new
     about: Report it privately. Please do not open a public issue.
-  - name: Sarab website
-    url: https://sarab.mkabumattar.com
-    about: News, downloads and documentation.

@@ -4,7 +4,7 @@ version = "0.0.3"
 edition = "2021"
 description = "Animated desktop wallpapers that rest when you work"
 license = "GPL-3.0-only"
-homepage = "https://sarab.mkabumattar.com"
+homepage = "https://github.com/MKAbuMattar/sarab"
 repository = "https://github.com/MKAbuMattar/sarab"
 authors = ["MKAbuMattar"]
 
