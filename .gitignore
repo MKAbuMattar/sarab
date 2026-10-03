@@ -370,5 +370,6 @@ scripts/.sandbox/
 scripts/fixtures/
 # An application commits its lockfile so every build uses the tested versions.
 !src-tauri/Cargo.lock
+!gpui/Cargo.lock
 
 # >>> End of custom patterns (edit freely; igntui preserves this block) <<<
