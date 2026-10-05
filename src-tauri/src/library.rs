@@ -369,6 +369,95 @@ pub fn save_prop(saved_path: &Path, ctl: &Value, key: &str, value: &Value) -> io
     crate::settings::save(saved_path, &saved)
 }
 
+/// Write `w` as a package zip in `dest` that `import_zip` reads back. A file that lives outside
+/// the package (a video added from elsewhere) goes into the zip, and the manifest then points
+/// at that copy, so the package works on another PC. Returns the zip's path.
+pub fn export_zip(w: &Wallpaper, dest: &Path) -> Result<PathBuf, String> {
+    use std::io::Write;
+    let name: String = w
+        .info
+        .title
+        .as_deref()
+        .unwrap_or(&w.id)
+        .chars()
+        .map(|c| {
+            if c.is_alphanumeric() || c == '-' || c == '_' || c == ' ' {
+                c
+            } else {
+                '_'
+            }
+        })
+        .take(60)
+        .collect();
+    let path = dest.join(format!("{}.zip", name.trim()));
+    let mut info = w.info.clone();
+    let outside = match w.target() {
+        Some(Target::File(f)) if w.info.external => {
+            let file = f
+                .file_name()
+                .ok_or("the file has no name")?
+                .to_string_lossy()
+                .into_owned();
+            info.external = false;
+            info.file = Some(file.clone());
+            Some((f, file))
+        }
+        _ => None,
+    };
+    let result = (|| -> Result<(), String> {
+        let mut zip = zip::ZipWriter::new(fs::File::create(&path).map_err(|e| e.to_string())?);
+        let opts = zip::write::SimpleFileOptions::default();
+        let err = |e: zip::result::ZipError| e.to_string();
+        fn walk(dir: &Path, root: &Path, out: &mut Vec<PathBuf>) {
+            for e in fs::read_dir(dir).into_iter().flatten().flatten() {
+                let Ok(m) = fs::symlink_metadata(e.path()) else {
+                    continue;
+                };
+                if m.is_dir() {
+                    walk(&e.path(), root, out);
+                } else if m.is_file() {
+                    out.push(
+                        e.path()
+                            .strip_prefix(root)
+                            .unwrap_or(&e.path())
+                            .to_path_buf(),
+                    );
+                }
+            }
+        }
+        let mut files = vec![];
+        walk(&w.dir, &w.dir, &mut files);
+        for rel in files.iter().filter(|r| r.as_os_str() != INFO) {
+            zip.start_file(rel.to_string_lossy().replace('\\', "/"), opts)
+                .map_err(err)?;
+            // Streamed, so a 4K video never sits in memory whole.
+            io::copy(
+                &mut fs::File::open(w.dir.join(rel)).map_err(|e| e.to_string())?,
+                &mut zip,
+            )
+            .map_err(|e| e.to_string())?;
+        }
+        if let Some((src, file)) = &outside {
+            zip.start_file(file.as_str(), opts).map_err(err)?;
+            io::copy(
+                &mut fs::File::open(src).map_err(|e| e.to_string())?,
+                &mut zip,
+            )
+            .map_err(|e| e.to_string())?;
+        }
+        zip.start_file(INFO, opts).map_err(err)?;
+        zip.write_all(&serde_json::to_vec_pretty(&info).map_err(|e| e.to_string())?)
+            .map_err(|e| e.to_string())?;
+        zip.finish().map_err(err)?;
+        Ok(())
+    })();
+    if let Err(e) = result {
+        let _ = fs::remove_file(&path);
+        return Err(e);
+    }
+    Ok(path)
+}
+
 /// Forget the values saved for one display, so the wallpaper's own defaults apply again.
 pub fn reset_props(saved_path: &Path) -> io::Result<()> {
     match fs::remove_file(saved_path) {
@@ -651,6 +740,48 @@ mod tests {
                 .filter(|w| w.id.starts_with("Rain-"))
                 .count(),
             1
+        );
+    }
+
+    #[test]
+    fn export_round_trip() {
+        let lib = tmp("export-lib");
+        let out = tmp("export-out");
+        // A web package with a subfolder and properties.
+        let pkg = lib.join("scene");
+        fs::create_dir_all(pkg.join("img")).unwrap();
+        fs::write(pkg.join(INFO), r#"{"title":"Scene: night/day","type":"web","file":"index.html","category":"city","tags":["night"]}"#).unwrap();
+        fs::write(pkg.join("index.html"), "<p>hi</p>").unwrap();
+        fs::write(pkg.join("img").join("a.png"), "png").unwrap();
+        fs::write(pkg.join(PROPS), "{}").unwrap();
+        let zip = export_zip(&read(&pkg).unwrap(), &out).unwrap();
+        assert!(zip
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .starts_with("Scene_ night_day"));
+        let back = import_zip(&out, &zip, MAX_UNPACKED).unwrap();
+        assert_eq!(back.info.title.as_deref(), Some("Scene: night/day"));
+        assert_eq!(back.info.category.as_deref(), Some("city"));
+        assert!(back.has_props);
+        assert_eq!(
+            fs::read_to_string(back.dir.join("img").join("a.png")).unwrap(),
+            "png"
+        );
+
+        // A video added from elsewhere travels inside the zip.
+        let video = out.join("clip.mp4");
+        fs::write(&video, "video bytes").unwrap();
+        let ext = add(&lib, &[], video.to_str().unwrap()).unwrap();
+        assert!(ext.info.external);
+        let zip = export_zip(&ext, &out).unwrap();
+        let other = tmp("export-other");
+        let back = import_zip(&other, &zip, MAX_UNPACKED).unwrap();
+        assert!(!back.info.external);
+        assert_eq!(back.info.file.as_deref(), Some("clip.mp4"));
+        assert_eq!(
+            fs::read_to_string(back.dir.join("clip.mp4")).unwrap(),
+            "video bytes"
         );
     }
 

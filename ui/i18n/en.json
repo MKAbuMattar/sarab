@@ -191,5 +191,6 @@
   "about.resetDesc": "Every setting goes back to its default. Your library stays.",
   "about.resetButton": "Reset",
   "about.resetTitle": "Reset every setting?",
-  "about.resetBody": "Pausing, theme, language, frame rate, volume and cycling go back to their defaults. Your wallpapers and where they play stay as they are."
+  "about.resetBody": "Pausing, theme, language, frame rate, volume and cycling go back to their defaults. Your wallpapers and where they play stay as they are.",
+  "info.export": "Export"
 }

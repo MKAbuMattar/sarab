@@ -320,6 +320,7 @@ async function openInfo(w) {
   $('#info-desc').hidden = !w.info.description;
   $('#info-list').replaceChildren(...rows.flatMap(([k, v]) => [el('dt', {}, t(k)), el('dd', {}, v)]));
   $('#info-folder').onclick = () => run(() => invoke('reveal', { id: w.id }));
+  $('#info-export').onclick = () => run(() => invoke('export_wallpaper', { id: w.id }));
   $('#info').showModal();
 }
 

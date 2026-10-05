@@ -11,6 +11,7 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 - Edit a wallpaper's title, description, author, category (Nature, Space, Abstract, City, Animals, Anime, Games, Vehicles, Minimal, Other) and up to 5 tags.
 - Restore defaults in Customize puts a wallpaper's settings back to how it shipped, on that display.
 - About > Help: export the log and settings as a zip in Downloads for a bug report, and reset every setting to its default while keeping the library.
+- Export a wallpaper from its Info view as a package zip in Downloads. A video or picture added from elsewhere goes inside the zip, so the package works on another PC.
 - An Info view for each wallpaper: type, category, tags, author, license, source, size, date added and changed, version, and a button that opens its folder.
 - Video and GIF fit in Settings: fill the screen (cover, the default), fit inside, stretch, or original size.
 
