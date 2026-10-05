@@ -213,5 +213,8 @@
   "settings.keepFrameDesc": "Each display keeps the moment it showed as its Windows wallpaper.",
   "update.toastTitle": "Sarab {v} is available",
   "update.toastBody": "Install it now: Sarab closes, updates and opens again.",
-  "update.trayItem": "Update to {v}"
+  "update.trayItem": "Update to {v}",
+  "settings.pauseCpu": "Pause while other apps keep the CPU over",
+  "settings.pauseCpuDesc": "Sarab's own work never counts, so a wallpaper cannot pause itself.",
+  "reason.busy": "Resting: other apps keep the CPU busy"
 }

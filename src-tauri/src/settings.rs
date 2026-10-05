@@ -15,6 +15,8 @@ pub struct Settings {
     pub pause_power_saver: bool,
     pub pause_remote: bool,
     pub per_display: bool,
+    /// Rest while other apps keep the CPU at or over this percent; 0 is never.
+    pub pause_cpu: u8,
     pub app_pause: Vec<String>,
     pub app_play: Vec<String>,
     pub fps: u32,
@@ -65,6 +67,7 @@ impl Default for Settings {
             pause_power_saver: true,
             pause_remote: true,
             per_display: true,
+            pause_cpu: 0,
             app_pause: vec![],
             app_play: vec![],
             fps: 30,

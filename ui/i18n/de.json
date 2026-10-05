@@ -213,5 +213,8 @@
   "settings.keepFrameDesc": "Jeder Bildschirm behält den zuletzt gezeigten Moment als Windows-Hintergrund.",
   "update.toastTitle": "Sarab {v} ist verfügbar",
   "update.toastBody": "Jetzt installieren: Sarab wird geschlossen, aktualisiert und wieder geöffnet.",
-  "update.trayItem": "Auf {v} aktualisieren"
+  "update.trayItem": "Auf {v} aktualisieren",
+  "settings.pauseCpu": "Anhalten, solange andere Apps die CPU auslasten über",
+  "settings.pauseCpuDesc": "Die Arbeit von Sarab selbst zählt nie mit, also kann sich ein Hintergrund nicht selbst anhalten.",
+  "reason.busy": "Pause: Andere Apps lasten die CPU aus"
 }

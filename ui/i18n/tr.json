@@ -213,5 +213,8 @@
   "settings.keepFrameDesc": "Her ekran gösterdiği son anı Windows duvar kâğıdı olarak tutar.",
   "update.toastTitle": "Sarab {v} kullanıma hazır",
   "update.toastBody": "Şimdi yükleyin: Sarab kapanır, güncellenir ve yeniden açılır.",
-  "update.trayItem": "{v} sürümüne güncelle"
+  "update.trayItem": "{v} sürümüne güncelle",
+  "settings.pauseCpu": "Diğer uygulamalar CPU’yu şu değerin üstünde tutarken duraklat",
+  "settings.pauseCpuDesc": "Sarab’ın kendi işi hiç sayılmaz; bu yüzden bir duvar kâğıdı kendini duraklatamaz.",
+  "reason.busy": "Dinleniyor: diğer uygulamalar CPU’yu meşgul ediyor"
 }

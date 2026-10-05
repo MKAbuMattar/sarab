@@ -213,5 +213,8 @@
   "settings.keepFrameDesc": "各ディスプレイで最後に表示していた場面を Windows の壁紙として残します。",
   "update.toastTitle": "Sarab {v} が利用可能です",
   "update.toastBody": "今すぐインストール: Sarab が終了し、更新してから再び起動します。",
-  "update.trayItem": "{v} に更新"
+  "update.trayItem": "{v} に更新",
+  "settings.pauseCpu": "他のアプリが CPU を次の値以上に使っている間は一時停止",
+  "settings.pauseCpuDesc": "Sarab 自身の処理は数えないため、壁紙が自分を止めることはありません。",
+  "reason.busy": "休止中: 他のアプリが CPU を使用中"
 }

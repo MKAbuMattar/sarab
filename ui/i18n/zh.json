@@ -213,5 +213,8 @@
   "settings.keepFrameDesc": "每个显示器都会把最后显示的画面保留为 Windows 壁纸。",
   "update.toastTitle": "Sarab {v} 现已推出",
   "update.toastBody": "立即安装：Sarab 将关闭、更新并重新打开。",
-  "update.trayItem": "更新到 {v}"
+  "update.trayItem": "更新到 {v}",
+  "settings.pauseCpu": "其他应用让 CPU 占用超过此值时暂停",
+  "settings.pauseCpuDesc": "Sarab 自身的占用从不计入，因此壁纸不会让自己暂停。",
+  "reason.busy": "休息中：其他应用正占用 CPU"
 }
