@@ -6,6 +6,7 @@ mod os;
 mod pause;
 mod presets;
 mod settings;
+mod support;
 mod update;
 mod wallpaper;
 
@@ -347,45 +348,67 @@ async fn reset_props(app: AppHandle, display: usize) -> Result<(), String> {
     })
 }
 
+/// Store new settings and apply what changed to the window and the wallpapers.
+fn apply_settings(app: &AppHandle, core: &mut Core, new: settings::Settings) -> Result<(), String> {
+    let lib_changed = new.library_dir != core.settings.library_dir;
+    let fit_changed = new.scaling != core.settings.scaling;
+    if let Some(w) = app.get_webview_window("main") {
+        if new.theme != core.settings.theme {
+            let _ = w.set_theme(theme_of(&new.theme));
+        }
+        if new.backdrop != core.settings.backdrop {
+            let _ = w.set_effects(effects_for(&new.backdrop));
+        }
+    }
+    let vol = new.volume;
+    core.settings = new;
+    settings::save(&wallpaper::cfg("settings.json"), &core.settings).map_err(|e| e.to_string())?;
+    if lib_changed {
+        rescan(core);
+    }
+    // The fit is part of the player URL, so running videos and GIFs load again with it.
+    if fit_changed {
+        for i in 0..core.displays.len() {
+            let id = core.displays[i].wallpaper.clone();
+            let kind = id
+                .as_deref()
+                .and_then(|id| core.find(id))
+                .map(|w| w.info.r#type);
+            if let (Some(id), Some(library::Kind::Video | library::Kind::Gif)) = (id, kind) {
+                let _ = wallpaper::apply(app, core, i, &id);
+            }
+        }
+    }
+    wallpaper::set_volume(app, core, vol);
+    wallpaper::set_fps(app, core);
+    wallpaper::tick(app, core);
+    changed(app);
+    Ok(())
+}
+
 #[tauri::command]
 async fn save_settings(app: AppHandle, new: settings::Settings) -> Result<(), String> {
+    with_core(&app, move |app, core| apply_settings(app, core, new))
+}
+
+#[tauri::command]
+async fn reset_settings(app: AppHandle) -> Result<(), String> {
     with_core(&app, move |app, core| {
-        let lib_changed = new.library_dir != core.settings.library_dir;
-        let fit_changed = new.scaling != core.settings.scaling;
-        if let Some(w) = app.get_webview_window("main") {
-            if new.theme != core.settings.theme {
-                let _ = w.set_theme(theme_of(&new.theme));
-            }
-            if new.backdrop != core.settings.backdrop {
-                let _ = w.set_effects(effects_for(&new.backdrop));
-            }
-        }
-        let vol = new.volume;
-        core.settings = new;
-        settings::save(&wallpaper::cfg("settings.json"), &core.settings)
-            .map_err(|e| e.to_string())?;
-        if lib_changed {
-            rescan(core);
-        }
-        // The fit is part of the player URL, so running videos and GIFs load again with it.
-        if fit_changed {
-            for i in 0..core.displays.len() {
-                let id = core.displays[i].wallpaper.clone();
-                let kind = id
-                    .as_deref()
-                    .and_then(|id| core.find(id))
-                    .map(|w| w.info.r#type);
-                if let (Some(id), Some(library::Kind::Video | library::Kind::Gif)) = (id, kind) {
-                    let _ = wallpaper::apply(app, core, i, &id);
-                }
-            }
-        }
-        wallpaper::set_volume(app, core, vol);
-        wallpaper::set_fps(app, core);
-        wallpaper::tick(app, core);
-        changed(app);
-        Ok(())
+        let new = support::reset(&core.settings);
+        log("settings reset to defaults");
+        apply_settings(app, core, new)
     })
+}
+
+/// Zip the log and settings files into Downloads and show the zip in Explorer.
+#[tauri::command]
+async fn export_logs() -> Result<String, String> {
+    let zip = support::export_logs(&settings::config_dir(), &support::downloads())
+        .map_err(|e| e.to_string())?;
+    let _ = std::process::Command::new("explorer.exe")
+        .arg(format!("/select,{}", zip.display()))
+        .spawn();
+    Ok(zip.display().to_string())
 }
 
 fn editable(core: &Core, id: &str) -> Result<library::Wallpaper, String> {
@@ -533,6 +556,8 @@ fn main() {
             set_prop,
             reset_props,
             save_settings,
+            reset_settings,
+            export_logs,
             autostart,
             check_update,
             install_update,
