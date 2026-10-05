@@ -487,6 +487,31 @@ pub fn set_picture(m: &Monitor, path: &str) -> windows::core::Result<()> {
     }
 }
 
+/// Move a file or folder to the Recycle Bin, so a deleted wallpaper can be restored.
+pub fn recycle(path: &std::path::Path) -> Result<(), String> {
+    use std::os::windows::ffi::OsStrExt;
+    use windows::Win32::UI::Shell::{
+        SHFileOperationW, FOF_ALLOWUNDO, FOF_NOCONFIRMATION, FOF_NOERRORUI, FOF_SILENT, FO_DELETE,
+        SHFILEOPSTRUCTW,
+    };
+    // The API takes a list ending in two NULs.
+    let from: Vec<u16> = path.as_os_str().encode_wide().chain([0, 0]).collect();
+    let mut op = SHFILEOPSTRUCTW {
+        wFunc: FO_DELETE,
+        pFrom: PCWSTR(from.as_ptr()),
+        fFlags: (FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT).0 as u16,
+        ..Default::default()
+    };
+    let code = unsafe { SHFileOperationW(&mut op) };
+    if code != 0 || op.fAnyOperationsAborted.as_bool() || path.exists() {
+        return Err(format!(
+            "could not move {} to the Recycle Bin (code {code})",
+            path.display()
+        ));
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -525,5 +550,16 @@ mod tests {
             &[r(0, 0, 800, 1040), r(1100, 0, 1920, 1040)]
         ));
         assert!(!covered(&work, &[]));
+    }
+
+    #[test]
+    fn recycle_moves_to_bin() {
+        // Leaves one small folder named sarab-test-recycle-<pid> in the Recycle Bin.
+        let d = std::env::temp_dir().join(format!("sarab-test-recycle-{}", std::process::id()));
+        std::fs::create_dir_all(d.join("inner")).unwrap();
+        std::fs::write(d.join("inner").join("a.txt"), "x").unwrap();
+        recycle(&d).unwrap();
+        assert!(!d.exists());
+        assert!(recycle(&d).is_err(), "nothing left to recycle");
     }
 }

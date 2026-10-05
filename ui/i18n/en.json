@@ -118,7 +118,7 @@
   "presets.downloading": "Downloading: {p}%",
   "presets.builtIn": "Built in",
   "library.deleteTitle": "Delete \"{title}\"?",
-  "library.deleteBody": "It is removed from your library. A video or picture you added from elsewhere on your PC stays where it is.",
+  "library.deleteBody": "It moves to the Recycle Bin. A video or picture you added from elsewhere on your PC stays where it is.",
   "dialog.cancel": "Cancel",
   "dialog.close": "Close",
   "update.notesTitle": "What's new in Sarab {v}",

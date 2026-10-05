@@ -828,7 +828,8 @@ pub fn remove(app: &AppHandle, core: &mut Core, id: &str) -> Result<(), String> 
             close(app, core, i);
         }
     }
-    fs::remove_dir_all(&dir).map_err(|e| e.to_string())?;
+    // To the Recycle Bin, so a wrong click can be undone from Explorer.
+    os::recycle(&dir)?;
     let _ = fs::remove_dir_all(cfg("props").join(id));
     core.lib = scan_all(&core.settings);
     Ok(())

@@ -118,7 +118,7 @@
   "presets.downloading": "جارٍ التنزيل: {p}%",
   "presets.builtIn": "مدمج",
   "library.deleteTitle": "هل تريد حذف \"{title}\"؟",
-  "library.deleteBody": "ستُزال من مكتبتك. أما الفيديو أو الصورة التي أضفتها من مكان آخر على جهازك فتبقى في مكانها.",
+  "library.deleteBody": "ستُنقل إلى سلة المحذوفات. أما الفيديو أو الصورة التي أضفتها من مكان آخر على جهازك فتبقى في مكانها.",
   "dialog.cancel": "إلغاء",
   "dialog.close": "إغلاق",
   "update.notesTitle": "ما الجديد في سراب {v}",
