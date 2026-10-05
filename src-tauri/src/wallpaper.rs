@@ -50,6 +50,8 @@ pub struct Core {
     /// Run video sync on the next tick (a display just resumed or loaded).
     pub sync_due: bool,
     pub ticks: u64,
+    /// Started the first time a playing wallpaper asks for system information.
+    pub sysinfo: Option<crate::feeds::Sampler>,
     /// The volume the pages play at now, after the audio rules; the setting is the most it can be.
     pub volume_now: u8,
     /// When the wallpaper last changed, by the user or by cycling.
@@ -144,6 +146,7 @@ impl Core {
             sync_due: false,
             ticks: 0,
             volume_now,
+            sysinfo: None,
             changed_at: std::time::Instant::now(),
         }
     }
@@ -709,6 +712,39 @@ fn sync_video(app: &AppHandle, core: &Core) {
     }
 }
 
+/// Displays playing a wallpaper whose manifest asks for `feed`.
+fn subscribers(core: &Core, feed: &str) -> Vec<usize> {
+    (0..core.displays.len())
+        .filter(|&i| {
+            let d = &core.displays[i];
+            d.loaded
+                && d.state == State::Play
+                && d.wallpaper
+                    .as_deref()
+                    .and_then(|id| core.find(id))
+                    .is_some_and(|w| w.info.api.iter().any(|a| a == feed))
+        })
+        .collect()
+}
+
+/// sarabSystemInfo once a tick, only to wallpapers that asked for it and only while they play.
+fn push_sysinfo(app: &AppHandle, core: &mut Core) {
+    let to = subscribers(core, "system");
+    if to.is_empty() {
+        return;
+    }
+    let info = core
+        .sysinfo
+        .get_or_insert_with(crate::feeds::Sampler::new)
+        .sample();
+    let v = serde_json::to_value(&info).unwrap_or(Value::Null);
+    for i in to {
+        if let Some(win) = window(app, &core.displays[i]) {
+            call(&win, "sarabSystemInfo", std::slice::from_ref(&v));
+        }
+    }
+}
+
 /// The volume the audio rules allow: the set volume, or silence while an app has the focus
 /// (desktop only) or while another app plays sound.
 fn effective_volume(s: &Settings, desktop_focused: bool, others_playing: bool) -> u8 {
@@ -849,6 +885,7 @@ pub fn tick(app: &AppHandle, core: &mut Core) {
         apply_state(app, core, i, st, false);
     }
     unload_or_reload(app, core);
+    push_sysinfo(app, core);
     // The session scan only runs when it can matter: a rule is on and the wallpaper has sound.
     let others =
         core.settings.audio_mute_others && core.settings.volume > 0 && os::other_audio_playing();

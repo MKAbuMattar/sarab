@@ -44,6 +44,8 @@ pub struct Manifest {
     /// The file lives outside the package folder (added from disk, not copied).
     pub external: bool,
     pub thumbnail: Option<String>,
+    /// Data the page asks Sarab for: "system" (sarabSystemInfo once a second).
+    pub api: Vec<String>,
     /// One of `CATEGORIES`, for the library filter.
     pub category: Option<String>,
     pub tags: Vec<String>,
