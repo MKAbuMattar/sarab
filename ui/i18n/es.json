@@ -216,5 +216,9 @@
   "update.trayItem": "Actualizar a {v}",
   "settings.pauseCpu": "Pausar mientras otras apps mantienen la CPU por encima de",
   "settings.pauseCpuDesc": "El trabajo de Sarab no cuenta, así que un fondo no puede pausarse a sí mismo.",
-  "reason.busy": "En reposo: otras apps mantienen ocupada la CPU"
+  "reason.busy": "En reposo: otras apps mantienen ocupada la CPU",
+  "about.channel": "Canal de actualizaciones",
+  "about.channelDesc": "Beta recibe versiones de prueba antes que nadie. Pueden tener fallos.",
+  "channel.stable": "Estable",
+  "channel.beta": "Beta"
 }

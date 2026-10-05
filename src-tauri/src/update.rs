@@ -1,4 +1,4 @@
-//! Update checks. A check runs a minute after start and then once a day, only while the user
+//! Update checks. A check runs a minute after start and then every 3 hours, only while the user
 //! allows it in Settings. Nothing is downloaded until the user chooses "Update now"; the updater
 //! plugin then verifies the installer's signature against the public key in tauri.conf.json.
 
@@ -7,7 +7,31 @@ use serde_json::{json, Value};
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager};
-use tauri_plugin_updater::UpdaterExt;
+use tauri_plugin_updater::{Updater, UpdaterExt};
+
+/// The feed for a channel. Stable reads the newest full release. Beta reads a fixed `beta`
+/// release whose feed every release refreshes, stable ones included, so beta never lags behind.
+pub fn feed(channel: &str) -> &'static str {
+    match channel {
+        "beta" => "https://github.com/MKAbuMattar/sarab/releases/download/beta/latest.json",
+        _ => "https://github.com/MKAbuMattar/sarab/releases/latest/download/latest.json",
+    }
+}
+
+fn updater(app: &AppHandle) -> Result<Updater, String> {
+    let channel = app
+        .state::<Shared>()
+        .lock()
+        .unwrap()
+        .settings
+        .update_channel
+        .clone();
+    let url = feed(&channel).parse().map_err(|e| format!("{e}"))?;
+    app.updater_builder()
+        .endpoints(vec![url])
+        .and_then(|b| b.build())
+        .map_err(|e| e.to_string())
+}
 
 #[derive(Default)]
 pub struct State {
@@ -73,7 +97,7 @@ pub fn spawn(app: AppHandle) {
 
 /// Ask the release feed whether a newer version exists. Returns the new version, if any.
 pub async fn check(app: &AppHandle) -> Result<Option<String>, String> {
-    let result = match app.updater() {
+    let result = match updater(app) {
         Ok(u) => u.check().await.map_err(|e| e.to_string()),
         Err(e) => Err(e.to_string()),
     };
@@ -163,9 +187,7 @@ pub fn check_if_stale(app: &AppHandle) {
 /// Download, verify and run the installer. On Windows the app exits once the installer starts;
 /// the installer reopens Sarab when it finishes.
 pub async fn install(app: &AppHandle) -> Result<(), String> {
-    let update = app
-        .updater()
-        .map_err(|e| e.to_string())?
+    let update = updater(app)?
         .check()
         .await
         .map_err(|e| e.to_string())?
@@ -201,4 +223,23 @@ pub async fn install(app: &AppHandle) -> Result<(), String> {
     }
     changed(app);
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn update_feed() {
+        assert!(feed("stable").ends_with("/releases/latest/download/latest.json"));
+        assert!(feed("beta").ends_with("/releases/download/beta/latest.json"));
+        assert_eq!(
+            feed("anything else"),
+            feed("stable"),
+            "an unknown channel falls back to stable"
+        );
+        // The beta feed must name the tag release.yml uploads it to.
+        let wf = include_str!("../../.github/workflows/release.yml");
+        assert!(wf.contains("gh release upload beta latest.json"));
+    }
 }

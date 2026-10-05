@@ -216,5 +216,9 @@
   "update.trayItem": "Mettre à jour vers {v}",
   "settings.pauseCpu": "Suspendre quand d’autres apps chargent le processeur au-delà de",
   "settings.pauseCpuDesc": "Le travail de Sarab ne compte jamais : un fond d’écran ne peut pas se suspendre lui-même.",
-  "reason.busy": "En pause : d’autres apps occupent le processeur"
+  "reason.busy": "En pause : d’autres apps occupent le processeur",
+  "about.channel": "Canal de mise à jour",
+  "about.channelDesc": "Bêta reçoit les versions de test avant tout le monde. Elles peuvent avoir des défauts.",
+  "channel.stable": "Stable",
+  "channel.beta": "Bêta"
 }

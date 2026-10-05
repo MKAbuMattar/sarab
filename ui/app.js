@@ -227,6 +227,7 @@ function render() {
   if (document.activeElement !== f.app_play) f.app_play.value = s.app_play.join('\n');
   $('#autostart').checked = state.autostart;
   $('#check-updates').checked = s.check_updates;
+  $('#update-channel').value = s.update_channel === 'beta' ? 'beta' : 'stable';
   $('#about-version').textContent = t('about.version', { v: state.version });
   $('#about-webview').textContent = state.webview;
   $('#library-dir').textContent = state.library_dir;
@@ -529,6 +530,7 @@ function readSettings() {
     theme: f.theme.value,
     backdrop: f.backdrop.value,
     check_updates: $('#check-updates').checked,
+    update_channel: $('#update-channel').value,
     language: f.language.value,
   };
 }

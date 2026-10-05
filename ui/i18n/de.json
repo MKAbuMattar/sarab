@@ -216,5 +216,9 @@
   "update.trayItem": "Auf {v} aktualisieren",
   "settings.pauseCpu": "Anhalten, solange andere Apps die CPU auslasten über",
   "settings.pauseCpuDesc": "Die Arbeit von Sarab selbst zählt nie mit, also kann sich ein Hintergrund nicht selbst anhalten.",
-  "reason.busy": "Pause: Andere Apps lasten die CPU aus"
+  "reason.busy": "Pause: Andere Apps lasten die CPU aus",
+  "about.channel": "Update-Kanal",
+  "about.channelDesc": "Beta erhält Testversionen vor allen anderen. Sie können noch Fehler haben.",
+  "channel.stable": "Stabil",
+  "channel.beta": "Beta"
 }

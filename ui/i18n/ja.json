@@ -216,5 +216,9 @@
   "update.trayItem": "{v} に更新",
   "settings.pauseCpu": "他のアプリが CPU を次の値以上に使っている間は一時停止",
   "settings.pauseCpuDesc": "Sarab 自身の処理は数えないため、壁紙が自分を止めることはありません。",
-  "reason.busy": "休止中: 他のアプリが CPU を使用中"
+  "reason.busy": "休止中: 他のアプリが CPU を使用中",
+  "about.channel": "更新チャネル",
+  "about.channelDesc": "ベータでは誰よりも早くテスト版を受け取れます。不具合が残っている場合があります。",
+  "channel.stable": "安定版",
+  "channel.beta": "ベータ"
 }
