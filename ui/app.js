@@ -218,6 +218,7 @@ function render() {
   $('#check-updates').checked = s.check_updates;
   $('#about-version').textContent = t('about.version', { v: state.version });
   $('#about-webview').textContent = state.webview;
+  $('#library-dir').textContent = state.library_dir;
   document.querySelectorAll('select').forEach(combo);
 }
 
@@ -476,6 +477,7 @@ $('#lib-search').addEventListener('input', e => { filters.query = e.target.value
 $('#lib-category').addEventListener('change', e => { filters.category = e.target.value; saveFilters(); renderLibrary(); });
 $('#lib-sort').addEventListener('change', e => { filters.sort = e.target.value; saveFilters(); renderLibrary(); });
 $('#check-updates').addEventListener('change', () => run(() => invoke('save_settings', { new: readSettings() })));
+$('#move-library').addEventListener('click', () => run(() => invoke('move_library')));
 $('#export-logs').addEventListener('click', () => run(() => invoke('export_logs')));
 $('#reset-settings').addEventListener('click', async () => {
   const ok = await ask({ title: t('about.resetTitle'), body: t('about.resetBody'), ok: t('about.resetButton'), cancel: t('dialog.cancel'), danger: true });

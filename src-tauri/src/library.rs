@@ -461,6 +461,45 @@ pub fn export_zip(w: &Wallpaper, dest: &Path) -> Result<PathBuf, String> {
     Ok(path)
 }
 
+/// Move every package from the library at `from` into `to`. Refuses a folder inside the
+/// library (or the library inside it) and never overwrites: a name taken in `to` stops the move
+/// before anything is touched. A rename is used where it can be, a copy across drives.
+pub fn move_library(from: &Path, to: &Path) -> Result<usize, String> {
+    let canon = |p: &Path| fs::canonicalize(p).unwrap_or_else(|_| p.to_path_buf());
+    fs::create_dir_all(to).map_err(|e| e.to_string())?;
+    let (a, b) = (canon(from), canon(to));
+    if a == b {
+        return Ok(0);
+    }
+    if b.starts_with(&a) || a.starts_with(&b) {
+        return Err("the new folder cannot be inside the library, or hold it".into());
+    }
+    let entries: Vec<PathBuf> = fs::read_dir(from)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| read(p).is_some())
+        .collect();
+    if let Some(taken) = entries
+        .iter()
+        .find(|p| to.join(p.file_name().unwrap_or_default()).exists())
+    {
+        return Err(format!(
+            "{} already exists in the new folder",
+            taken.file_name().unwrap_or_default().to_string_lossy()
+        ));
+    }
+    for p in &entries {
+        let dest = to.join(p.file_name().unwrap_or_default());
+        if fs::rename(p, &dest).is_err() {
+            copy_dir(p, &dest).map_err(|e| e.to_string())?;
+            fs::remove_dir_all(p).map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(entries.len())
+}
+
 /// Forget the values saved for one display, so the wallpaper's own defaults apply again.
 pub fn reset_props(saved_path: &Path) -> io::Result<()> {
     match fs::remove_file(saved_path) {
@@ -744,6 +783,44 @@ mod tests {
                 .count(),
             1
         );
+    }
+
+    #[test]
+    fn move_library_moves_every_package() {
+        let from = tmp("move-from");
+        let to = tmp("move-to").join("Library");
+        for name in ["one", "two"] {
+            fs::create_dir_all(from.join(name)).unwrap();
+            fs::write(
+                from.join(name).join(INFO),
+                r#"{"type":"web","file":"index.html"}"#,
+            )
+            .unwrap();
+            fs::write(from.join(name).join("index.html"), name).unwrap();
+        }
+        fs::write(from.join("not-a-package.txt"), "stays").unwrap();
+        assert_eq!(move_library(&from, &to).unwrap(), 2);
+        assert_eq!(scan(&to).len(), 2);
+        assert!(scan(&from).is_empty());
+        assert_eq!(
+            fs::read_to_string(to.join("two").join("index.html")).unwrap(),
+            "two"
+        );
+        assert!(
+            from.join("not-a-package.txt").exists(),
+            "only packages move"
+        );
+
+        // Into itself, and onto a taken name, are refused without moving anything.
+        assert!(move_library(&to, &to.join("inner")).is_err());
+        fs::create_dir_all(from.join("one")).unwrap();
+        fs::write(
+            from.join("one").join(INFO),
+            r#"{"type":"web","file":"index.html"}"#,
+        )
+        .unwrap();
+        assert!(move_library(&from, &to).is_err());
+        assert!(from.join("one").join(INFO).exists());
     }
 
     #[test]

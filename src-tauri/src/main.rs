@@ -210,6 +210,7 @@ async fn state(app: AppHandle) -> Value {
             "settings": core.settings,
             "library": core.lib,
             "categories": library::CATEGORIES,
+            "library_dir": wallpaper::library_dir(&core.settings),
             "manual": core.manual,
             "autostart": auto,
             "update": update::to_json(app),
@@ -437,6 +438,48 @@ async fn details(app: AppHandle, id: String) -> Result<library::Details, String>
     Ok(library::details(&w))
 }
 
+/// Ask for a folder, then move the library there. Running wallpapers close during the move and
+/// open again from the new place. Returns the new folder, or None when cancelled.
+#[tauri::command]
+async fn move_library(app: AppHandle) -> Result<Option<String>, String> {
+    let (old, owner) = with_core(&app, |app, core| {
+        let owner = app
+            .get_webview_window("main")
+            .and_then(|w| w.hwnd().ok())
+            .map(|h| h.0 as isize);
+        (wallpaper::library_dir(&core.settings), owner)
+    });
+    let owner = owner.map(|h| windows::Win32::Foundation::HWND(h as *mut _));
+    let Some(new) = os::windows::pick_folder(owner, old.parent()) else {
+        return Ok(None);
+    };
+    let new = if new.file_name().is_some_and(|n| n == "Library") {
+        new
+    } else {
+        new.join("Library")
+    };
+    with_core(&app, move |app, core| {
+        for i in 0..core.displays.len() {
+            wallpaper::unload(app, core, i);
+        }
+        let moved = library::move_library(&old, &new);
+        if moved.is_ok() {
+            core.settings.library_dir = Some(new.clone());
+            settings::save(&wallpaper::cfg("settings.json"), &core.settings)
+                .map_err(|e| e.to_string())?;
+            rescan(core);
+            log(format!("library moved to {}", new.display()));
+        }
+        for i in 0..core.displays.len() {
+            if let Some(id) = core.displays[i].wallpaper.clone() {
+                let _ = wallpaper::apply(app, core, i, &id);
+            }
+        }
+        changed(app);
+        moved.map(|_| Some(new.display().to_string()))
+    })
+}
+
 /// Saves the wallpaper as a package zip in Downloads and shows it in Explorer.
 #[tauri::command]
 async fn export_wallpaper(app: AppHandle, id: String) -> Result<String, String> {
@@ -577,7 +620,8 @@ fn main() {
             edit_info,
             details,
             reveal,
-            export_wallpaper
+            export_wallpaper,
+            move_library
         ])
         .on_window_event(|win, ev| {
             if win.label() != "main" {

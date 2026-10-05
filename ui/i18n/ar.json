@@ -197,5 +197,6 @@
   "settings.unloadDesc": "فقط عندما يغطيها تطبيق أو تكون الشاشة مقفلة أو تعمل جلسة عن بعد. وتُحمَّل من جديد عندما تظهر.",
   "unload.oneMinute": "دقيقة واحدة",
   "settings.audioMuteOthers": "كتم الصوت عندما يشغّل تطبيق آخر صوتًا",
-  "settings.audioDesktopOnly": "تشغيل الصوت فقط عندما يكون سطح المكتب في المقدمة"
+  "settings.audioDesktopOnly": "تشغيل الصوت فقط عندما يكون سطح المكتب في المقدمة",
+  "about.move": "نقل…"
 }

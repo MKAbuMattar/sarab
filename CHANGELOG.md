@@ -12,6 +12,7 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 - Restore defaults in Customize puts a wallpaper's settings back to how it shipped, on that display.
 - About > Help: export the log and settings as a zip in Downloads for a bug report, and reset every setting to its default while keeping the library.
 - Export a wallpaper from its Info view as a package zip in Downloads. A video or picture added from elsewhere goes inside the zip, so the package works on another PC.
+- Move the library to another folder or drive from About > Folders. Every wallpaper moves with it and keeps playing from the new place.
 - An Info view for each wallpaper: type, category, tags, author, license, source, size, date added and changed, version, and a button that opens its folder.
 - Sound rules in Settings > Performance: mute the wallpaper while another app plays sound (on by default), and play sound only while the desktop has the focus.
 - Web wallpapers can ask for system information: with `"api": ["system"]` in sarab.json, the page gets `sarabSystemInfo` once a second while it plays (CPU and GPU name, CPU use, memory, network down and up).
