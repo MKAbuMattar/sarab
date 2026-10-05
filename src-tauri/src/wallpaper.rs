@@ -52,6 +52,8 @@ pub struct Core {
     pub ticks: u64,
     /// Started the first time a playing wallpaper asks for system information.
     pub sysinfo: Option<crate::feeds::Sampler>,
+    /// Started the first time a playing wallpaper asks for the current track.
+    pub now_playing: Option<crate::feeds::NowPlaying>,
     /// The volume the pages play at now, after the audio rules; the setting is the most it can be.
     pub volume_now: u8,
     /// When the wallpaper last changed, by the user or by cycling.
@@ -147,6 +149,7 @@ impl Core {
             ticks: 0,
             volume_now,
             sysinfo: None,
+            now_playing: None,
             changed_at: std::time::Instant::now(),
         }
     }
@@ -745,6 +748,35 @@ fn push_sysinfo(app: &AppHandle, core: &mut Core) {
     }
 }
 
+/// sarabNowPlaying when the track changes, and to a wallpaper that just started asking.
+fn push_now_playing(app: &AppHandle, core: &mut Core) {
+    use std::sync::atomic::Ordering;
+    let to = subscribers(core, "nowplaying");
+    if to.is_empty() {
+        if let Some(n) = &mut core.now_playing {
+            n.wanted.store(false, Ordering::Relaxed);
+            n.sent = None;
+        }
+        return;
+    }
+    let n = core
+        .now_playing
+        .get_or_insert_with(crate::feeds::NowPlaying::start);
+    n.wanted.store(true, Ordering::Relaxed);
+    let latest = n.latest.lock().unwrap().clone();
+    // Sent again every 10 ticks so a page that loaded since still learns the track.
+    if n.sent.as_ref() == Some(&latest) && !core.ticks.is_multiple_of(10) {
+        return;
+    }
+    n.sent = Some(latest.clone());
+    let v = serde_json::to_value(&latest).unwrap_or(Value::Null);
+    for i in to {
+        if let Some(win) = window(app, &core.displays[i]) {
+            call(&win, "sarabNowPlaying", std::slice::from_ref(&v));
+        }
+    }
+}
+
 /// The volume the audio rules allow: the set volume, or silence while an app has the focus
 /// (desktop only) or while another app plays sound.
 fn effective_volume(s: &Settings, desktop_focused: bool, others_playing: bool) -> u8 {
@@ -886,6 +918,7 @@ pub fn tick(app: &AppHandle, core: &mut Core) {
     }
     unload_or_reload(app, core);
     push_sysinfo(app, core);
+    push_now_playing(app, core);
     // The session scan only runs when it can matter: a rule is on and the wallpaper has sound.
     let others =
         core.settings.audio_mute_others && core.settings.volume > 0 && os::other_audio_playing();
