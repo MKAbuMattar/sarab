@@ -197,6 +197,7 @@ function render() {
   for (const k of ['pause_fullscreen', 'per_display', 'pause_focus', 'pause_battery', 'pause_power_saver', 'pause_remote']) f[k].checked = s[k];
   f.per_display.disabled = !s.pause_fullscreen;
   f.fps.value = String(s.fps);
+  f.unload_minutes.value = String(s.unload_minutes ?? 0);
   f.scaling.value = s.scaling || 'cover';
   f.cycle_minutes.value = String(s.cycle_minutes || 0);
   f.cycle_order.value = s.cycle_order || 'order';
@@ -444,6 +445,7 @@ function readSettings() {
     pause_power_saver: f.pause_power_saver.checked,
     pause_remote: f.pause_remote.checked,
     fps: Number(f.fps.value),
+    unload_minutes: Number(f.unload_minutes.value),
     scaling: f.scaling.value,
     cycle_minutes: Number(f.cycle_minutes.value),
     cycle_order: f.cycle_order.value,

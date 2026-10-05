@@ -31,6 +31,10 @@ pub struct Display {
     /// Label of this display's wallpaper window. Unique per window: `destroy()` frees a label
     /// asynchronously, so reusing one for the replacement window fails.
     pub label: Option<String>,
+    /// Since when nobody can see this display's wallpaper (covered, locked, remote).
+    pub unseen_since: Option<std::time::Instant>,
+    /// Its webview was closed to free memory; it loads again when it would play.
+    pub unloaded: bool,
 }
 
 pub struct Core {
@@ -626,6 +630,8 @@ pub fn sync_displays(app: &AppHandle, core: &mut Core) {
             error: None,
             page: Value::Null,
             label: None,
+            unseen_since: None,
+            unloaded: false,
         })
         .collect();
     for i in 0..core.displays.len() {
@@ -694,6 +700,48 @@ fn sync_video(app: &AppHandle, core: &Core) {
                 }
             }
         });
+    }
+}
+
+/// Reasons that mean nobody can see the wallpaper. Every other pause leaves it visible.
+fn unseen(why: Reason) -> bool {
+    matches!(why, Reason::Covered | Reason::Locked | Reason::Remote)
+}
+
+/// Unload when the setting is on and the wallpaper has been out of sight that long. Only then:
+/// unloading a visible one would show the plain Windows wallpaper.
+fn should_unload(why: Reason, unseen_for: std::time::Duration, minutes: u32) -> bool {
+    minutes > 0 && unseen(why) && unseen_for.as_secs() >= u64::from(minutes) * 60
+}
+
+/// Free or bring back each display's webview as its visibility changes.
+fn unload_or_reload(app: &AppHandle, core: &mut Core) {
+    for i in 0..core.displays.len() {
+        let d = &mut core.displays[i];
+        let why = d.reason;
+        if unseen(why) {
+            d.unseen_since.get_or_insert_with(std::time::Instant::now);
+        } else {
+            d.unseen_since = None;
+        }
+        let unseen_for = d.unseen_since.map(|t| t.elapsed()).unwrap_or_default();
+        if !d.unloaded
+            && d.label.is_some()
+            && should_unload(why, unseen_for, core.settings.unload_minutes)
+        {
+            log(format!(
+                "display {i}: unloading its wallpaper, unseen for {}s",
+                unseen_for.as_secs()
+            ));
+            close_window(app, core, i);
+            core.displays[i].unloaded = true;
+        } else if d.unloaded && !unseen(why) {
+            core.displays[i].unloaded = false;
+            if let Some(id) = core.displays[i].wallpaper.clone() {
+                log(format!("display {i}: loading its wallpaper again"));
+                let _ = apply(app, core, i, &id);
+            }
+        }
     }
 }
 
@@ -775,6 +823,7 @@ pub fn tick(app: &AppHandle, core: &mut Core) {
         core.displays[i].reason = why;
         apply_state(app, core, i, st, false);
     }
+    unload_or_reload(app, core);
     core.ticks += 1;
     let playing = core.displays.iter().any(|d| d.wallpaper.is_some());
     let resting = core.displays.iter().any(|d| d.state != State::Play);
@@ -878,6 +927,29 @@ pub fn remove(app: &AppHandle, core: &mut Core, id: &str) -> Result<(), String> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn should_unload_only_when_unseen() {
+        use std::time::Duration;
+        let m = |n: u64| Duration::from_secs(n * 60);
+        assert!(should_unload(Reason::Covered, m(5), 5));
+        assert!(should_unload(Reason::Locked, m(9), 5));
+        assert!(should_unload(Reason::Remote, m(5), 5));
+        assert!(!should_unload(Reason::Covered, m(4), 5), "too soon");
+        assert!(!should_unload(Reason::Covered, m(60), 0), "off");
+        // Paused but still on screen: unloading would show the Windows wallpaper.
+        for why in [
+            Reason::Battery,
+            Reason::PowerSaver,
+            Reason::Focus,
+            Reason::Manual,
+            Reason::AppPause,
+            Reason::OtherCovered,
+            Reason::None,
+        ] {
+            assert!(!should_unload(why, m(60), 5), "{why:?}");
+        }
+    }
 
     #[test]
     fn pick_next_order_random_category() {

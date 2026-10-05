@@ -192,5 +192,8 @@
   "about.resetButton": "Reset",
   "about.resetTitle": "Reset every setting?",
   "about.resetBody": "Pausing, theme, language, frame rate, volume and cycling go back to their defaults. Your wallpapers and where they play stay as they are.",
-  "info.export": "Export"
+  "info.export": "Export",
+  "settings.unload": "Free memory when a wallpaper is hidden for",
+  "settings.unloadDesc": "Only while an app covers it, the screen is locked or a remote session runs. It loads again when it is seen.",
+  "unload.oneMinute": "1 minute"
 }
