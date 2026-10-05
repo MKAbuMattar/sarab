@@ -7,6 +7,7 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 ### Added
 
 - Change wallpaper every 5, 15 or 30 minutes, or every hour, going through the library in order. It waits while the wallpaper rests, and picking a wallpaper yourself restarts the wait.
+- Video and GIF fit in Settings: fill the screen (cover, the default), fit inside, stretch, or original size.
 
 ### Changed
 
