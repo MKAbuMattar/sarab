@@ -129,7 +129,7 @@
   "fit.fill": "Stretch",
   "fit.none": "Original size",
   "settings.cycle": "Change wallpaper every",
-  "settings.cycleDesc": "Goes through your library in order. Waits while the wallpaper rests.",
+  "settings.cycleDesc": "Waits while the wallpaper rests. Next in the tray menu follows the same order.",
   "cycle.never": "Never",
   "cycle.fiveMinutes": "5 minutes",
   "cycle.fifteenMinutes": "15 minutes",
@@ -177,5 +177,9 @@
   "category.games": "Games",
   "category.vehicles": "Vehicles",
   "category.minimal": "Minimal",
-  "category.other": "Other"
+  "category.other": "Other",
+  "settings.cycleOrder": "Order",
+  "cycle.inOrder": "In library order",
+  "cycle.random": "Random",
+  "settings.cycleFrom": "From"
 }

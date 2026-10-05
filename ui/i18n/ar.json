@@ -129,7 +129,7 @@
   "fit.fill": "تمديد",
   "fit.none": "الحجم الأصلي",
   "settings.cycle": "تغيير الخلفية كل",
-  "settings.cycleDesc": "تنتقل بين خلفيات مكتبتك بالترتيب، وتنتظر أثناء استراحة الخلفية.",
+  "settings.cycleDesc": "تنتظر أثناء استراحة الخلفية. خيار التالي في قائمة الصينية يتبع الترتيب نفسه.",
   "cycle.never": "أبدًا",
   "cycle.fiveMinutes": "5 دقائق",
   "cycle.fifteenMinutes": "15 دقيقة",
@@ -177,5 +177,9 @@
   "category.games": "ألعاب",
   "category.vehicles": "مركبات",
   "category.minimal": "بسيط",
-  "category.other": "أخرى"
+  "category.other": "أخرى",
+  "settings.cycleOrder": "الترتيب",
+  "cycle.inOrder": "بترتيب المكتبة",
+  "cycle.random": "عشوائي",
+  "settings.cycleFrom": "من"
 }

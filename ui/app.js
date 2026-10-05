@@ -199,6 +199,11 @@ function render() {
   f.fps.value = String(s.fps);
   f.scaling.value = s.scaling || 'cover';
   f.cycle_minutes.value = String(s.cycle_minutes || 0);
+  f.cycle_order.value = s.cycle_order || 'order';
+  f.cycle_category.replaceChildren(el('option', { value: 'all' }, t('library.allCategories')),
+    ...state.categories.map(c => el('option', { value: c }, categoryName(c))));
+  f.cycle_category.value = s.cycle_category || 'all';
+  f.cycle_order.disabled = f.cycle_category.disabled = !s.cycle_minutes;
   f.volume.value = s.volume;
   fill(f.volume);
   f.theme.value = s.theme || 'system';
@@ -434,6 +439,8 @@ function readSettings() {
     fps: Number(f.fps.value),
     scaling: f.scaling.value,
     cycle_minutes: Number(f.cycle_minutes.value),
+    cycle_order: f.cycle_order.value,
+    cycle_category: f.cycle_category.value,
     volume: Number(f.volume.value),
     app_pause: lines(f.app_pause.value),
     app_play: lines(f.app_play.value),

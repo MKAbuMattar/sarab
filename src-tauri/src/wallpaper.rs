@@ -682,18 +682,43 @@ fn sync_video(app: &AppHandle, core: &Core) {
     }
 }
 
-/// The library entry after the one on the first display, on every display.
+/// Which wallpaper comes after `current`: the next one in `ids`, wrapping, or with `random`
+/// any other one, chosen by `seed`. None when `ids` is empty.
+fn pick_next(ids: &[String], current: Option<&str>, random: bool, seed: u64) -> Option<String> {
+    if ids.is_empty() {
+        return None;
+    }
+    let at = current.and_then(|c| ids.iter().position(|i| i == c));
+    let i = if random && ids.len() > 1 {
+        // Never the same one twice in a row: pick among the others.
+        let k = (seed % (ids.len() as u64 - u64::from(at.is_some()))) as usize;
+        match at {
+            Some(a) if k >= a => k + 1,
+            _ => k,
+        }
+    } else {
+        at.map_or(0, |p| (p + 1) % ids.len())
+    };
+    Some(ids[i].clone())
+}
+
+/// The next wallpaper on every display, from the category and in the order Settings asks for.
 pub fn next(app: &AppHandle, core: &mut Core) -> Result<(), String> {
     let cur = core.displays.first().and_then(|d| d.wallpaper.clone());
-    let pos = cur
-        .and_then(|c| core.lib.iter().position(|w| w.id == c))
-        .map_or(0, |p| p + 1);
-    let Some(next) = core
+    let s = &core.settings;
+    let ids: Vec<String> = core
         .lib
-        .get(pos % core.lib.len().max(1))
+        .iter()
+        .filter(|w| {
+            s.cycle_category == "all" || w.info.category.as_deref() == Some(&s.cycle_category)
+        })
         .map(|w| w.id.clone())
-    else {
-        return Err("library is empty".into());
+        .collect();
+    let seed = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_nanos() as u64);
+    let Some(next) = pick_next(&ids, cur.as_deref(), s.cycle_order == "random", seed) else {
+        return Err("no wallpaper to change to".into());
     };
     for i in 0..core.displays.len() {
         apply(app, core, i, &next)?;
@@ -838,6 +863,43 @@ pub fn remove(app: &AppHandle, core: &mut Core, id: &str) -> Result<(), String> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pick_next_order_random_category() {
+        let ids: Vec<String> = ["a", "b", "c"].iter().map(|s| s.to_string()).collect();
+        assert_eq!(pick_next(&ids, Some("a"), false, 0).as_deref(), Some("b"));
+        assert_eq!(
+            pick_next(&ids, Some("c"), false, 0).as_deref(),
+            Some("a"),
+            "wraps"
+        );
+        assert_eq!(pick_next(&ids, None, false, 0).as_deref(), Some("a"));
+        assert_eq!(
+            pick_next(&ids, Some("gone"), false, 0).as_deref(),
+            Some("a")
+        );
+        assert_eq!(pick_next(&[], None, true, 5), None);
+        // Random never repeats the current one and reaches every other one.
+        for cur in ["a", "b", "c"] {
+            let seen: std::collections::BTreeSet<String> = (0..20)
+                .filter_map(|seed| pick_next(&ids, Some(cur), true, seed))
+                .collect();
+            assert!(!seen.contains(cur), "{cur} repeated");
+            assert_eq!(seen.len(), 2);
+        }
+        let one = vec!["a".to_string()];
+        assert_eq!(
+            pick_next(&one, Some("a"), true, 7).as_deref(),
+            Some("a"),
+            "only one to show"
+        );
+        // The category filter happens before picking, in next(); a filtered list behaves the same.
+        let nature: Vec<String> = vec!["b".into()];
+        assert_eq!(
+            pick_next(&nature, Some("a"), false, 0).as_deref(),
+            Some("b")
+        );
+    }
 
     #[test]
     fn sync_groups_pick_shared_videos() {
