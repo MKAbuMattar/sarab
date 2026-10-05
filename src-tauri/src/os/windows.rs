@@ -332,11 +332,23 @@ fn frame(hwnd: HWND) -> Option<RECT> {
     Some(r)
 }
 
-fn contains(outer: &RECT, inner: &RECT) -> bool {
-    outer.left <= inner.left
-        && outer.top <= inner.top
-        && outer.right >= inner.right
-        && outer.bottom >= inner.bottom
+/// Whether windows together hide `area`: every point of a 12 by 12 grid lies inside one of
+/// them. Two windows snapped side by side cover a display as well as one maximized window does.
+// ponytail: grid sampling, so a gap narrower than a grid cell (area/12) still counts as covered.
+fn covered(area: &RECT, wins: &[RECT]) -> bool {
+    const N: i32 = 12;
+    let (w, h) = (area.right - area.left, area.bottom - area.top);
+    if w <= 0 || h <= 0 {
+        return false;
+    }
+    (0..N).all(|i| {
+        (0..N).all(|j| {
+            let x = area.left + w * (2 * i + 1) / (2 * N);
+            let y = area.top + h * (2 * j + 1) / (2 * N);
+            wins.iter()
+                .any(|r| r.left <= x && x < r.right && r.top <= y && y < r.bottom)
+        })
+    })
 }
 
 /// Visible, uncloaked, unminimized top-level windows of other processes, with their frame rects.
@@ -374,10 +386,10 @@ fn app_windows() -> Vec<(HWND, RECT)> {
 }
 
 pub fn signals(mons: &[Monitor]) -> Signals {
-    let wins = app_windows();
+    let rects: Vec<RECT> = app_windows().into_iter().map(|(_, r)| r).collect();
     let mut covered: Vec<bool> = mons
         .iter()
-        .map(|m| wins.iter().any(|(_, r)| contains(r, &m.work)))
+        .map(|m| self::covered(&m.work, &rects))
         .collect();
 
     let fg = unsafe { GetForegroundWindow() };
@@ -472,5 +484,46 @@ pub fn set_picture(m: &Monitor, path: &str) -> windows::core::Result<()> {
     unsafe {
         let id = monitor_id(&api, m)?;
         api.SetWallpaper(PCWSTR(id.0), &HSTRING::from(path))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn r(left: i32, top: i32, right: i32, bottom: i32) -> RECT {
+        RECT {
+            left,
+            top,
+            right,
+            bottom,
+        }
+    }
+
+    #[test]
+    fn tiled_windows_cover_a_display() {
+        let work = r(0, 0, 1920, 1040);
+        // One maximized window (its frame sits a few pixels outside the work area).
+        assert!(covered(&work, &[r(-7, -7, 1927, 1047)]));
+        // Two windows snapped left and right.
+        assert!(covered(&work, &[r(0, 0, 960, 1040), r(960, 0, 1920, 1040)]));
+        // Four quarters.
+        let q = [
+            r(0, 0, 960, 520),
+            r(960, 0, 1920, 520),
+            r(0, 520, 960, 1040),
+            r(960, 520, 1920, 1040),
+        ];
+        assert!(covered(&work, &q));
+        // Half the screen is still desktop.
+        assert!(!covered(&work, &[r(0, 0, 960, 1040)]));
+        // A window on the other display does not count.
+        assert!(!covered(&work, &[r(1920, 0, 3840, 1040)]));
+        // A strip of desktop left between two windows is seen.
+        assert!(!covered(
+            &work,
+            &[r(0, 0, 800, 1040), r(1100, 0, 1920, 1040)]
+        ));
+        assert!(!covered(&work, &[]));
     }
 }
