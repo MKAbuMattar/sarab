@@ -426,12 +426,28 @@ pub fn signals(mons: &[Monitor]) -> Signals {
         manual: None,
         on_battery: power && ps.ACLineStatus == 0,
         power_saver: power && ps.SystemStatusFlag == 1,
-        locked: is_locked(),
+        // The Windows screensaver hides the desktop just as the lock screen does.
+        locked: is_locked() || screensaver_running(),
         remote: unsafe { GetSystemMetrics(SM_REMOTESESSION) } != 0,
         foreground_app,
         desktop_focused,
         covered,
     }
+}
+
+/// Is the Windows screensaver on screen right now?
+fn screensaver_running() -> bool {
+    let mut on = BOOL(0);
+    unsafe {
+        SystemParametersInfoW(
+            SPI_GETSCREENSAVERRUNNING,
+            0,
+            Some(&mut on as *mut _ as *mut _),
+            SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS(0),
+        )
+    }
+    .is_ok()
+        && on.as_bool()
 }
 
 /// The lock screen and UAC prompts switch to the secure desktop, which we cannot open.
@@ -1175,6 +1191,12 @@ mod tests {
             Some(22),
             "edges belong to the right"
         );
+    }
+
+    #[test]
+    fn screensaver_running_reads_the_real_state() {
+        // Tests run while someone (or CI) works, so no screensaver is on screen.
+        assert!(!screensaver_running());
     }
 
     #[test]
