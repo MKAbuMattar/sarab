@@ -182,5 +182,14 @@
   "cycle.inOrder": "In library order",
   "cycle.random": "Random",
   "settings.cycleFrom": "From",
-  "props.reset": "Restore defaults"
+  "props.reset": "Restore defaults",
+  "about.support": "Help",
+  "about.logs": "Logs for a bug report",
+  "about.logsDesc": "Saves the log and your settings (not your wallpapers) as a zip in Downloads.",
+  "about.export": "Export",
+  "about.reset": "Reset settings",
+  "about.resetDesc": "Every setting goes back to its default. Your library stays.",
+  "about.resetButton": "Reset",
+  "about.resetTitle": "Reset every setting?",
+  "about.resetBody": "Pausing, theme, language, frame rate, volume and cycling go back to their defaults. Your wallpapers and where they play stay as they are."
 }
