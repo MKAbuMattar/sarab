@@ -659,6 +659,9 @@ Add-Type -AssemblyName System.Windows.Forms
     $conf = (Get-Content (Join-Path $root 'src-tauri/tauri.conf.json') -Raw | ConvertFrom-Json).version
     Assert ($cargo -eq $conf) "Cargo.toml says $cargo, tauri.conf.json says $conf"
     Assert ((Get-Content (Join-Path $root 'CHANGELOG.md') -Raw) -match "## \[$([regex]::Escape($cargo))\]") "CHANGELOG.md has no entry for $cargo"
+    # Library filter and sort (ui/filter.js) behave as tested.
+    $filters = & node (Join-Path $root 'scripts/check_filters.mjs') 2>&1
+    Assert ($LASTEXITCODE -eq 0) "library filters: $filters"
     Write-Host "$($files.Count) languages, $($en.Count) strings, $($used.Count) keys used, $($reasons.Count) reasons, version $cargo"
     'static gate passed'
   }

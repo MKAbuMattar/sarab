@@ -207,6 +207,7 @@ async fn state(app: AppHandle) -> Value {
             "translucent": effects_for(&core.settings.backdrop).is_some(),
             "settings": core.settings,
             "library": core.lib,
+            "categories": library::CATEGORIES,
             "manual": core.manual,
             "autostart": auto,
             "update": update::to_json(app),
@@ -377,6 +378,42 @@ async fn save_settings(app: AppHandle, new: settings::Settings) -> Result<(), St
     })
 }
 
+fn editable(core: &Core, id: &str) -> Result<library::Wallpaper, String> {
+    let w = core.find(id).cloned().ok_or("not found")?;
+    if w.preset {
+        return Err("built-in wallpapers cannot be edited".into());
+    }
+    Ok(w)
+}
+
+#[tauri::command]
+async fn edit_info(app: AppHandle, id: String, edit: library::Edit) -> Result<(), String> {
+    with_core(&app, move |app, core| {
+        let w = editable(core, &id)?;
+        library::edit_info(&w.dir, edit)?;
+        rescan(core);
+        changed(app);
+        Ok(())
+    })
+}
+
+#[tauri::command]
+async fn details(app: AppHandle, id: String) -> Result<library::Details, String> {
+    let w = with_core(&app, move |_, core| core.find(&id).cloned()).ok_or("not found")?;
+    Ok(library::details(&w))
+}
+
+/// Opens the wallpaper's own folder in Explorer. Takes an id, never a path.
+#[tauri::command]
+async fn reveal(app: AppHandle, id: String) -> Result<(), String> {
+    let w = with_core(&app, move |_, core| core.find(&id).cloned()).ok_or("not found")?;
+    std::process::Command::new("explorer.exe")
+        .arg(&w.dir)
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 async fn get_preset(app: AppHandle, id: String) -> Result<(), String> {
     presets::download(&app, &id).await
@@ -488,7 +525,10 @@ fn main() {
             autostart,
             check_update,
             install_update,
-            get_preset
+            get_preset,
+            edit_info,
+            details,
+            reveal
         ])
         .on_window_event(|win, ev| {
             if win.label() != "main" {

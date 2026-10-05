@@ -44,6 +44,8 @@ pub struct Manifest {
     /// The file lives outside the package folder (added from disk, not copied).
     pub external: bool,
     pub thumbnail: Option<String>,
+    /// One of `CATEGORIES`, for the library filter.
+    pub category: Option<String>,
     pub tags: Vec<String>,
     pub version: u32,
     /// Play only this range of a video, in seconds, and loop inside it.
@@ -59,6 +61,8 @@ pub struct Wallpaper {
     pub has_props: bool,
     /// Ships with Sarab (read-only, cannot be deleted).
     pub preset: bool,
+    /// When the folder was created, in Unix seconds, for "newest first".
+    pub added: u64,
 }
 
 pub enum Target {
@@ -103,6 +107,7 @@ pub fn read(dir: &Path) -> Option<Wallpaper> {
         kind: info.r#type.name(),
         has_props: dir.join(PROPS).is_file(),
         preset: false,
+        added: secs(fs::metadata(dir).ok().and_then(|m| m.created().ok())),
         info,
     })
 }
@@ -364,6 +369,130 @@ pub fn save_prop(saved_path: &Path, ctl: &Value, key: &str, value: &Value) -> io
     crate::settings::save(saved_path, &saved)
 }
 
+/// The categories a wallpaper can be filed under. Keys into `category.*` UI strings.
+pub const CATEGORIES: [&str; 10] = [
+    "nature", "space", "abstract", "city", "animals", "anime", "games", "vehicles", "minimal",
+    "other",
+];
+
+fn secs(t: Option<std::time::SystemTime>) -> u64 {
+    t.and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map_or(0, |d| d.as_secs())
+}
+
+/// What the edit dialog sends.
+#[derive(Deserialize, Debug, Default)]
+#[serde(default)]
+pub struct Edit {
+    pub title: String,
+    pub description: String,
+    pub author: String,
+    pub category: Option<String>,
+    pub tags: Vec<String>,
+}
+
+fn optional(s: &str) -> Option<String> {
+    let s = s.trim();
+    (!s.is_empty()).then(|| s.to_string())
+}
+
+/// Check an edit and write it to the wallpaper's sarab.json. Limits follow the editors other
+/// wallpaper apps ship: a title of 1 to 100 characters, up to 5 tags of up to 20 each.
+pub fn edit_info(dir: &Path, e: Edit) -> Result<Manifest, String> {
+    let mut info: Manifest =
+        serde_json::from_slice(&fs::read(dir.join(INFO)).map_err(|e| e.to_string())?)
+            .map_err(|e| e.to_string())?;
+    let title = e.title.trim();
+    let len = |s: &str| s.chars().count();
+    if title.is_empty() || len(title) > 100 {
+        return Err("the title needs 1 to 100 characters".into());
+    }
+    if len(e.description.trim()) > 1000 || len(e.author.trim()) > 100 {
+        return Err("the description is limited to 1000 characters and the author to 100".into());
+    }
+    let category = e.category.as_deref().and_then(optional);
+    if let Some(c) = &category {
+        if !CATEGORIES.contains(&c.as_str()) {
+            return Err(format!("unknown category {c}"));
+        }
+    }
+    let mut tags: Vec<String> = vec![];
+    for t in e.tags.iter().map(|t| t.trim()).filter(|t| !t.is_empty()) {
+        if len(t) > 20 {
+            return Err(format!("the tag \"{t}\" is longer than 20 characters"));
+        }
+        if !tags.iter().any(|x| x.eq_ignore_ascii_case(t)) {
+            tags.push(t.to_string());
+        }
+    }
+    if tags.len() > 5 {
+        return Err("use at most 5 tags".into());
+    }
+    info.title = Some(title.to_string());
+    info.description = optional(&e.description);
+    info.author = optional(&e.author);
+    info.category = category;
+    info.tags = tags;
+    info.version += 1;
+    crate::settings::save(&dir.join(INFO), &info).map_err(|e| e.to_string())?;
+    Ok(info)
+}
+
+/// Facts for the info dialog that the manifest does not hold.
+#[derive(Serialize, Debug, Default)]
+pub struct Details {
+    /// Bytes in the package folder, plus the file it points to when that lives elsewhere.
+    pub size: u64,
+    pub files: u32,
+    pub created: u64,
+    /// When sarab.json was last written.
+    pub modified: u64,
+    pub folder: String,
+    /// The file or web address it plays.
+    pub source: String,
+    pub has_props: bool,
+}
+
+pub fn details(w: &Wallpaper) -> Details {
+    fn walk(dir: &Path, d: &mut Details) {
+        for e in fs::read_dir(dir).into_iter().flatten().flatten() {
+            // symlink_metadata: a link in a package is counted, never followed out of the folder.
+            let Ok(m) = fs::symlink_metadata(e.path()) else {
+                continue;
+            };
+            if m.is_dir() {
+                walk(&e.path(), d);
+            } else {
+                d.size += m.len();
+                d.files += 1;
+            }
+        }
+    }
+    let mut d = Details {
+        created: w.added,
+        modified: secs(
+            fs::metadata(w.dir.join(INFO))
+                .ok()
+                .and_then(|m| m.modified().ok()),
+        ),
+        folder: dunce_str(&w.dir),
+        has_props: w.has_props,
+        ..Default::default()
+    };
+    walk(&w.dir, &mut d);
+    match w.target() {
+        Some(Target::Url(u)) => d.source = u,
+        Some(Target::File(f)) => {
+            if w.info.external {
+                d.size += fs::metadata(&f).map_or(0, |m| m.len());
+            }
+            d.source = dunce_str(&f);
+        }
+        None => {}
+    }
+    d
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -515,5 +644,98 @@ mod tests {
                 .count(),
             1
         );
+    }
+
+    #[test]
+    fn edit_info_validates_and_saves() {
+        let d = tmp("edit");
+        fs::write(
+            d.join(INFO),
+            r#"{"title":"Old","type":"video","file":"a.mp4","version":2}"#,
+        )
+        .unwrap();
+        let edit = |title: &str, category: Option<&str>, tags: &[&str]| Edit {
+            title: title.into(),
+            description: "  Waves at dusk  ".into(),
+            author: "".into(),
+            category: category.map(String::from),
+            tags: tags.iter().map(|t| t.to_string()).collect(),
+        };
+        let info = edit_info(
+            &d,
+            edit("  Sea  ", Some("nature"), &["sea", " Sea ", "dusk", ""]),
+        )
+        .unwrap();
+        assert_eq!(info.title.as_deref(), Some("Sea"));
+        assert_eq!(info.description.as_deref(), Some("Waves at dusk"));
+        assert_eq!(info.author, None);
+        assert_eq!(info.category.as_deref(), Some("nature"));
+        assert_eq!(
+            info.tags,
+            vec!["sea", "dusk"],
+            "trimmed, empty dropped, duplicates folded"
+        );
+        assert_eq!(info.version, 3);
+        assert_eq!(read(&d).unwrap().info, info, "written to sarab.json");
+
+        assert!(
+            edit_info(&d, edit("   ", None, &[])).is_err(),
+            "empty title"
+        );
+        assert!(
+            edit_info(&d, edit(&"x".repeat(101), None, &[])).is_err(),
+            "title too long"
+        );
+        assert!(
+            edit_info(&d, edit("Sea", Some("cats"), &[])).is_err(),
+            "unknown category"
+        );
+        assert!(
+            edit_info(&d, edit("Sea", None, &["a", "b", "c", "d", "e", "f"])).is_err(),
+            "six tags"
+        );
+        assert!(
+            edit_info(&d, edit("Sea", None, &[&"t".repeat(21)])).is_err(),
+            "long tag"
+        );
+        assert_eq!(
+            read(&d).unwrap().info.version,
+            3,
+            "a refused edit writes nothing"
+        );
+        assert!(
+            edit_info(&d, edit("سراب", Some(""), &[])).is_ok(),
+            "Arabic title, no category"
+        );
+    }
+
+    #[test]
+    fn details_report_folder_facts() {
+        let d = tmp("details");
+        fs::write(
+            d.join(INFO),
+            r#"{"title":"T","type":"web","file":"index.html"}"#,
+        )
+        .unwrap();
+        fs::write(d.join("index.html"), "0123456789").unwrap();
+        fs::create_dir_all(d.join("img")).unwrap();
+        fs::write(d.join("img").join("a.png"), "12345").unwrap();
+        fs::write(d.join(PROPS), "{}").unwrap();
+        let w = read(&d).unwrap();
+        let info_len = fs::metadata(d.join(INFO)).unwrap().len();
+        let det = details(&w);
+        assert_eq!(det.files, 4);
+        assert_eq!(det.size, 10 + 5 + 2 + info_len);
+        assert!(det.has_props);
+        assert!(det.modified > 0 && det.created > 0);
+        assert!(det.source.ends_with("index.html"));
+
+        let url = tmp("details-url");
+        fs::write(
+            url.join(INFO),
+            r#"{"title":"U","type":"url","file":"https://example.com/"}"#,
+        )
+        .unwrap();
+        assert_eq!(details(&read(&url).unwrap()).source, "https://example.com/");
     }
 }
