@@ -351,8 +351,15 @@ pub fn coerce(ctl: &Value, raw: &Value) -> Result<Value, String> {
         v => v.to_string(),
     };
     Ok(match ty {
-        "slider" => {
-            let n: f64 = s.parse().map_err(|_| format!("{s} is not a number"))?;
+        // A number field is a slider without the slider: the same range rules.
+        "slider" | "number" => {
+            let n: f64 = s
+                .trim()
+                .parse()
+                .map_err(|_| format!("{s} is not a number"))?;
+            if !n.is_finite() {
+                return Err(format!("{s} is not a number"));
+            }
             let min = ctl.get("min").and_then(Value::as_f64).unwrap_or(f64::MIN);
             let max = ctl.get("max").and_then(Value::as_f64).unwrap_or(f64::MAX);
             serde_json::json!(n.clamp(min, max))
@@ -926,6 +933,27 @@ mod tests {
         assert!(!read(&d).unwrap().too_new);
         fs::write(d.join(INFO), r#"{"type":"web","file":"index.html"}"#).unwrap();
         assert!(!read(&d).unwrap().too_new, "no version: assume it fits");
+    }
+
+    #[test]
+    fn number_and_password_fields() {
+        let num = serde_json::json!({"type": "number", "value": 3, "min": 1, "max": 10});
+        assert_eq!(
+            coerce(&num, &Value::String(" 7 ".into())).unwrap(),
+            serde_json::json!(7.0)
+        );
+        assert_eq!(
+            coerce(&num, &Value::String("50".into())).unwrap(),
+            serde_json::json!(10.0),
+            "clamped"
+        );
+        assert!(coerce(&num, &Value::String("seven".into())).is_err());
+        assert!(coerce(&num, &Value::String("NaN".into())).is_err());
+        let pw = serde_json::json!({"type": "password", "value": ""});
+        assert_eq!(
+            coerce(&pw, &Value::String("s3cret !".into())).unwrap(),
+            Value::String("s3cret !".into())
+        );
     }
 
     #[test]

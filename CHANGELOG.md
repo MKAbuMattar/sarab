@@ -6,6 +6,7 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ### Added
 
+- Customize has two more control types for packages: number (with min, max and step) and password (shown as dots).
 - A package made for a newer Sarab says so on its tile and asks before it plays. Exported packages record the version that made them.
 
 ### Changed

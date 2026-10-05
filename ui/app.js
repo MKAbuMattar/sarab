@@ -390,6 +390,17 @@ function control(display, key, c) {
       input.addEventListener('input', () => send(input.value));
       return el('label', {}, label, input);
     }
+    case 'number': {
+      const input = el('input', { type: 'number', min: c.min, max: c.max, step: c.step ?? 1, value: c.value ?? 0 });
+      input.addEventListener('change', () => send(input.value));
+      return el('label', {}, label, input);
+    }
+    case 'password': {
+      // Shown as dots; the page receives the text as typed.
+      const input = el('input', { type: 'password', value: c.value ?? '', autocomplete: 'off' });
+      input.addEventListener('change', () => send(input.value));
+      return el('label', {}, label, input);
+    }
     case 'button':
       return el('div', {}, el('button', { type: 'button', onclick: () => send(true) }, c.value || label));
     case 'label':
