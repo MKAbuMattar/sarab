@@ -28,9 +28,14 @@ pub enum Command {
     Preset(String),
     CheckUpdate,
     InstallUpdate,
+    /// Save a display's wallpaper as a PNG at this full path.
+    Screenshot {
+        path: String,
+        display: Option<usize>,
+    },
 }
 
-pub const USAGE: &str = "usage: sarab [set <file|folder|url> | close | pause | play | resume | toggle | prop <key>=<value> | volume <0-100> | next | import <zip> | ui | status | preset <id> | check-update | install-update | quit] [--display N]";
+pub const USAGE: &str = "usage: sarab [set <file|folder|url> | close | pause | play | resume | toggle | prop <key>=<value> | volume <0-100> | next | import <zip> | ui | status | preset <id> | check-update | install-update | screenshot <file.png> | quit] [--display N]";
 
 /// `args` excludes the program name. No args means "just start" (None).
 pub fn parse(args: &[String]) -> Result<Option<Command>, String> {
@@ -89,6 +94,10 @@ pub fn parse(args: &[String]) -> Result<Option<Command>, String> {
         Some("preset") => Command::Preset(arg(1)?),
         Some("check-update") => Command::CheckUpdate,
         Some("install-update") => Command::InstallUpdate,
+        Some("screenshot") => Command::Screenshot {
+            path: arg(1)?,
+            display,
+        },
         Some(other) => return Err(format!("unknown command: {other}\n{USAGE}")),
     };
     Ok(Some(cmd))
@@ -149,5 +158,13 @@ mod tests {
         assert_eq!(p("preset nasa-x"), Ok(Some(Preset("nasa-x".into()))));
         assert!(p("preset").is_err());
         assert_eq!(p("check-update"), Ok(Some(CheckUpdate)));
+        assert_eq!(
+            p("screenshot C:/out.png --display 1"),
+            Ok(Some(Screenshot {
+                path: "C:/out.png".into(),
+                display: Some(1)
+            }))
+        );
+        assert!(p("screenshot").is_err());
     }
 }
