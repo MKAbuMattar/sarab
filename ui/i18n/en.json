@@ -195,5 +195,7 @@
   "info.export": "Export",
   "settings.unload": "Free memory when a wallpaper is hidden for",
   "settings.unloadDesc": "Only while an app covers it, the screen is locked or a remote session runs. It loads again when it is seen.",
-  "unload.oneMinute": "1 minute"
+  "unload.oneMinute": "1 minute",
+  "settings.audioMuteOthers": "Mute while another app plays sound",
+  "settings.audioDesktopOnly": "Play sound only while the desktop has the focus"
 }

@@ -19,6 +19,10 @@ pub struct Settings {
     pub app_play: Vec<String>,
     pub fps: u32,
     pub volume: u8,
+    /// Mute the wallpaper whenever an app has the focus instead of the desktop.
+    pub audio_desktop_only: bool,
+    /// Mute the wallpaper while another app plays sound.
+    pub audio_mute_others: bool,
     /// How videos and GIFs fill the display: "cover", "contain", "fill" or "none".
     pub scaling: String,
     /// Move to the next wallpaper in the library every this many minutes; 0 is never.
@@ -55,6 +59,8 @@ impl Default for Settings {
             app_play: vec![],
             fps: 30,
             volume: 0,
+            audio_desktop_only: false,
+            audio_mute_others: true,
             scaling: "cover".into(),
             cycle_minutes: 0,
             cycle_order: "order".into(),

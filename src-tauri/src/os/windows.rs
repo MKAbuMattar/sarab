@@ -487,6 +487,78 @@ pub fn set_picture(m: &Monitor, path: &str) -> windows::core::Result<()> {
     }
 }
 
+/// Processes that belong to Sarab: this one and every process it started, at any depth
+/// (WebView2's browser, renderers and its audio service).
+fn own_processes() -> std::collections::HashSet<u32> {
+    use windows::Win32::System::Diagnostics::ToolHelp::{
+        CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W,
+        TH32CS_SNAPPROCESS,
+    };
+    let mut parent = std::collections::HashMap::new();
+    unsafe {
+        if let Ok(snap) = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) {
+            let mut e = PROCESSENTRY32W {
+                dwSize: std::mem::size_of::<PROCESSENTRY32W>() as u32,
+                ..Default::default()
+            };
+            let mut ok = Process32FirstW(snap, &mut e).is_ok();
+            while ok {
+                parent.insert(e.th32ProcessID, e.th32ParentProcessID);
+                ok = Process32NextW(snap, &mut e).is_ok();
+            }
+            let _ = CloseHandle(snap);
+        }
+    }
+    let me = unsafe { GetCurrentProcessId() };
+    let mut own = std::collections::HashSet::from([me]);
+    // A few passes reach grandchildren; a PID reused after its parent exited never links to us
+    // because the chain stops at a PID that is not ours.
+    for _ in 0..4 {
+        for (&pid, &ppid) in &parent {
+            if own.contains(&ppid) {
+                own.insert(pid);
+            }
+        }
+    }
+    own
+}
+
+/// Is another app making sound right now? Only sessions that are active and above a whisper
+/// count, so a paused player or a silent stream does not mute the wallpaper.
+pub fn other_audio_playing() -> bool {
+    use windows::core::Interface;
+    use windows::Win32::Media::Audio::Endpoints::IAudioMeterInformation;
+    use windows::Win32::Media::Audio::{
+        eConsole, eRender, AudioSessionStateActive, IAudioSessionControl2, IAudioSessionManager2,
+        IMMDeviceEnumerator, MMDeviceEnumerator,
+    };
+    let own = own_processes();
+    let run = || -> windows::core::Result<bool> {
+        unsafe {
+            let en: IMMDeviceEnumerator = CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL)?;
+            let dev = en.GetDefaultAudioEndpoint(eRender, eConsole)?;
+            let mgr: IAudioSessionManager2 = dev.Activate(CLSCTX_ALL, None)?;
+            let list = mgr.GetSessionEnumerator()?;
+            for i in 0..list.GetCount()? {
+                let s = list.GetSession(i)?;
+                if s.GetState()? != AudioSessionStateActive {
+                    continue;
+                }
+                let pid = s.cast::<IAudioSessionControl2>()?.GetProcessId()?;
+                // pid 0 is the system sounds session.
+                if pid == 0 || own.contains(&pid) {
+                    continue;
+                }
+                if s.cast::<IAudioMeterInformation>()?.GetPeakValue()? > 0.01 {
+                    return Ok(true);
+                }
+            }
+            Ok(false)
+        }
+    };
+    run().unwrap_or(false)
+}
+
 /// Installed memory in bytes, 0 if Windows will not say.
 pub fn total_ram() -> u64 {
     use windows::Win32::System::SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX};
