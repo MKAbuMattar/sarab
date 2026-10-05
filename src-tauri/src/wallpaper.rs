@@ -13,6 +13,7 @@ use std::{
     sync::Mutex,
 };
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
+use windows::Win32::Foundation::RECT;
 
 pub const INJECT: &str = include_str!("inject.js");
 
@@ -31,6 +32,10 @@ pub struct Display {
     /// Label of this display's wallpaper window. Unique per window: `destroy()` frees a label
     /// asynchronously, so reusing one for the replacement window fails.
     pub label: Option<String>,
+    /// Since when nobody can see this display's wallpaper (covered, locked, remote).
+    pub unseen_since: Option<std::time::Instant>,
+    /// Its webview was closed to free memory; it loads again when it would play.
+    pub unloaded: bool,
 }
 
 pub struct Core {
@@ -46,6 +51,23 @@ pub struct Core {
     /// Run video sync on the next tick (a display just resumed or loaded).
     pub sync_due: bool,
     pub ticks: u64,
+    /// Started the first time a playing wallpaper asks for system information.
+    pub sysinfo: Option<crate::feeds::Sampler>,
+    /// The screensaver's window labels and the input stamp it started at, while it shows.
+    pub screensaver: Option<(Vec<String>, u32)>,
+    /// Where the mouse hook sends input, and whether it runs.
+    pub mouse_targets: os::Targets,
+    pub mouse_on: Option<std::sync::Arc<std::sync::atomic::AtomicBool>>,
+    /// Runs while a playing wallpaper asks for the audio levels.
+    pub audio: Option<crate::audio::Feed>,
+    /// Labels of the webviews the audio thread sends to.
+    pub audio_to: std::sync::Arc<Mutex<Vec<String>>>,
+    /// Started the first time a playing wallpaper asks for the current track.
+    pub now_playing: Option<crate::feeds::NowPlaying>,
+    /// The volume the pages play at now, after the audio rules; the setting is the most it can be.
+    pub volume_now: u8,
+    /// When the wallpaper last changed, by the user or by cycling.
+    pub changed_at: std::time::Instant,
 }
 
 pub type Shared = Mutex<Core>;
@@ -123,6 +145,7 @@ impl Core {
     pub fn load() -> Core {
         let settings: Settings = settings::load(&cfg("settings.json"));
         let lib = scan_all(&settings);
+        let volume_now = settings.volume;
         Core {
             layout: settings::load(&cfg("layout.json")),
             restore: settings::load(&cfg("restore.json")),
@@ -134,6 +157,15 @@ impl Core {
             signals: Signals::default(),
             sync_due: false,
             ticks: 0,
+            volume_now,
+            sysinfo: None,
+            now_playing: None,
+            audio: None,
+            mouse_targets: Default::default(),
+            mouse_on: None,
+            screensaver: None,
+            audio_to: Default::default(),
+            changed_at: std::time::Instant::now(),
         }
     }
     pub fn find(&self, id: &str) -> Option<&Wallpaper> {
@@ -173,8 +205,123 @@ pub fn saved_props_path(id: &str, key: &str) -> PathBuf {
         .join(format!("{}.json", key_file(key)))
 }
 
+pub const THUMBNAIL: &str = "thumbnail.png";
+
+/// Set once at startup, for work that finishes on another thread.
+pub static APP: std::sync::OnceLock<AppHandle> = std::sync::OnceLock::new();
+static FAILED: Mutex<std::collections::BTreeSet<PathBuf>> =
+    Mutex::new(std::collections::BTreeSet::new());
+
+/// Give every user wallpaper that has no thumbnail one from Explorer, on a thread. Web and URL
+/// wallpapers get theirs from a frame once they play (`capture_thumbnail`).
+pub fn make_thumbnails(lib: &[Wallpaper]) {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    static RUNNING: AtomicBool = AtomicBool::new(false);
+    let Some(app) = APP.get() else { return };
+    let failed = FAILED.lock().unwrap().clone();
+    let todo: Vec<(PathBuf, PathBuf)> = lib
+        .iter()
+        .filter(|w| !w.preset && w.thumb.is_none() && !failed.contains(&w.dir))
+        .filter(|w| matches!(w.info.r#type, Kind::Video | Kind::Gif | Kind::Picture))
+        .filter_map(|w| match w.target() {
+            Some(Target::File(f)) if f.is_file() => Some((f, w.dir.clone())),
+            _ => None,
+        })
+        .collect();
+    if todo.is_empty() || RUNNING.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    let app = app.clone();
+    std::thread::spawn(move || {
+        for (src, dir) in todo {
+            match os::shell_thumbnail(&src, &dir.join(THUMBNAIL), 480)
+                .and_then(|()| library::set_thumbnail(&dir, THUMBNAIL))
+            {
+                Ok(()) => log(format!("thumbnail made for {}", dir.display())),
+                Err(e) => {
+                    log(e);
+                    // Not tried again this run, so a file Explorer cannot thumbnail never loops.
+                    FAILED.lock().unwrap().insert(dir);
+                }
+            }
+        }
+        RUNNING.store(false, Ordering::SeqCst);
+        later(&app, |app, core| {
+            crate::rescan(core);
+            let _ = app.emit_to("main", "changed", ());
+        });
+    });
+}
+
+/// Save one frame of a playing web or URL wallpaper as its thumbnail, scaled to 480 px wide.
+fn capture_thumbnail(app: &AppHandle, core: &Core, lbl: &str) {
+    use webview2_com::CapturePreviewCompletedHandler;
+    use webview2_com::Microsoft::Web::WebView2::Win32::COREWEBVIEW2_CAPTURE_PREVIEW_IMAGE_FORMAT_PNG;
+    use windows::Win32::System::Com::{STGM_CREATE, STGM_WRITE};
+    use windows::Win32::UI::Shell::SHCreateStreamOnFileEx;
+    let Some(d) = core
+        .displays
+        .iter()
+        .find(|d| d.label.as_deref() == Some(lbl))
+    else {
+        return;
+    };
+    let Some(w) = d.wallpaper.as_deref().and_then(|id| core.find(id)).cloned() else {
+        return;
+    };
+    if w.preset || w.thumb.is_some() || !matches!(w.info.r#type, Kind::Web | Kind::Url) {
+        return;
+    }
+    let Some(win) = app.get_webview_window(lbl) else {
+        return;
+    };
+    let full = std::env::temp_dir().join(format!("sarab-capture-{}.png", std::process::id()));
+    let a = app.clone();
+    let _ = win.with_webview(move |pw| unsafe {
+        let run = || -> windows::core::Result<()> {
+            let stream = SHCreateStreamOnFileEx(
+                &windows::core::HSTRING::from(full.as_os_str()),
+                (STGM_CREATE | STGM_WRITE).0,
+                0x80,
+                true,
+                None,
+            )?;
+            let done = full.clone();
+            // WebView2 holds the stream while it writes; this copy closes the file when done.
+            let keep = stream.clone();
+            let handler = CapturePreviewCompletedHandler::create(Box::new(move |r| {
+                drop(keep);
+                if r.is_ok() {
+                    let (dir, a) = (w.dir.clone(), a.clone());
+                    std::thread::spawn(move || {
+                        let r = os::shrink_png(&done, &dir.join(THUMBNAIL), 480)
+                            .and_then(|()| library::set_thumbnail(&dir, THUMBNAIL));
+                        let _ = fs::remove_file(&done);
+                        match r {
+                            Ok(()) => later(&a, |app, core| {
+                                crate::rescan(core);
+                                let _ = app.emit_to("main", "changed", ());
+                            }),
+                            Err(e) => log(format!("thumbnail capture: {e}")),
+                        }
+                    });
+                }
+                Ok(())
+            }));
+            pw.controller().CoreWebView2()?.CapturePreview(
+                COREWEBVIEW2_CAPTURE_PREVIEW_IMAGE_FORMAT_PNG,
+                &stream,
+                &handler,
+            )
+        };
+        if let Err(e) = run() {
+            log(format!("thumbnail capture: {e}"));
+        }
+    });
+}
+
 /// `http://asset.localhost/C:/dir/index.html`: forward slashes keep relative links in web wallpapers working.
-fn asset_url(p: &Path) -> String {
+pub fn asset_url(p: &Path) -> String {
     let s = p.to_string_lossy().replace('\\', "/");
     let mut out = String::from("http://asset.localhost/");
     for b in s.bytes() {
@@ -202,7 +349,44 @@ fn player_url(src: &str, kind: &str, fit: &str, clip: Option<[f64; 2]>) -> Strin
     format!("{APP_ORIGIN}/player.html?kind={kind}&fit={fit}{range}&src={q}")
 }
 
-/// Shadertoy and YouTube pages are heavy; their embed forms show only the content.
+/// The video and playlist ids in a YouTube link: watch, youtu.be, shorts, live, embed and
+/// playlist forms, on www, m and music. None for anything else.
+fn youtube_ids(u: &str) -> Option<(Option<String>, Option<String>)> {
+    let rest = u.split_once("://").map_or(u, |(_, r)| r);
+    let (host, path) = rest.split_once('/').unwrap_or((rest, ""));
+    let host = host
+        .trim_start_matches("www.")
+        .trim_start_matches("m.")
+        .trim_start_matches("music.");
+    let (path, query) = path.split_once('?').unwrap_or((path, ""));
+    let id_chars = |s: &str| -> Option<String> {
+        let id: String = s
+            .chars()
+            .take_while(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_')
+            .collect();
+        (!id.is_empty()).then_some(id)
+    };
+    let param = |name: &str| {
+        query
+            .split('&')
+            .find_map(|kv| kv.strip_prefix(name)?.strip_prefix('='))
+            .and_then(id_chars)
+    };
+    let video = match host {
+        "youtu.be" => id_chars(path),
+        "youtube.com" | "youtube-nocookie.com" => match path.split_once('/') {
+            Some(("shorts" | "live" | "embed" | "v", id)) => id_chars(id),
+            _ if path == "watch" => param("v"),
+            _ => None,
+        },
+        _ => return None,
+    };
+    let list = param("list");
+    (video.is_some() || list.is_some()).then_some((video, list))
+}
+
+/// Shadertoy pages are heavy; the embed form shows only the shader. YouTube refuses to play
+/// when loaded directly (Error 153), so its links open Sarab's own page, which frames the player.
 fn rewrite_url(u: &str) -> String {
     if let Some(id) = u.split("shadertoy.com/view/").nth(1) {
         return format!(
@@ -210,18 +394,11 @@ fn rewrite_url(u: &str) -> String {
             id.trim_end_matches('/')
         );
     }
-    let yt = u
-        .split("youtube.com/watch?v=")
-        .nth(1)
-        .or_else(|| u.split("youtu.be/").nth(1));
-    if let Some(id) = yt {
-        let id: String = id
-            .chars()
-            .take_while(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_')
-            .collect();
-        return format!(
-            "https://www.youtube.com/embed/{id}?autoplay=1&mute=1&loop=1&playlist={id}&controls=0"
-        );
+    if let Some((video, list)) = youtube_ids(u) {
+        let mut q = vec![];
+        q.extend(video.map(|v| format!("v={v}")));
+        q.extend(list.map(|l| format!("list={l}")));
+        return format!("{APP_ORIGIN}/youtube.html?{}", q.join("&"));
     }
     u.to_string()
 }
@@ -345,7 +522,7 @@ pub fn on_loaded(app: &AppHandle, core: &mut Core, lbl: &str) {
     };
     let _ = win.eval(format!(
         "window.__sarab&&(__sarab.setFps({}),__sarab.volume({}))",
-        core.settings.fps, core.settings.volume
+        core.settings.fps, core.volume_now
     ));
     if let Some(w) = core.find(&id).cloned() {
         push_props(&win, &w, &core.displays[i].mon.key);
@@ -353,6 +530,13 @@ pub fn on_loaded(app: &AppHandle, core: &mut Core, lbl: &str) {
     let st = core.displays[i].state;
     apply_state(app, core, i, st, true);
     write_status(core);
+    // A web or URL wallpaper without a thumbnail gets one from its first seconds on screen.
+    let lbl = lbl.to_string();
+    let a = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_secs(4));
+        later(&a, move |app, core| capture_thumbnail(app, core, &lbl));
+    });
 }
 
 // ---- apply / close ----
@@ -367,6 +551,11 @@ fn close_window(app: &AppHandle, core: &mut Core, i: usize) {
     d.label = None;
 }
 
+/// Close display `i`'s webview but keep its wallpaper and layout, to load it again later.
+pub fn unload(app: &AppHandle, core: &mut Core, i: usize) {
+    close_window(app, core, i);
+}
+
 fn restore_picture(core: &mut Core, i: usize) {
     let key = core.displays[i].mon.key.clone();
     if let Some(orig) = core.restore.remove(&key) {
@@ -377,6 +566,34 @@ fn restore_picture(core: &mut Core, i: usize) {
     }
 }
 
+/// The rectangle that holds every display, in screen coordinates.
+fn span_rect(rects: &[RECT]) -> RECT {
+    rects
+        .iter()
+        .fold(rects.first().copied().unwrap_or_default(), |a, r| RECT {
+            left: a.left.min(r.left),
+            top: a.top.min(r.top),
+            right: a.right.max(r.right),
+            bottom: a.bottom.max(r.bottom),
+        })
+}
+
+/// A spanned wallpaper plays while any display can play it, and otherwise rests for the
+/// reason the first display gives.
+fn span_state(decisions: &[(State, Reason)]) -> (State, Reason) {
+    decisions
+        .iter()
+        .find(|(st, _)| *st == State::Play)
+        .or(decisions.first())
+        .copied()
+        .unwrap_or((State::Play, Reason::None))
+}
+
+/// Is display `i` drawn by the spanning window on display 0 rather than its own?
+fn spanned(core: &Core, i: usize) -> bool {
+    core.settings.span && i > 0
+}
+
 pub fn apply(app: &AppHandle, core: &mut Core, i: usize, id: &str) -> Result<(), String> {
     let w = core
         .find(id)
@@ -385,7 +602,10 @@ pub fn apply(app: &AppHandle, core: &mut Core, i: usize, id: &str) -> Result<(),
     close_window(app, core, i);
     let key = core.displays[i].mon.key.clone();
     core.displays[i].error = None;
-    let result = if w.info.r#type == Kind::Picture {
+    let result = if spanned(core, i) && w.info.r#type != Kind::Picture {
+        // Drawn by display 0's window; this display only records what it shows.
+        Ok(())
+    } else if w.info.r#type == Kind::Picture {
         let Some(Target::File(f)) = w.target() else {
             return Err("picture has no file".into());
         };
@@ -444,7 +664,12 @@ fn create_window(app: &AppHandle, core: &mut Core, i: usize, w: &Wallpaper) -> R
         .map_err(|e| e.to_string())?;
     core.displays[i].label = Some(lbl);
     let attached = win.hwnd().map_err(|e| e.to_string()).and_then(|hwnd| {
-        os::attach(&desk, hwnd, core.displays[i].mon.rect).map_err(|e| e.to_string())?;
+        let rect = if core.settings.span {
+            span_rect(&core.displays.iter().map(|d| d.mon.rect).collect::<Vec<_>>())
+        } else {
+            core.displays[i].mon.rect
+        };
+        os::attach(&desk, hwnd, rect).map_err(|e| e.to_string())?;
         os::show(hwnd, true);
         Ok(())
     });
@@ -515,6 +740,21 @@ pub fn set_prop(
     Ok(v)
 }
 
+/// Back to the wallpaper's own defaults on display `i`, and tell the page.
+pub fn reset_props(app: &AppHandle, core: &mut Core, i: usize) -> Result<(), String> {
+    let id = core.displays[i]
+        .wallpaper
+        .clone()
+        .ok_or("no wallpaper on that display")?;
+    let w = core.find(&id).cloned().ok_or("wallpaper missing")?;
+    library::reset_props(&saved_props_path(&id, &core.displays[i].mon.key))
+        .map_err(|e| e.to_string())?;
+    if let Some(win) = window(app, &core.displays[i]) {
+        push_props(&win, &w, &core.displays[i].mon.key);
+    }
+    Ok(())
+}
+
 pub fn props_for(core: &Core, i: usize) -> Map<String, Value> {
     let Some(id) = core.displays.get(i).and_then(|d| d.wallpaper.clone()) else {
         return Map::new();
@@ -527,6 +767,8 @@ pub fn props_for(core: &Core, i: usize) -> Map<String, Value> {
 
 pub fn set_volume(app: &AppHandle, core: &mut Core, v: u8) {
     core.settings.volume = v;
+    // The rules apply on the next tick; until then the new volume plays.
+    core.volume_now = v;
     let _ = settings::save(&cfg("settings.json"), &core.settings);
     for i in 0..core.displays.len() {
         if let Some(win) = window(app, &core.displays[i]) {
@@ -578,6 +820,8 @@ pub fn sync_displays(app: &AppHandle, core: &mut Core) {
             error: None,
             page: Value::Null,
             label: None,
+            unseen_since: None,
+            unloaded: false,
         })
         .collect();
     for i in 0..core.displays.len() {
@@ -596,22 +840,38 @@ pub fn sync_displays(app: &AppHandle, core: &mut Core) {
 /// The same video on several displays plays in step: the leftmost playing display leads, the
 /// others follow. Displays are independent webviews, so without this they start at different
 /// moments and drift further apart every time one is paused and resumed.
-fn sync_video(app: &AppHandle, core: &Core) {
+/// Displays to keep in step: those playing the same video or YouTube link, two or more to a
+/// group, leftmost first. Each entry is a display's wallpaper id and whether it can be synced now.
+fn sync_groups(displays: impl Iterator<Item = (Option<String>, bool)>) -> Vec<Vec<usize>> {
     let mut groups: BTreeMap<String, Vec<usize>> = BTreeMap::new();
-    for (i, d) in core.displays.iter().enumerate() {
-        let video = d
-            .wallpaper
-            .as_deref()
-            .and_then(|id| core.find(id))
-            .is_some_and(|w| w.info.r#type == Kind::Video);
-        if video && d.loaded && d.state == State::Play {
-            groups
-                .entry(d.wallpaper.clone().unwrap_or_default())
-                .or_default()
-                .push(i);
+    for (i, (id, syncable)) in displays.enumerate() {
+        if let (Some(id), true) = (id, syncable) {
+            groups.entry(id).or_default().push(i);
         }
     }
-    for idx in groups.into_values().filter(|g| g.len() > 1) {
+    groups.into_values().filter(|g| g.len() > 1).collect()
+}
+
+fn sync_video(app: &AppHandle, core: &Core) {
+    let syncable = |d: &Display| {
+        let w = d.wallpaper.as_deref().and_then(|id| core.find(id));
+        let media = w.is_some_and(|w| match w.info.r#type {
+            Kind::Video => true,
+            Kind::Url => w
+                .info
+                .file
+                .as_deref()
+                .is_some_and(|u| youtube_ids(u).is_some()),
+            _ => false,
+        });
+        media && d.loaded && d.state == State::Play
+    };
+    let groups = sync_groups(
+        core.displays
+            .iter()
+            .map(|d| (d.wallpaper.clone(), syncable(d))),
+    );
+    for idx in groups {
         let Some(lead) = window(app, &core.displays[idx[0]]) else {
             continue;
         };
@@ -631,6 +891,329 @@ fn sync_video(app: &AppHandle, core: &Core) {
             }
         });
     }
+}
+
+/// Displays playing a wallpaper whose manifest asks for `feed`.
+fn subscribers(core: &Core, feed: &str) -> Vec<usize> {
+    (0..core.displays.len())
+        .filter(|&i| {
+            let d = &core.displays[i];
+            d.loaded
+                && d.state == State::Play
+                && d.wallpaper
+                    .as_deref()
+                    .and_then(|id| core.find(id))
+                    .is_some_and(|w| w.info.api.iter().any(|a| a == feed))
+        })
+        .collect()
+}
+
+/// sarabSystemInfo once a tick, only to wallpapers that asked for it and only while they play.
+fn push_sysinfo(app: &AppHandle, core: &mut Core) {
+    let to = subscribers(core, "system");
+    if to.is_empty() {
+        return;
+    }
+    let info = core
+        .sysinfo
+        .get_or_insert_with(crate::feeds::Sampler::new)
+        .sample();
+    let v = serde_json::to_value(&info).unwrap_or(Value::Null);
+    for i in to {
+        if let Some(win) = window(app, &core.displays[i]) {
+            call(&win, "sarabSystemInfo", std::slice::from_ref(&v));
+        }
+    }
+}
+
+/// sarabNowPlaying when the track changes, and to a wallpaper that just started asking.
+fn push_now_playing(app: &AppHandle, core: &mut Core) {
+    use std::sync::atomic::Ordering;
+    let to = subscribers(core, "nowplaying");
+    if to.is_empty() {
+        if let Some(n) = &mut core.now_playing {
+            n.wanted.store(false, Ordering::Relaxed);
+            n.sent = None;
+        }
+        return;
+    }
+    let n = core
+        .now_playing
+        .get_or_insert_with(crate::feeds::NowPlaying::start);
+    n.wanted.store(true, Ordering::Relaxed);
+    let latest = n.latest.lock().unwrap().clone();
+    // Sent again every 10 ticks so a page that loaded since still learns the track.
+    if n.sent.as_ref() == Some(&latest) && !core.ticks.is_multiple_of(10) {
+        return;
+    }
+    n.sent = Some(latest.clone());
+    let v = serde_json::to_value(&latest).unwrap_or(Value::Null);
+    for i in to {
+        if let Some(win) = window(app, &core.displays[i]) {
+            call(&win, "sarabNowPlaying", std::slice::from_ref(&v));
+        }
+    }
+}
+
+/// Time for the screensaver: it is on, the user has been away long enough, and nothing that
+/// keeps a screen awake on purpose is going on (a full-screen app, or sound from another app).
+fn screensaver_due(minutes: u32, idle_ms: u32, busy: bool) -> bool {
+    minutes > 0 && !busy && u64::from(idle_ms) >= u64::from(minutes) * 60_000
+}
+
+/// Open the screensaver: one topmost borderless window per display, outside the desktop.
+fn start_screensaver(app: &AppHandle, core: &mut Core, stamp: u32) {
+    let mut labels = vec![];
+    for i in 0..core.displays.len() {
+        let id = core
+            .settings
+            .screensaver_wallpaper
+            .clone()
+            .or_else(|| core.displays[i].wallpaper.clone());
+        let Some(w) = id.as_deref().and_then(|id| core.find(id)).cloned() else {
+            continue;
+        };
+        if w.info.r#type == Kind::Picture {
+            continue;
+        }
+        let Ok(url) = url_for(app, &w, &core.settings.scaling) else {
+            continue;
+        };
+        let lbl = format!("ss-{i}-{stamp}");
+        let r = core.displays[i].mon.rect;
+        let built = WebviewWindowBuilder::new(app, &lbl, WebviewUrl::External(url))
+            .title("Sarab screensaver")
+            .decorations(false)
+            .always_on_top(true)
+            .skip_taskbar(true)
+            .visible(false)
+            .shadow(false)
+            .resizable(false)
+            .initialization_script(INJECT)
+            .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
+            .build();
+        let Ok(win) = built else { continue };
+        let _ = win.set_position(tauri::PhysicalPosition::new(r.left, r.top));
+        let _ = win.set_size(tauri::PhysicalSize::new(
+            (r.right - r.left) as u32,
+            (r.bottom - r.top) as u32,
+        ));
+        let _ = win.eval("document.documentElement.style.cursor='none'");
+        let _ = win.show();
+        labels.push(lbl);
+    }
+    if !labels.is_empty() {
+        log(format!("screensaver on ({} displays)", labels.len()));
+        core.screensaver = Some((labels, stamp));
+    }
+}
+
+fn stop_screensaver(app: &AppHandle, core: &mut Core) {
+    if let Some((labels, _)) = core.screensaver.take() {
+        for l in labels {
+            if let Some(w) = app.get_webview_window(&l) {
+                let _ = w.destroy();
+            }
+        }
+        log("screensaver off");
+    }
+}
+
+/// Start the screensaver when due; end it on any input.
+fn run_screensaver(app: &AppHandle, core: &mut Core, others_playing: bool) {
+    let (idle, stamp) = os::last_input();
+    match &core.screensaver {
+        Some((_, at)) if *at != stamp => stop_screensaver(app, core),
+        Some(_) => {}
+        None => {
+            let busy =
+                core.signals.covered.iter().any(|&c| c) || others_playing || core.signals.locked;
+            if screensaver_due(core.settings.screensaver_minutes, idle, busy) {
+                start_screensaver(app, core, stamp);
+            }
+        }
+    }
+}
+
+/// Keep the mouse hook running exactly while the setting is on and a web or URL wallpaper
+/// shows, and tell it where those wallpapers are.
+fn run_mouse_input(app: &AppHandle, core: &mut Core) {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    let targets: Vec<(windows::Win32::Foundation::RECT, isize)> = if core.settings.mouse_input {
+        core.displays
+            .iter()
+            .filter(|d| {
+                d.wallpaper
+                    .as_deref()
+                    .and_then(|id| core.find(id))
+                    .is_some_and(|w| matches!(w.info.r#type, Kind::Web | Kind::Url))
+            })
+            .filter_map(|d| window(app, d)?.hwnd().ok())
+            .filter_map(|h| Some((os::window_rect(h)?, os::input_window(h)?)))
+            .collect()
+    } else {
+        vec![]
+    };
+    let want = !targets.is_empty();
+    *core.mouse_targets.lock().unwrap() = targets;
+    match (&core.mouse_on, want) {
+        (Some(on), false) => {
+            on.store(false, Ordering::Relaxed);
+            core.mouse_on = None;
+        }
+        (None, true) => {
+            let on = std::sync::Arc::new(AtomicBool::new(true));
+            os::forward_mouse(core.mouse_targets.clone(), on.clone());
+            core.mouse_on = Some(on);
+        }
+        _ => {}
+    }
+}
+
+/// Keep the audio capture running exactly while a playing wallpaper asks for "audio". The
+/// capture thread sends each spectrum straight to those webviews (eval is thread-safe).
+fn run_audio_feed(app: &AppHandle, core: &mut Core) {
+    let to: Vec<String> = subscribers(core, "audio")
+        .into_iter()
+        .filter_map(|i| core.displays[i].label.clone())
+        .collect();
+    let want = !to.is_empty();
+    *core.audio_to.lock().unwrap() = to;
+    match (&core.audio, want) {
+        (Some(f), false) => {
+            f.stop();
+            core.audio = None;
+        }
+        (Some(f), true) if f.running() => {}
+        (_, true) => {
+            let (a, to) = (app.clone(), core.audio_to.clone());
+            core.audio = Some(crate::audio::Feed::start(move |s| {
+                let levels: Vec<String> = s.iter().map(|v| format!("{v:.3}")).collect();
+                let js = format!(
+                    "try{{typeof sarabAudio==='function'&&sarabAudio([{}])}}catch(e){{}}",
+                    levels.join(",")
+                );
+                for lbl in to.lock().unwrap().iter() {
+                    if let Some(w) = a.get_webview_window(lbl) {
+                        let _ = w.eval(&js);
+                    }
+                }
+            }));
+        }
+        (None, false) => {}
+    }
+}
+
+/// The volume the audio rules allow: the set volume, or silence while an app has the focus
+/// (desktop only) or while another app plays sound.
+fn effective_volume(s: &Settings, desktop_focused: bool, others_playing: bool) -> u8 {
+    if (s.audio_desktop_only && !desktop_focused) || (s.audio_mute_others && others_playing) {
+        0
+    } else {
+        s.volume
+    }
+}
+
+/// Send the volume to every page without touching the saved setting.
+fn push_volume(app: &AppHandle, core: &Core, v: u8) {
+    for d in &core.displays {
+        if let Some(win) = window(app, d) {
+            let _ = win.eval(format!("window.__sarab&&__sarab.volume({v})"));
+        }
+    }
+}
+
+/// Reasons that mean nobody can see the wallpaper. Every other pause leaves it visible.
+fn unseen(why: Reason) -> bool {
+    matches!(why, Reason::Covered | Reason::Locked | Reason::Remote)
+}
+
+/// Unload when the setting is on and the wallpaper has been out of sight that long. Only then:
+/// unloading a visible one would show the plain Windows wallpaper.
+fn should_unload(why: Reason, unseen_for: std::time::Duration, minutes: u32) -> bool {
+    minutes > 0 && unseen(why) && unseen_for.as_secs() >= u64::from(minutes) * 60
+}
+
+/// Free or bring back each display's webview as its visibility changes.
+fn unload_or_reload(app: &AppHandle, core: &mut Core) {
+    for i in 0..core.displays.len() {
+        let d = &mut core.displays[i];
+        let why = d.reason;
+        if unseen(why) {
+            d.unseen_since.get_or_insert_with(std::time::Instant::now);
+        } else {
+            d.unseen_since = None;
+        }
+        let unseen_for = d.unseen_since.map(|t| t.elapsed()).unwrap_or_default();
+        if !d.unloaded
+            && d.label.is_some()
+            && should_unload(why, unseen_for, core.settings.unload_minutes)
+        {
+            log(format!(
+                "display {i}: unloading its wallpaper, unseen for {}s",
+                unseen_for.as_secs()
+            ));
+            close_window(app, core, i);
+            core.displays[i].unloaded = true;
+        } else if d.unloaded && !unseen(why) {
+            core.displays[i].unloaded = false;
+            if let Some(id) = core.displays[i].wallpaper.clone() {
+                log(format!("display {i}: loading its wallpaper again"));
+                let _ = apply(app, core, i, &id);
+            }
+        }
+    }
+}
+
+/// Which wallpaper comes after `current`: the next one in `ids`, wrapping, or with `random`
+/// any other one, chosen by `seed`. None when `ids` is empty.
+fn pick_next(ids: &[String], current: Option<&str>, random: bool, seed: u64) -> Option<String> {
+    if ids.is_empty() {
+        return None;
+    }
+    let at = current.and_then(|c| ids.iter().position(|i| i == c));
+    let i = if random && ids.len() > 1 {
+        // Never the same one twice in a row: pick among the others.
+        let k = (seed % (ids.len() as u64 - u64::from(at.is_some()))) as usize;
+        match at {
+            Some(a) if k >= a => k + 1,
+            _ => k,
+        }
+    } else {
+        at.map_or(0, |p| (p + 1) % ids.len())
+    };
+    Some(ids[i].clone())
+}
+
+/// The next wallpaper on every display, from the category and in the order Settings asks for.
+pub fn next(app: &AppHandle, core: &mut Core) -> Result<(), String> {
+    let cur = core.displays.first().and_then(|d| d.wallpaper.clone());
+    let s = &core.settings;
+    let ids: Vec<String> = core
+        .lib
+        .iter()
+        .filter(|w| {
+            s.cycle_category == "all" || w.info.category.as_deref() == Some(&s.cycle_category)
+        })
+        .map(|w| w.id.clone())
+        .collect();
+    let seed = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_nanos() as u64);
+    let Some(next) = pick_next(&ids, cur.as_deref(), s.cycle_order == "random", seed) else {
+        return Err("no wallpaper to change to".into());
+    };
+    for i in 0..core.displays.len() {
+        apply(app, core, i, &next)?;
+    }
+    core.changed_at = std::time::Instant::now();
+    Ok(())
+}
+
+/// Time to move on: cycling is on, its interval has passed, something is playing, and nothing
+/// rests. A frozen or covered wallpaper is not seen, so changing it would only cost a page load.
+fn cycle_due(minutes: u32, since: std::time::Duration, playing: bool, resting: bool) -> bool {
+    minutes > 0 && playing && !resting && since.as_secs() >= u64::from(minutes) * 60
 }
 
 pub fn tick(app: &AppHandle, core: &mut Core) {
@@ -656,15 +1239,60 @@ pub fn tick(app: &AppHandle, core: &mut Core) {
             .zip(&core.displays)
             .any(|((st, why), d)| *st != d.state || *why != d.reason);
     core.signals = s;
+    // While the screensaver shows, the desktop wallpapers under it cannot be seen.
+    let decisions = if core.screensaver.is_some() {
+        vec![(State::Covered, Reason::Covered); decisions.len()]
+    } else {
+        decisions
+    };
+    let decisions = if core.settings.span {
+        vec![span_state(&decisions); decisions.len()]
+    } else {
+        decisions
+    };
     for (i, (st, why)) in decisions.into_iter().enumerate() {
         core.displays[i].reason = why;
         apply_state(app, core, i, st, false);
     }
-    core.ticks += 1;
-    if core.sync_due || core.ticks.is_multiple_of(5) {
-        core.sync_due = false;
-        sync_video(app, core);
+    unload_or_reload(app, core);
+    push_sysinfo(app, core);
+    push_now_playing(app, core);
+    run_audio_feed(app, core);
+    run_mouse_input(app, core);
+    // The session scan only runs when it can matter: a rule is on and the wallpaper has sound,
+    // or the screensaver is about to decide whether a video is playing.
+    let ss_soon = core.settings.screensaver_minutes > 0
+        && core.screensaver.is_none()
+        && u64::from(os::last_input().0) >= u64::from(core.settings.screensaver_minutes) * 60_000;
+    let others = ((core.settings.audio_mute_others && core.settings.volume > 0) || ss_soon)
+        && os::other_audio_playing();
+    run_screensaver(app, core, others);
+    let v = effective_volume(&core.settings, core.signals.desktop_focused, others);
+    if v != core.volume_now {
+        log(format!("volume {} -> {v} (audio rules)", core.volume_now));
+        core.volume_now = v;
+        push_volume(app, core, v);
     }
+    core.ticks += 1;
+    let playing = core.displays.iter().any(|d| d.wallpaper.is_some());
+    let resting = core.displays.iter().any(|d| d.state != State::Play);
+    if cycle_due(
+        core.settings.cycle_minutes,
+        core.changed_at.elapsed(),
+        playing,
+        resting,
+    ) {
+        log("cycling to the next wallpaper");
+        if let Err(e) = next(app, core) {
+            log(format!("cycle: {e}"));
+        }
+        // Wait a full interval before trying again, even after a failure.
+        core.changed_at = std::time::Instant::now();
+        let _ = app.emit_to("main", "changed", ());
+    }
+    // Every tick: a follower corrects its speed once a second, so it holds within a frame.
+    core.sync_due = false;
+    sync_video(app, core);
     if changed {
         write_status(core);
         let _ = app.emit_to("main", "changed", ());
@@ -738,8 +1366,234 @@ pub fn remove(app: &AppHandle, core: &mut Core, id: &str) -> Result<(), String> 
             close(app, core, i);
         }
     }
-    fs::remove_dir_all(&dir).map_err(|e| e.to_string())?;
+    // To the Recycle Bin, so a wrong click can be undone from Explorer.
+    os::recycle(&dir)?;
     let _ = fs::remove_dir_all(cfg("props").join(id));
     core.lib = scan_all(&core.settings);
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn screensaver_due_after_idle_unless_busy() {
+        let min = 60_000;
+        assert!(screensaver_due(5, 5 * min, false));
+        assert!(!screensaver_due(5, 5 * min - 1, false), "too soon");
+        assert!(!screensaver_due(0, 60 * min, false), "off");
+        assert!(
+            !screensaver_due(5, 60 * min, true),
+            "a video or game keeps it away"
+        );
+    }
+
+    #[test]
+    fn span_covers_all_displays() {
+        let r = |left, top, right, bottom| RECT {
+            left,
+            top,
+            right,
+            bottom,
+        };
+        // A 1080p display, and a taller one to its left and lower down.
+        let both = span_rect(&[r(0, 0, 1920, 1080), r(-1080, 200, 0, 2120)]);
+        assert_eq!(both, r(-1080, 0, 1920, 2120));
+        assert_eq!(span_rect(&[r(0, 0, 10, 10)]), r(0, 0, 10, 10));
+        let play = (State::Play, Reason::None);
+        let covered = (State::Covered, Reason::Covered);
+        let battery = (State::Frozen, Reason::Battery);
+        assert_eq!(
+            span_state(&[covered, play]),
+            play,
+            "one display still shows it"
+        );
+        assert_eq!(
+            span_state(&[battery, covered]),
+            battery,
+            "all rest: the first reason"
+        );
+        assert_eq!(span_state(&[]), play);
+    }
+
+    #[test]
+    fn effective_volume_rules() {
+        let s = |desk: bool, others: bool| Settings {
+            volume: 60,
+            audio_desktop_only: desk,
+            audio_mute_others: others,
+            ..Settings::default()
+        };
+        assert_eq!(
+            effective_volume(&s(false, false), false, true),
+            60,
+            "no rule on"
+        );
+        assert_eq!(
+            effective_volume(&s(true, false), true, false),
+            60,
+            "desktop shown"
+        );
+        assert_eq!(
+            effective_volume(&s(true, false), false, false),
+            0,
+            "an app has focus"
+        );
+        assert_eq!(
+            effective_volume(&s(false, true), false, true),
+            0,
+            "another app plays"
+        );
+        assert_eq!(
+            effective_volume(&s(false, true), false, false),
+            60,
+            "silence elsewhere"
+        );
+        assert_eq!(effective_volume(&s(true, true), true, false), 60);
+    }
+
+    #[test]
+    fn should_unload_only_when_unseen() {
+        use std::time::Duration;
+        let m = |n: u64| Duration::from_secs(n * 60);
+        assert!(should_unload(Reason::Covered, m(5), 5));
+        assert!(should_unload(Reason::Locked, m(9), 5));
+        assert!(should_unload(Reason::Remote, m(5), 5));
+        assert!(!should_unload(Reason::Covered, m(4), 5), "too soon");
+        assert!(!should_unload(Reason::Covered, m(60), 0), "off");
+        // Paused but still on screen: unloading would show the Windows wallpaper.
+        for why in [
+            Reason::Battery,
+            Reason::PowerSaver,
+            Reason::Focus,
+            Reason::Manual,
+            Reason::AppPause,
+            Reason::OtherCovered,
+            Reason::None,
+        ] {
+            assert!(!should_unload(why, m(60), 5), "{why:?}");
+        }
+    }
+
+    #[test]
+    fn pick_next_order_random_category() {
+        let ids: Vec<String> = ["a", "b", "c"].iter().map(|s| s.to_string()).collect();
+        assert_eq!(pick_next(&ids, Some("a"), false, 0).as_deref(), Some("b"));
+        assert_eq!(
+            pick_next(&ids, Some("c"), false, 0).as_deref(),
+            Some("a"),
+            "wraps"
+        );
+        assert_eq!(pick_next(&ids, None, false, 0).as_deref(), Some("a"));
+        assert_eq!(
+            pick_next(&ids, Some("gone"), false, 0).as_deref(),
+            Some("a")
+        );
+        assert_eq!(pick_next(&[], None, true, 5), None);
+        // Random never repeats the current one and reaches every other one.
+        for cur in ["a", "b", "c"] {
+            let seen: std::collections::BTreeSet<String> = (0..20)
+                .filter_map(|seed| pick_next(&ids, Some(cur), true, seed))
+                .collect();
+            assert!(!seen.contains(cur), "{cur} repeated");
+            assert_eq!(seen.len(), 2);
+        }
+        let one = vec!["a".to_string()];
+        assert_eq!(
+            pick_next(&one, Some("a"), true, 7).as_deref(),
+            Some("a"),
+            "only one to show"
+        );
+        // The category filter happens before picking, in next(); a filtered list behaves the same.
+        let nature: Vec<String> = vec!["b".into()];
+        assert_eq!(
+            pick_next(&nature, Some("a"), false, 0).as_deref(),
+            Some("b")
+        );
+    }
+
+    #[test]
+    fn sync_groups_pick_shared_videos() {
+        let d = |id: Option<&str>, ok: bool| (id.map(String::from), ok);
+        // Displays 0 and 2 share a video; 1 plays something else alone; 3 shares but is resting.
+        let groups = sync_groups(
+            vec![
+                d(Some("a"), true),
+                d(Some("b"), true),
+                d(Some("a"), true),
+                d(Some("a"), false),
+            ]
+            .into_iter(),
+        );
+        assert_eq!(groups, vec![vec![0, 2]]);
+        assert!(sync_groups(vec![d(Some("a"), true), d(None, true)].into_iter()).is_empty());
+    }
+
+    #[test]
+    fn cycle_due_only_when_on_playing_and_seen() {
+        use std::time::Duration;
+        let m = |n: u64| Duration::from_secs(n * 60);
+        assert!(cycle_due(15, m(15), true, false));
+        assert!(cycle_due(15, m(40), true, false));
+        assert!(!cycle_due(15, m(14), true, false), "too early");
+        assert!(!cycle_due(0, m(999), true, false), "off");
+        assert!(!cycle_due(15, m(15), false, false), "nothing playing");
+        assert!(!cycle_due(15, m(15), true, true), "resting");
+    }
+
+    #[test]
+    fn youtube_links() {
+        let v = |id: &str| Some((Some(id.to_string()), None));
+        assert_eq!(
+            youtube_ids("https://www.youtube.com/watch?v=aqz-KE-bpKQ"),
+            v("aqz-KE-bpKQ")
+        );
+        assert_eq!(
+            youtube_ids("https://youtube.com/watch?feature=share&v=aqz-KE-bpKQ&t=30"),
+            v("aqz-KE-bpKQ")
+        );
+        assert_eq!(
+            youtube_ids("https://youtu.be/aqz-KE-bpKQ?si=x"),
+            v("aqz-KE-bpKQ")
+        );
+        assert_eq!(
+            youtube_ids("https://m.youtube.com/watch?v=aqz-KE-bpKQ"),
+            v("aqz-KE-bpKQ")
+        );
+        assert_eq!(
+            youtube_ids("https://www.youtube.com/shorts/aqz-KE-bpKQ"),
+            v("aqz-KE-bpKQ")
+        );
+        assert_eq!(
+            youtube_ids("https://www.youtube.com/live/jfKfPfyJRdk?si=y"),
+            v("jfKfPfyJRdk")
+        );
+        assert_eq!(
+            youtube_ids("https://www.youtube.com/embed/aqz-KE-bpKQ"),
+            v("aqz-KE-bpKQ")
+        );
+        assert_eq!(
+            youtube_ids("https://www.youtube.com/playlist?list=PL123_ab-C"),
+            Some((None, Some("PL123_ab-C".into())))
+        );
+        assert_eq!(
+            youtube_ids("https://www.youtube.com/watch?v=aqz-KE-bpKQ&list=PL123"),
+            Some((Some("aqz-KE-bpKQ".into()), Some("PL123".into())))
+        );
+        // Not YouTube, or YouTube without a video: left alone.
+        assert_eq!(youtube_ids("https://www.youtube.com/@blender"), None);
+        assert_eq!(
+            youtube_ids("https://notyoutube.com/watch?v=aqz-KE-bpKQ"),
+            None
+        );
+        assert_eq!(youtube_ids("https://example.com/youtu.be/x"), None);
+        // An id cannot carry anything but id characters into the page URL.
+        assert_eq!(youtube_ids("https://youtu.be/abc\"><script>"), v("abc"));
+        assert_eq!(
+            rewrite_url("https://youtu.be/aqz-KE-bpKQ"),
+            "http://tauri.localhost/youtube.html?v=aqz-KE-bpKQ"
+        );
+        assert_eq!(rewrite_url("https://example.com/"), "https://example.com/");
+    }
 }

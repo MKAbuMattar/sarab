@@ -44,6 +44,12 @@ pub struct Manifest {
     /// The file lives outside the package folder (added from disk, not copied).
     pub external: bool,
     pub thumbnail: Option<String>,
+    /// Data the page asks Sarab for: "system" (sarabSystemInfo once a second) and
+    /// "nowplaying" (sarabNowPlaying when the track changes), and "audio" (sarabAudio, 128
+    /// levels about 30 times a second).
+    pub api: Vec<String>,
+    /// One of `CATEGORIES`, for the library filter.
+    pub category: Option<String>,
     pub tags: Vec<String>,
     pub version: u32,
     /// Play only this range of a video, in seconds, and loop inside it.
@@ -59,6 +65,10 @@ pub struct Wallpaper {
     pub has_props: bool,
     /// Ships with Sarab (read-only, cannot be deleted).
     pub preset: bool,
+    /// When the folder was created, in Unix seconds, for "newest first".
+    pub added: u64,
+    /// The thumbnail image, when the package has one.
+    pub thumb: Option<PathBuf>,
 }
 
 pub enum Target {
@@ -103,6 +113,12 @@ pub fn read(dir: &Path) -> Option<Wallpaper> {
         kind: info.r#type.name(),
         has_props: dir.join(PROPS).is_file(),
         preset: false,
+        added: secs(fs::metadata(dir).ok().and_then(|m| m.created().ok())),
+        thumb: info
+            .thumbnail
+            .as_deref()
+            .map(|t| dir.join(t))
+            .filter(|p| p.is_file() && p.starts_with(dir)),
         info,
     })
 }
@@ -364,6 +380,275 @@ pub fn save_prop(saved_path: &Path, ctl: &Value, key: &str, value: &Value) -> io
     crate::settings::save(saved_path, &saved)
 }
 
+/// Write `w` as a package zip in `dest` that `import_zip` reads back. A file that lives outside
+/// the package (a video added from elsewhere) goes into the zip, and the manifest then points
+/// at that copy, so the package works on another PC. Returns the zip's path.
+pub fn export_zip(w: &Wallpaper, dest: &Path) -> Result<PathBuf, String> {
+    use std::io::Write;
+    let name: String = w
+        .info
+        .title
+        .as_deref()
+        .unwrap_or(&w.id)
+        .chars()
+        .map(|c| {
+            if c.is_alphanumeric() || c == '-' || c == '_' || c == ' ' {
+                c
+            } else {
+                '_'
+            }
+        })
+        .take(60)
+        .collect();
+    let path = dest.join(format!("{}.zip", name.trim()));
+    let mut info = w.info.clone();
+    let outside = match w.target() {
+        Some(Target::File(f)) if w.info.external => {
+            let file = f
+                .file_name()
+                .ok_or("the file has no name")?
+                .to_string_lossy()
+                .into_owned();
+            info.external = false;
+            info.file = Some(file.clone());
+            Some((f, file))
+        }
+        _ => None,
+    };
+    let result = (|| -> Result<(), String> {
+        let mut zip = zip::ZipWriter::new(fs::File::create(&path).map_err(|e| e.to_string())?);
+        let opts = zip::write::SimpleFileOptions::default();
+        let err = |e: zip::result::ZipError| e.to_string();
+        fn walk(dir: &Path, root: &Path, out: &mut Vec<PathBuf>) {
+            for e in fs::read_dir(dir).into_iter().flatten().flatten() {
+                let Ok(m) = fs::symlink_metadata(e.path()) else {
+                    continue;
+                };
+                if m.is_dir() {
+                    walk(&e.path(), root, out);
+                } else if m.is_file() {
+                    out.push(
+                        e.path()
+                            .strip_prefix(root)
+                            .unwrap_or(&e.path())
+                            .to_path_buf(),
+                    );
+                }
+            }
+        }
+        let mut files = vec![];
+        walk(&w.dir, &w.dir, &mut files);
+        for rel in files.iter().filter(|r| r.as_os_str() != INFO) {
+            zip.start_file(rel.to_string_lossy().replace('\\', "/"), opts)
+                .map_err(err)?;
+            // Streamed, so a 4K video never sits in memory whole.
+            io::copy(
+                &mut fs::File::open(w.dir.join(rel)).map_err(|e| e.to_string())?,
+                &mut zip,
+            )
+            .map_err(|e| e.to_string())?;
+        }
+        if let Some((src, file)) = &outside {
+            zip.start_file(file.as_str(), opts).map_err(err)?;
+            io::copy(
+                &mut fs::File::open(src).map_err(|e| e.to_string())?,
+                &mut zip,
+            )
+            .map_err(|e| e.to_string())?;
+        }
+        zip.start_file(INFO, opts).map_err(err)?;
+        zip.write_all(&serde_json::to_vec_pretty(&info).map_err(|e| e.to_string())?)
+            .map_err(|e| e.to_string())?;
+        zip.finish().map_err(err)?;
+        Ok(())
+    })();
+    if let Err(e) = result {
+        let _ = fs::remove_file(&path);
+        return Err(e);
+    }
+    Ok(path)
+}
+
+/// Move every package from the library at `from` into `to`. Refuses a folder inside the
+/// library (or the library inside it) and never overwrites: a name taken in `to` stops the move
+/// before anything is touched. A rename is used where it can be, a copy across drives.
+pub fn move_library(from: &Path, to: &Path) -> Result<usize, String> {
+    let canon = |p: &Path| fs::canonicalize(p).unwrap_or_else(|_| p.to_path_buf());
+    fs::create_dir_all(to).map_err(|e| e.to_string())?;
+    let (a, b) = (canon(from), canon(to));
+    if a == b {
+        return Ok(0);
+    }
+    if b.starts_with(&a) || a.starts_with(&b) {
+        return Err("the new folder cannot be inside the library, or hold it".into());
+    }
+    let entries: Vec<PathBuf> = fs::read_dir(from)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| read(p).is_some())
+        .collect();
+    if let Some(taken) = entries
+        .iter()
+        .find(|p| to.join(p.file_name().unwrap_or_default()).exists())
+    {
+        return Err(format!(
+            "{} already exists in the new folder",
+            taken.file_name().unwrap_or_default().to_string_lossy()
+        ));
+    }
+    for p in &entries {
+        let dest = to.join(p.file_name().unwrap_or_default());
+        if fs::rename(p, &dest).is_err() {
+            copy_dir(p, &dest).map_err(|e| e.to_string())?;
+            fs::remove_dir_all(p).map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(entries.len())
+}
+
+/// Record `name` (a file in the package) as its thumbnail in sarab.json.
+pub fn set_thumbnail(dir: &Path, name: &str) -> Result<(), String> {
+    let mut info: Manifest =
+        serde_json::from_slice(&fs::read(dir.join(INFO)).map_err(|e| e.to_string())?)
+            .map_err(|e| e.to_string())?;
+    info.thumbnail = Some(name.to_string());
+    crate::settings::save(&dir.join(INFO), &info).map_err(|e| e.to_string())
+}
+
+/// Forget the values saved for one display, so the wallpaper's own defaults apply again.
+pub fn reset_props(saved_path: &Path) -> io::Result<()> {
+    match fs::remove_file(saved_path) {
+        Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(()),
+        r => r,
+    }
+}
+
+/// The categories a wallpaper can be filed under. Keys into `category.*` UI strings.
+pub const CATEGORIES: [&str; 10] = [
+    "nature", "space", "abstract", "city", "animals", "anime", "games", "vehicles", "minimal",
+    "other",
+];
+
+fn secs(t: Option<std::time::SystemTime>) -> u64 {
+    t.and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map_or(0, |d| d.as_secs())
+}
+
+/// What the edit dialog sends.
+#[derive(Deserialize, Debug, Default)]
+#[serde(default)]
+pub struct Edit {
+    pub title: String,
+    pub description: String,
+    pub author: String,
+    pub category: Option<String>,
+    pub tags: Vec<String>,
+}
+
+fn optional(s: &str) -> Option<String> {
+    let s = s.trim();
+    (!s.is_empty()).then(|| s.to_string())
+}
+
+/// Check an edit and write it to the wallpaper's sarab.json. Limits follow the editors other
+/// wallpaper apps ship: a title of 1 to 100 characters, up to 5 tags of up to 20 each.
+pub fn edit_info(dir: &Path, e: Edit) -> Result<Manifest, String> {
+    let mut info: Manifest =
+        serde_json::from_slice(&fs::read(dir.join(INFO)).map_err(|e| e.to_string())?)
+            .map_err(|e| e.to_string())?;
+    let title = e.title.trim();
+    let len = |s: &str| s.chars().count();
+    if title.is_empty() || len(title) > 100 {
+        return Err("the title needs 1 to 100 characters".into());
+    }
+    if len(e.description.trim()) > 1000 || len(e.author.trim()) > 100 {
+        return Err("the description is limited to 1000 characters and the author to 100".into());
+    }
+    let category = e.category.as_deref().and_then(optional);
+    if let Some(c) = &category {
+        if !CATEGORIES.contains(&c.as_str()) {
+            return Err(format!("unknown category {c}"));
+        }
+    }
+    let mut tags: Vec<String> = vec![];
+    for t in e.tags.iter().map(|t| t.trim()).filter(|t| !t.is_empty()) {
+        if len(t) > 20 {
+            return Err(format!("the tag \"{t}\" is longer than 20 characters"));
+        }
+        if !tags.iter().any(|x| x.eq_ignore_ascii_case(t)) {
+            tags.push(t.to_string());
+        }
+    }
+    if tags.len() > 5 {
+        return Err("use at most 5 tags".into());
+    }
+    info.title = Some(title.to_string());
+    info.description = optional(&e.description);
+    info.author = optional(&e.author);
+    info.category = category;
+    info.tags = tags;
+    info.version += 1;
+    crate::settings::save(&dir.join(INFO), &info).map_err(|e| e.to_string())?;
+    Ok(info)
+}
+
+/// Facts for the info dialog that the manifest does not hold.
+#[derive(Serialize, Debug, Default)]
+pub struct Details {
+    /// Bytes in the package folder, plus the file it points to when that lives elsewhere.
+    pub size: u64,
+    pub files: u32,
+    pub created: u64,
+    /// When sarab.json was last written.
+    pub modified: u64,
+    pub folder: String,
+    /// The file or web address it plays.
+    pub source: String,
+    pub has_props: bool,
+}
+
+pub fn details(w: &Wallpaper) -> Details {
+    fn walk(dir: &Path, d: &mut Details) {
+        for e in fs::read_dir(dir).into_iter().flatten().flatten() {
+            // symlink_metadata: a link in a package is counted, never followed out of the folder.
+            let Ok(m) = fs::symlink_metadata(e.path()) else {
+                continue;
+            };
+            if m.is_dir() {
+                walk(&e.path(), d);
+            } else {
+                d.size += m.len();
+                d.files += 1;
+            }
+        }
+    }
+    let mut d = Details {
+        created: w.added,
+        modified: secs(
+            fs::metadata(w.dir.join(INFO))
+                .ok()
+                .and_then(|m| m.modified().ok()),
+        ),
+        folder: dunce_str(&w.dir),
+        has_props: w.has_props,
+        ..Default::default()
+    };
+    walk(&w.dir, &mut d);
+    match w.target() {
+        Some(Target::Url(u)) => d.source = u,
+        Some(Target::File(f)) => {
+            if w.info.external {
+                d.size += fs::metadata(&f).map_or(0, |m| m.len());
+            }
+            d.source = dunce_str(&f);
+        }
+        None => {}
+    }
+    d
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -515,5 +800,202 @@ mod tests {
                 .count(),
             1
         );
+    }
+
+    #[test]
+    fn move_library_moves_every_package() {
+        let from = tmp("move-from");
+        let to = tmp("move-to").join("Library");
+        for name in ["one", "two"] {
+            fs::create_dir_all(from.join(name)).unwrap();
+            fs::write(
+                from.join(name).join(INFO),
+                r#"{"type":"web","file":"index.html"}"#,
+            )
+            .unwrap();
+            fs::write(from.join(name).join("index.html"), name).unwrap();
+        }
+        fs::write(from.join("not-a-package.txt"), "stays").unwrap();
+        assert_eq!(move_library(&from, &to).unwrap(), 2);
+        assert_eq!(scan(&to).len(), 2);
+        assert!(scan(&from).is_empty());
+        assert_eq!(
+            fs::read_to_string(to.join("two").join("index.html")).unwrap(),
+            "two"
+        );
+        assert!(
+            from.join("not-a-package.txt").exists(),
+            "only packages move"
+        );
+
+        // Into itself, and onto a taken name, are refused without moving anything.
+        assert!(move_library(&to, &to.join("inner")).is_err());
+        fs::create_dir_all(from.join("one")).unwrap();
+        fs::write(
+            from.join("one").join(INFO),
+            r#"{"type":"web","file":"index.html"}"#,
+        )
+        .unwrap();
+        assert!(move_library(&from, &to).is_err());
+        assert!(from.join("one").join(INFO).exists());
+    }
+
+    #[test]
+    fn export_round_trip() {
+        let lib = tmp("export-lib");
+        let out = tmp("export-out");
+        // A web package with a subfolder and properties.
+        let pkg = lib.join("scene");
+        fs::create_dir_all(pkg.join("img")).unwrap();
+        fs::write(pkg.join(INFO), r#"{"title":"Scene: night/day","type":"web","file":"index.html","category":"city","tags":["night"]}"#).unwrap();
+        fs::write(pkg.join("index.html"), "<p>hi</p>").unwrap();
+        fs::write(pkg.join("img").join("a.png"), "png").unwrap();
+        fs::write(pkg.join(PROPS), "{}").unwrap();
+        let zip = export_zip(&read(&pkg).unwrap(), &out).unwrap();
+        assert!(zip
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .starts_with("Scene_ night_day"));
+        let back = import_zip(&out, &zip, MAX_UNPACKED).unwrap();
+        assert_eq!(back.info.title.as_deref(), Some("Scene: night/day"));
+        assert_eq!(back.info.category.as_deref(), Some("city"));
+        assert!(back.has_props);
+        assert_eq!(
+            fs::read_to_string(back.dir.join("img").join("a.png")).unwrap(),
+            "png"
+        );
+
+        // A video added from elsewhere travels inside the zip.
+        let video = out.join("clip.mp4");
+        fs::write(&video, "video bytes").unwrap();
+        let ext = add(&lib, &[], video.to_str().unwrap()).unwrap();
+        assert!(ext.info.external);
+        let zip = export_zip(&ext, &out).unwrap();
+        let other = tmp("export-other");
+        let back = import_zip(&other, &zip, MAX_UNPACKED).unwrap();
+        assert!(!back.info.external);
+        assert_eq!(back.info.file.as_deref(), Some("clip.mp4"));
+        assert_eq!(
+            fs::read_to_string(back.dir.join("clip.mp4")).unwrap(),
+            "video bytes"
+        );
+    }
+
+    #[test]
+    fn reset_props_restores_defaults() {
+        let d = tmp("reset");
+        fs::write(d.join(INFO), r#"{"type":"web","file":"index.html"}"#).unwrap();
+        fs::write(
+            d.join(PROPS),
+            r#"{"speed":{"type":"slider","value":1,"min":0,"max":5,"step":1}}"#,
+        )
+        .unwrap();
+        let w = read(&d).unwrap();
+        let saved = d.join("saved.json");
+        save_prop(
+            &saved,
+            &props(&w, &saved)["speed"],
+            "speed",
+            &serde_json::json!(4.0),
+        )
+        .unwrap();
+        assert_eq!(props(&w, &saved)["speed"]["value"], serde_json::json!(4.0));
+        reset_props(&saved).unwrap();
+        assert_eq!(props(&w, &saved)["speed"]["value"], serde_json::json!(1));
+        reset_props(&saved).unwrap(); // nothing saved: still fine
+    }
+
+    #[test]
+    fn edit_info_validates_and_saves() {
+        let d = tmp("edit");
+        fs::write(
+            d.join(INFO),
+            r#"{"title":"Old","type":"video","file":"a.mp4","version":2}"#,
+        )
+        .unwrap();
+        let edit = |title: &str, category: Option<&str>, tags: &[&str]| Edit {
+            title: title.into(),
+            description: "  Waves at dusk  ".into(),
+            author: "".into(),
+            category: category.map(String::from),
+            tags: tags.iter().map(|t| t.to_string()).collect(),
+        };
+        let info = edit_info(
+            &d,
+            edit("  Sea  ", Some("nature"), &["sea", " Sea ", "dusk", ""]),
+        )
+        .unwrap();
+        assert_eq!(info.title.as_deref(), Some("Sea"));
+        assert_eq!(info.description.as_deref(), Some("Waves at dusk"));
+        assert_eq!(info.author, None);
+        assert_eq!(info.category.as_deref(), Some("nature"));
+        assert_eq!(
+            info.tags,
+            vec!["sea", "dusk"],
+            "trimmed, empty dropped, duplicates folded"
+        );
+        assert_eq!(info.version, 3);
+        assert_eq!(read(&d).unwrap().info, info, "written to sarab.json");
+
+        assert!(
+            edit_info(&d, edit("   ", None, &[])).is_err(),
+            "empty title"
+        );
+        assert!(
+            edit_info(&d, edit(&"x".repeat(101), None, &[])).is_err(),
+            "title too long"
+        );
+        assert!(
+            edit_info(&d, edit("Sea", Some("cats"), &[])).is_err(),
+            "unknown category"
+        );
+        assert!(
+            edit_info(&d, edit("Sea", None, &["a", "b", "c", "d", "e", "f"])).is_err(),
+            "six tags"
+        );
+        assert!(
+            edit_info(&d, edit("Sea", None, &[&"t".repeat(21)])).is_err(),
+            "long tag"
+        );
+        assert_eq!(
+            read(&d).unwrap().info.version,
+            3,
+            "a refused edit writes nothing"
+        );
+        assert!(
+            edit_info(&d, edit("سراب", Some(""), &[])).is_ok(),
+            "Arabic title, no category"
+        );
+    }
+
+    #[test]
+    fn details_report_folder_facts() {
+        let d = tmp("details");
+        fs::write(
+            d.join(INFO),
+            r#"{"title":"T","type":"web","file":"index.html"}"#,
+        )
+        .unwrap();
+        fs::write(d.join("index.html"), "0123456789").unwrap();
+        fs::create_dir_all(d.join("img")).unwrap();
+        fs::write(d.join("img").join("a.png"), "12345").unwrap();
+        fs::write(d.join(PROPS), "{}").unwrap();
+        let w = read(&d).unwrap();
+        let info_len = fs::metadata(d.join(INFO)).unwrap().len();
+        let det = details(&w);
+        assert_eq!(det.files, 4);
+        assert_eq!(det.size, 10 + 5 + 2 + info_len);
+        assert!(det.has_props);
+        assert!(det.modified > 0 && det.created > 0);
+        assert!(det.source.ends_with("index.html"));
+
+        let url = tmp("details-url");
+        fs::write(
+            url.join(INFO),
+            r#"{"title":"U","type":"url","file":"https://example.com/"}"#,
+        )
+        .unwrap();
+        assert_eq!(details(&read(&url).unwrap()).source, "https://example.com/");
     }
 }

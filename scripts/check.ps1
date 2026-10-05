@@ -637,6 +637,12 @@ Add-Type -AssemblyName System.Windows.Forms
     $i18n = Join-Path $root 'ui/i18n'
     $files = Get-ChildItem $i18n -Filter '*.json'
     Assert ($files.Count -ge 2) 'expected at least English and Arabic'
+    # Every language in the menu has a file, and every file is in the menu.
+    $html = Get-Content (Join-Path $root 'ui/index.html') -Raw
+    $menu = [regex]::Match($html, '<select name="language">(.*?)</select>').Groups[1].Value
+    $offered = @([regex]::Matches($menu, 'value="([\w-]+)"') | ForEach-Object { $_.Groups[1].Value }) | Sort-Object
+    $have = @($files | ForEach-Object { $_.BaseName }) | Sort-Object
+    Assert (-not (Compare-Object $offered $have)) "language menu ($($offered -join ',')) and ui/i18n ($($have -join ',')) differ"
     $en = Get-Content (Join-Path $i18n 'en.json') -Raw | ConvertFrom-Json -AsHashtable
     foreach ($f in $files) {
       $j = Get-Content $f.FullName -Raw | ConvertFrom-Json -AsHashtable
@@ -659,6 +665,9 @@ Add-Type -AssemblyName System.Windows.Forms
     $conf = (Get-Content (Join-Path $root 'src-tauri/tauri.conf.json') -Raw | ConvertFrom-Json).version
     Assert ($cargo -eq $conf) "Cargo.toml says $cargo, tauri.conf.json says $conf"
     Assert ((Get-Content (Join-Path $root 'CHANGELOG.md') -Raw) -match "## \[$([regex]::Escape($cargo))\]") "CHANGELOG.md has no entry for $cargo"
+    # Library filter and sort (ui/filter.js) behave as tested.
+    $filters = & node (Join-Path $root 'scripts/check_filters.mjs') 2>&1
+    Assert ($LASTEXITCODE -eq 0) "library filters: $filters"
     Write-Host "$($files.Count) languages, $($en.Count) strings, $($used.Count) keys used, $($reasons.Count) reasons, version $cargo"
     'static gate passed'
   }

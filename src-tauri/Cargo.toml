@@ -1,6 +1,6 @@
 [package]
 name = "sarab"
-version = "0.0.4"
+version = "0.0.5"
 edition = "2021"
 description = "Animated desktop wallpapers that rest when you work"
 license = "GPL-3.0-only"
@@ -31,7 +31,11 @@ windows-version = "0.100.0"
 windows = { version = "0.62.2", features = [
   "Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_UI_Shell", "Win32_Graphics_Gdi",
   "Win32_Graphics_Dwm", "Win32_System_Com", "Win32_System_Power", "Win32_System_Threading",
-  "Win32_System_RemoteDesktop", "Win32_System_StationsAndDesktops", "Win32_System_SystemServices",
+  "Win32_System_RemoteDesktop", "Win32_System_StationsAndDesktops", "Win32_System_SystemServices", "Win32_System_SystemInformation",
+  "Win32_Media_Audio", "Win32_Media_Audio_Endpoints", "Win32_System_Diagnostics_ToolHelp",
+  "Win32_System_Com_StructuredStorage", "Win32_System_Variant",
+  "Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis", "Win32_System_Registry",
+  "Media_Control", "Foundation", "Storage_Streams", "Win32_Graphics_Imaging", "Win32_UI_Input_KeyboardAndMouse",
 ] }
 
 [profile.release]

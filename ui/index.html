@@ -38,7 +38,14 @@
       <button class="accent"><i class="icon" aria-hidden="true">&#xE710;</i><span data-t="add.button"></span></button>
     </form>
     <p class="caption" data-t="add.hint"></p>
+    <div class="lib-bar" role="search">
+      <input id="lib-search" type="text" dir="auto" data-tp="library.search" data-tl="library.search" autocomplete="off">
+      <select id="lib-category" data-tl="edit.category"></select>
+      <select id="lib-sort" data-tl="library.sort"><option value="name" data-t="sort.name"></option><option value="newest" data-t="sort.newest"></option><option value="oldest" data-t="sort.oldest"></option></select>
+    </div>
+    <div id="lib-types" class="chips" role="group" data-tl="library.types"></div>
     <p id="lib-empty" class="empty" data-t="library.empty" hidden></p>
+    <p id="lib-none" class="empty" data-t="library.noMatch" hidden></p>
     <ul id="library" class="tiles"></ul>
     <h2 data-t="presets.title"></h2>
     <p class="caption" data-t="presets.hint"></p>
@@ -54,7 +61,7 @@
       <label class="card"><i class="icon" aria-hidden="true">&#xF5EF;</i><span><span class="title" data-t="settings.backdrop"></span><br><span class="caption" data-t="settings.backdropDesc"></span></span>
         <select name="backdrop"><option value="acrylic" data-t="backdrop.acrylic"></option><option value="mica" data-t="backdrop.mica"></option><option value="solid" data-t="backdrop.solid"></option></select></label>
       <label class="card"><i class="icon" aria-hidden="true">&#xE8C1;</i><span class="title" data-t="settings.language"></span>
-        <select name="language"><option value="en">English</option><option value="ar">العربية</option></select></label>
+        <select name="language"><option value="en">English</option><option value="ar">العربية</option><option value="de">Deutsch</option><option value="es">Español</option><option value="fr">Français</option><option value="pt">Português (Brasil)</option><option value="tr">Türkçe</option><option value="ru">Русский</option><option value="zh">简体中文</option><option value="ja">日本語</option></select></label>
 
       <h2 data-t="settings.pausing"></h2>
       <label class="card"><i class="icon" aria-hidden="true">&#xE740;</i><span><span class="title" data-t="settings.pauseFullscreen"></span><br><span class="caption" data-t="settings.pauseFullscreenDesc"></span></span><input class="switch" type="checkbox" name="pause_fullscreen"></label>
@@ -64,14 +71,35 @@
       <label class="card"><i class="icon" aria-hidden="true">&#xEC48;</i><span class="title" data-t="settings.pausePowerSaver"></span><input class="switch" type="checkbox" name="pause_power_saver"></label>
       <label class="card"><i class="icon" aria-hidden="true">&#xE8AF;</i><span class="title" data-t="settings.pauseRemote"></span><input class="switch" type="checkbox" name="pause_remote"></label>
 
+      <h2 data-t="settings.wallpapers"></h2>
+      <label class="card"><i class="icon" aria-hidden="true">&#xE7F4;</i><span><span class="title" data-t="settings.span"></span><br><span class="caption" data-t="settings.spanDesc"></span></span><input class="switch" type="checkbox" name="span"></label>
+      <label class="card"><i class="icon" aria-hidden="true">&#xE962;</i><span><span class="title" data-t="settings.mouseInput"></span><br><span class="caption" data-t="settings.mouseInputDesc"></span></span><input class="switch" type="checkbox" name="mouse_input"></label>
+      <label class="card"><i class="icon" aria-hidden="true">&#xE9A6;</i><span class="title" data-t="settings.fit"></span>
+        <select name="scaling"><option value="cover" data-t="fit.cover"></option><option value="contain" data-t="fit.contain"></option><option value="fill" data-t="fit.fill"></option><option value="none" data-t="fit.none"></option></select></label>
+      <label class="card"><i class="icon" aria-hidden="true">&#xE8EE;</i><span><span class="title" data-t="settings.cycle"></span><br><span class="caption" data-t="settings.cycleDesc"></span></span>
+        <select name="cycle_minutes"><option value="0" data-t="cycle.never"></option><option value="5" data-t="cycle.fiveMinutes"></option><option value="15" data-t="cycle.fifteenMinutes"></option><option value="30" data-t="cycle.thirtyMinutes"></option><option value="60" data-t="cycle.hour"></option></select></label>
+      <label class="card sub"><span></span><span class="title" data-t="settings.cycleOrder"></span>
+        <select name="cycle_order"><option value="order" data-t="cycle.inOrder"></option><option value="random" data-t="cycle.random"></option></select></label>
+      <label class="card sub"><span></span><span class="title" data-t="settings.cycleFrom"></span>
+        <select name="cycle_category"></select></label>
+
       <h2 data-t="settings.performance"></h2>
       <label class="card"><i class="icon" aria-hidden="true">&#xEC4A;</i><span><span class="title" data-t="settings.fps"></span><br><span class="caption" data-t="settings.fpsDesc"></span></span>
         <select name="fps"><option value="15">15</option><option value="30">30</option><option value="60">60</option><option value="0" data-t="settings.fpsUnlimited"></option></select></label>
+      <label class="card"><i class="icon" aria-hidden="true">&#xEEA1;</i><span><span class="title" data-t="settings.unload"></span><br><span class="caption" data-t="settings.unloadDesc"></span></span>
+        <select name="unload_minutes"><option value="0" data-t="cycle.never"></option><option value="1" data-t="unload.oneMinute"></option><option value="5" data-t="cycle.fiveMinutes"></option><option value="15" data-t="cycle.fifteenMinutes"></option></select></label>
       <label class="card"><i class="icon" aria-hidden="true">&#xE767;</i><span class="title" data-t="settings.volume"></span><input type="range" name="volume" min="0" max="100" step="1"></label>
+      <label class="card sub"><span></span><span class="title" data-t="settings.audioMuteOthers"></span><input class="switch" type="checkbox" name="audio_mute_others"></label>
+      <label class="card sub"><span></span><span class="title" data-t="settings.audioDesktopOnly"></span><input class="switch" type="checkbox" name="audio_desktop_only"></label>
 
       <h2 data-t="settings.apps"></h2>
       <label class="card stack"><i class="icon" aria-hidden="true">&#xE769;</i><span class="title" data-t="settings.appPause"></span><textarea name="app_pause" rows="2" spellcheck="false"></textarea></label>
       <label class="card stack"><i class="icon" aria-hidden="true">&#xE768;</i><span class="title" data-t="settings.appPlay"></span><textarea name="app_play" rows="2" spellcheck="false"></textarea></label>
+
+      <h2 data-t="settings.screensaver"></h2>
+      <label class="card"><i class="icon" aria-hidden="true">&#xE7F8;</i><span><span class="title" data-t="settings.screensaverAfter"></span><br><span class="caption" data-t="settings.screensaverDesc"></span></span>
+        <select name="screensaver_minutes"><option value="0" data-t="cycle.never"></option><option value="1" data-t="unload.oneMinute"></option><option value="5" data-t="cycle.fiveMinutes"></option><option value="15" data-t="cycle.fifteenMinutes"></option><option value="30" data-t="cycle.thirtyMinutes"></option></select></label>
+      <label class="card sub"><span></span><span class="title" data-t="settings.screensaverShows"></span><select name="screensaver_wallpaper"></select></label>
 
       <h2 data-t="settings.startup"></h2>
       <label class="card"><i class="icon" aria-hidden="true">&#xE7E8;</i><span class="title" data-t="settings.autostart"></span><input class="switch" type="checkbox" id="autostart"></label>
@@ -99,7 +127,10 @@
     <div class="card"><i class="icon" aria-hidden="true">&#xE946;</i><span id="update-status" class="title"></span><button type="button" id="check-now"><span data-t="about.checkNow"></span></button></div>
     <h2 data-t="about.folders"></h2>
     <div class="card"><i class="icon" aria-hidden="true">&#xE8B7;</i><span><span class="title" data-t="about.config"></span><br><span class="caption" data-t="about.configDesc"></span></span><button type="button" data-open="config"><span data-t="about.open"></span></button></div>
-    <div class="card"><i class="icon" aria-hidden="true">&#xE8F1;</i><span class="title" data-t="about.library"></span><button type="button" data-open="library"><span data-t="about.open"></span></button></div>
+    <div class="card"><i class="icon" aria-hidden="true">&#xE8F1;</i><span><span class="title" data-t="about.library"></span><br><span class="caption" id="library-dir"></span></span><span class="row"><button type="button" id="move-library"><span data-t="about.move"></span></button><button type="button" data-open="library"><span data-t="about.open"></span></button></span></div>
+    <h2 data-t="about.support"></h2>
+    <div class="card"><i class="icon" aria-hidden="true">&#xE9F9;</i><span><span class="title" data-t="about.logs"></span><br><span class="caption" data-t="about.logsDesc"></span></span><button type="button" id="export-logs"><span data-t="about.export"></span></button></div>
+    <div class="card"><i class="icon" aria-hidden="true">&#xE777;</i><span><span class="title" data-t="about.reset"></span><br><span class="caption" data-t="about.resetDesc"></span></span><button type="button" id="reset-settings" class="subtle danger"><span data-t="about.resetButton"></span></button></div>
   </section>
 </main>
 
@@ -110,13 +141,36 @@
   </form>
 </dialog>
 
-<dialog id="props">
-  <form method="dialog">
-    <div class="content"><h2 data-t="props.title"></h2><div id="props-body"></div></div>
-    <div class="footer"><button class="accent" data-t="props.close"></button></div>
+<dialog id="edit" aria-labelledby="edit-title">
+  <form method="dialog" id="edit-form">
+    <div class="content">
+      <h2 id="edit-title" data-t="edit.title"></h2>
+      <label><span data-t="edit.name"></span><input type="text" name="title" maxlength="100" required dir="auto"></label>
+      <label><span data-t="edit.description"></span><textarea name="description" rows="3" maxlength="1000" dir="auto"></textarea></label>
+      <label><span data-t="edit.author"></span><input type="text" name="author" maxlength="100" dir="auto"></label>
+      <label><span data-t="edit.category"></span><select name="category"></select></label>
+      <label><span data-t="edit.tags"></span><input type="text" name="tags" dir="auto" aria-describedby="edit-tags-hint"><span id="edit-tags-hint" class="caption" data-t="edit.tagsHint"></span></label>
+      <p id="edit-error" class="caption danger-text" role="alert" hidden></p>
+    </div>
+    <div class="footer"><button class="accent" value="save" data-t="edit.save"></button><button value="cancel" formnovalidate data-t="dialog.cancel"></button></div>
   </form>
 </dialog>
 
+<dialog id="info" aria-labelledby="info-title">
+  <form method="dialog">
+    <div class="content"><h2 id="info-title"></h2><p id="info-desc" class="caption"></p><dl id="info-list" class="facts"></dl></div>
+    <div class="footer"><button type="button" id="info-folder" data-t="info.openFolder"></button><button type="button" id="info-export" data-t="info.export"></button><button class="accent" value="close" data-t="dialog.close"></button></div>
+  </form>
+</dialog>
+
+<dialog id="props">
+  <form method="dialog">
+    <div class="content"><h2 data-t="props.title"></h2><div id="props-body"></div></div>
+    <div class="footer"><button type="button" id="props-reset" data-t="props.reset"></button><button class="accent" data-t="props.close"></button></div>
+  </form>
+</dialog>
+
+<script src="filter.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

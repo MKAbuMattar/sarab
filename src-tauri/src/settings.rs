@@ -19,7 +19,29 @@ pub struct Settings {
     pub app_play: Vec<String>,
     pub fps: u32,
     pub volume: u8,
+    /// Mute the wallpaper whenever an app has the focus instead of the desktop.
+    pub audio_desktop_only: bool,
+    /// Mute the wallpaper while another app plays sound.
+    pub audio_mute_others: bool,
+    /// How videos and GIFs fill the display: "cover", "contain", "fill" or "none".
     pub scaling: String,
+    /// Move to the next wallpaper in the library every this many minutes; 0 is never.
+    pub cycle_minutes: u32,
+    /// Show a wallpaper full screen after this many idle minutes; 0 is never.
+    pub screensaver_minutes: u32,
+    /// The wallpaper the screensaver shows; None shows each display's own.
+    pub screensaver_wallpaper: Option<String>,
+    /// One wallpaper stretched across every display instead of one per display.
+    pub span: bool,
+    /// Pass mouse moves and clicks over the desktop to web wallpapers.
+    pub mouse_input: bool,
+    /// Cycling and "next" go through the library "order"ly or at "random".
+    pub cycle_order: String,
+    /// Only wallpapers in this category take part in cycling and "next"; "all" for every one.
+    pub cycle_category: String,
+    /// Unload a wallpaper nobody can see (covered, locked, remote) after this many minutes, to
+    /// free its memory; it loads again when it would play. 0 is never.
+    pub unload_minutes: u32,
     pub language: String,
     /// "system", "light" or "dark" for the settings window.
     pub theme: String,
@@ -45,7 +67,22 @@ impl Default for Settings {
             app_play: vec![],
             fps: 30,
             volume: 0,
+            audio_desktop_only: false,
+            audio_mute_others: true,
             scaling: "cover".into(),
+            cycle_minutes: 0,
+            screensaver_minutes: 0,
+            screensaver_wallpaper: None,
+            span: false,
+            mouse_input: false,
+            cycle_order: "order".into(),
+            cycle_category: "all".into(),
+            // On by default where memory is tight (SPEC F17).
+            unload_minutes: if crate::os::windows::total_ram() < 8 << 30 {
+                5
+            } else {
+                0
+            },
             language: "en".into(),
             theme: "system".into(),
             backdrop: "acrylic".into(),

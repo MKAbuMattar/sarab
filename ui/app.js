@@ -190,24 +190,30 @@ function render() {
   renderUpdate();
   renderPresets();
 
-  $('#lib-empty').hidden = state.library.length > 0;
-  $('#library').replaceChildren(...state.library.map(w => el('li', { class: 'tile' },
-    el('div', { class: 'thumb' }, icon(ICON[w.kind] ?? '')),
-    el('div', { class: 'body' },
-      el('span', { class: 'name' }, w.info.title || w.id),
-      el('span', { class: 'caption' }, w.preset ? `${t(`type.${w.kind}`)} · ${t('presets.builtIn')}` : t(`type.${w.kind}`)),
-      el('div', { class: 'row' },
-        btn('accent', '', t('library.set'), () => run(() => invoke('set_wallpaper', { target: w.id, display: selectedDisplay() }))),
-        w.preset ? '' : btn('subtle danger', '', t('library.delete'), async () => {
-          const ok = await ask({ title: t('library.deleteTitle', { title: w.info.title || w.id }), body: t('library.deleteBody'), ok: t('library.delete'), cancel: t('dialog.cancel'), danger: true });
-          if (ok) run(() => invoke('remove', { id: w.id }));
-        }))))));
+  renderLibrary();
 
   const f = $('#settings');
   const s = state.settings;
   for (const k of ['pause_fullscreen', 'per_display', 'pause_focus', 'pause_battery', 'pause_power_saver', 'pause_remote']) f[k].checked = s[k];
   f.per_display.disabled = !s.pause_fullscreen;
   f.fps.value = String(s.fps);
+  f.audio_mute_others.checked = s.audio_mute_others;
+  f.audio_desktop_only.checked = s.audio_desktop_only;
+  f.unload_minutes.value = String(s.unload_minutes ?? 0);
+  f.scaling.value = s.scaling || 'cover';
+  f.screensaver_minutes.value = String(s.screensaver_minutes || 0);
+  f.screensaver_wallpaper.replaceChildren(el('option', { value: '' }, t('screensaver.each')),
+    ...state.library.filter(w => w.kind !== 'picture').map(w => el('option', { value: w.id }, w.info.title || w.id)));
+  f.screensaver_wallpaper.value = s.screensaver_wallpaper || '';
+  f.screensaver_wallpaper.disabled = !s.screensaver_minutes;
+  f.span.checked = s.span;
+  f.mouse_input.checked = s.mouse_input;
+  f.cycle_minutes.value = String(s.cycle_minutes || 0);
+  f.cycle_order.value = s.cycle_order || 'order';
+  f.cycle_category.replaceChildren(el('option', { value: 'all' }, t('library.allCategories')),
+    ...state.categories.map(c => el('option', { value: c }, categoryName(c))));
+  f.cycle_category.value = s.cycle_category || 'all';
+  f.cycle_order.disabled = f.cycle_category.disabled = !s.cycle_minutes;
   f.volume.value = s.volume;
   fill(f.volume);
   f.theme.value = s.theme || 'system';
@@ -219,7 +225,114 @@ function render() {
   $('#check-updates').checked = s.check_updates;
   $('#about-version').textContent = t('about.version', { v: state.version });
   $('#about-webview').textContent = state.webview;
+  $('#library-dir').textContent = state.library_dir;
   document.querySelectorAll('select').forEach(combo);
+}
+
+// Library filters, remembered between visits.
+const filters = (() => { try { return JSON.parse(localStorage.getItem('filters')) || {}; } catch { return {}; } })();
+const saveFilters = () => { try { localStorage.setItem('filters', JSON.stringify(filters)); } catch {} };
+const categoryName = c => t(`category.${c}`);
+
+function renderLibrary() {
+  const lib = state.library;
+  // Type chips: All, then only the types the library has.
+  const kinds = [...new Set(lib.map(w => w.kind))];
+  if (filters.type && filters.type !== 'all' && !kinds.includes(filters.type)) filters.type = 'all';
+  const chip = (value, label) => el('button', {
+    type: 'button', 'aria-pressed': String((filters.type || 'all') === value),
+    onclick: () => { filters.type = value; saveFilters(); renderLibrary(); },
+  }, label);
+  $('#lib-types').replaceChildren(chip('all', t('filter.all')), ...kinds.map(k => chip(k, t(`type.${k}`))));
+
+  const cat = $('#lib-category');
+  const used = [...new Set(lib.map(w => w.info.category || 'none'))];
+  cat.replaceChildren(el('option', { value: 'all' }, t('library.allCategories')),
+    ...state.categories.filter(c => used.includes(c)).map(c => el('option', { value: c }, categoryName(c))),
+    ...(used.includes('none') ? [el('option', { value: 'none' }, t('edit.none'))] : []));
+  cat.value = [...cat.options].some(o => o.value === filters.category) ? filters.category : 'all';
+  $('#lib-sort').value = filters.sort || 'name';
+  if (document.activeElement !== $('#lib-search')) $('#lib-search').value = filters.query || '';
+
+  const shown = filterLibrary(lib, { type: filters.type || 'all', category: cat.value, query: filters.query || '', sort: filters.sort || 'name', label: categoryName });
+  $('#lib-empty').hidden = lib.length > 0;
+  $('#lib-none').hidden = lib.length === 0 || shown.length > 0;
+  $('.lib-bar').hidden = $('#lib-types').hidden = lib.length === 0;
+  $('#library').replaceChildren(...shown.map(w => el('li', { class: 'tile' },
+    el('div', { class: 'thumb' }, w.thumb_url ? el('img', { src: w.thumb_url, alt: '', loading: 'lazy' }) : icon(ICON[w.kind] ?? '')),
+    el('div', { class: 'body' },
+      el('span', { class: 'name' }, w.info.title || w.id),
+      el('span', { class: 'caption' }, [t(`type.${w.kind}`), w.info.category && categoryName(w.info.category), w.preset && t('presets.builtIn')].filter(Boolean).join(' · ')),
+      el('div', { class: 'row' },
+        btn('accent', '', t('library.set'), () => run(() => invoke('set_wallpaper', { target: w.id, display: selectedDisplay() }))),
+        iconBtn('', t('library.info'), () => openInfo(w)),
+        w.preset ? '' : iconBtn('', t('library.edit'), () => openEdit(w)),
+        w.preset ? '' : btn('subtle danger', '', t('library.delete'), async () => {
+          const ok = await ask({ title: t('library.deleteTitle', { title: w.info.title || w.id }), body: t('library.deleteBody'), ok: t('library.delete'), cancel: t('dialog.cancel'), danger: true });
+          if (ok) run(() => invoke('remove', { id: w.id }));
+        }))))));
+  document.querySelectorAll('.lib-bar select').forEach(combo);
+}
+
+// An icon-only button still has a name for screen readers and a tooltip for the mouse.
+const iconBtn = (glyph, label, onclick) =>
+  el('button', { class: 'subtle icon-only', type: 'button', 'aria-label': label, title: label, onclick }, icon(glyph));
+
+function openEdit(w) {
+  const d = $('#edit'), f = $('#edit-form');
+  f.title.value = w.info.title || '';
+  f.description.value = w.info.description || '';
+  f.author.value = w.info.author || '';
+  f.category.replaceChildren(el('option', { value: '' }, t('edit.none')), ...state.categories.map(c => el('option', { value: c }, categoryName(c))));
+  f.category.value = w.info.category || '';
+  f.tags.value = (w.info.tags || []).join(', ');
+  $('#edit-error').hidden = true;
+  combo(f.category);
+  d.returnValue = 'cancel';
+  d.showModal();
+  f.title.focus();
+  f.onsubmit = async e => {
+    if (e.submitter?.value !== 'save') return;
+    e.preventDefault();
+    try {
+      await invoke('edit_info', { id: w.id, edit: {
+        title: f.title.value, description: f.description.value, author: f.author.value,
+        category: f.category.value || null, tags: f.tags.value.split(',').map(x => x.trim()).filter(Boolean),
+      } });
+      d.close('save');
+      await refresh();
+    } catch (err) {
+      $('#edit-error').textContent = String(err);
+      $('#edit-error').hidden = false;
+    }
+  };
+}
+
+async function openInfo(w) {
+  let det = {};
+  try { det = await invoke('details', { id: w.id }); } catch (e) { showError(String(e)); return; }
+  const mb = n => n >= 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`;
+  const date = s => s ? new Date(s * 1000).toLocaleString(document.documentElement.lang) : t('info.unknown');
+  const rows = [
+    ['info.type', t(`type.${w.kind}`)],
+    ['edit.category', w.info.category ? categoryName(w.info.category) : t('edit.none')],
+    ['edit.tags', (w.info.tags || []).join(', ') || t('info.unknown')],
+    ['edit.author', w.info.author || t('info.unknown')],
+    ['info.license', w.info.license || t('info.unknown')],
+    ['info.source', det.source || t('info.unknown')],
+    ['info.size', `${mb(det.size || 0)} · ${t('info.files', { n: det.files || 0 })}`],
+    ['info.added', date(det.created)],
+    ['info.modified', date(det.modified)],
+    ['info.version', String(w.info.version || 1)],
+    ['info.customize', det.has_props ? t('info.yes') : t('info.no')],
+  ];
+  $('#info-title').textContent = w.info.title || w.id;
+  $('#info-desc').textContent = w.info.description || '';
+  $('#info-desc').hidden = !w.info.description;
+  $('#info-list').replaceChildren(...rows.flatMap(([k, v]) => [el('dt', {}, t(k)), el('dd', {}, v)]));
+  $('#info-folder').onclick = () => run(() => invoke('reveal', { id: w.id }));
+  $('#info-export').onclick = () => run(() => invoke('export_wallpaper', { id: w.id }));
+  $('#info').showModal();
 }
 
 async function refresh() {
@@ -234,7 +347,13 @@ async function openProps(display) {
     ? entries.map(([key, c]) => control(display, key, c))
     : [el('p', { class: 'caption' }, t('props.none'))]));
   $('#props-body').querySelectorAll('select').forEach(combo);
-  $('#props').showModal();
+  $('#props-reset').hidden = !entries.length;
+  $('#props-reset').onclick = async () => {
+    try { await invoke('reset_props', { display }); } catch (e) { showError(String(e)); return; }
+    $('#props').close();
+    openProps(display);
+  };
+  if (!$('#props').open) $('#props').showModal();
 }
 
 function control(display, key, c) {
@@ -336,6 +455,17 @@ function readSettings() {
     pause_power_saver: f.pause_power_saver.checked,
     pause_remote: f.pause_remote.checked,
     fps: Number(f.fps.value),
+    audio_mute_others: f.audio_mute_others.checked,
+    audio_desktop_only: f.audio_desktop_only.checked,
+    unload_minutes: Number(f.unload_minutes.value),
+    scaling: f.scaling.value,
+    screensaver_minutes: Number(f.screensaver_minutes.value),
+    screensaver_wallpaper: f.screensaver_wallpaper.value || null,
+    span: f.span.checked,
+    mouse_input: f.mouse_input.checked,
+    cycle_minutes: Number(f.cycle_minutes.value),
+    cycle_order: f.cycle_order.value,
+    cycle_category: f.cycle_category.value,
     volume: Number(f.volume.value),
     app_pause: lines(f.app_pause.value),
     app_play: lines(f.app_play.value),
@@ -354,7 +484,19 @@ $('#add').addEventListener('submit', e => {
     $('#target').value = '';
   });
 });
+$('#lib-search').addEventListener('input', e => { filters.query = e.target.value; saveFilters(); renderLibrary(); });
+$('#lib-category').addEventListener('change', e => { filters.category = e.target.value; saveFilters(); renderLibrary(); });
+$('#lib-sort').addEventListener('change', e => { filters.sort = e.target.value; saveFilters(); renderLibrary(); });
 $('#check-updates').addEventListener('change', () => run(() => invoke('save_settings', { new: readSettings() })));
+$('#move-library').addEventListener('click', () => run(() => invoke('move_library')));
+$('#export-logs').addEventListener('click', () => run(() => invoke('export_logs')));
+$('#reset-settings').addEventListener('click', async () => {
+  const ok = await ask({ title: t('about.resetTitle'), body: t('about.resetBody'), ok: t('about.resetButton'), cancel: t('dialog.cancel'), danger: true });
+  if (!ok) return;
+  await run(() => invoke('reset_settings'));
+  await loadLanguage(state.settings.language || 'en');
+  render();
+});
 $('#check-now').addEventListener('click', () => run(() => invoke('check_update')));
 $('#pause').addEventListener('click', () => run(() => invoke('toggle_pause')));
 document.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => run(() => invoke('open', { which: b.dataset.open }))));

@@ -4,6 +4,40 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ## [Unreleased]
 
+## [0.0.5] - 2026-10-05
+
+### Added
+
+- Change wallpaper every 5, 15 or 30 minutes, or every hour, in library order or at random, through every wallpaper or one category. Next in the tray menu follows the same choice. It waits while the wallpaper rests, and picking a wallpaper yourself restarts the wait.
+- The library has a search box, type filters, a category filter and sorting by name, newest or oldest. Search looks at titles, descriptions, tags and categories, in English or Arabic.
+- Edit a wallpaper's title, description, author, category (Nature, Space, Abstract, City, Animals, Anime, Games, Vehicles, Minimal, Other) and up to 5 tags.
+- Restore defaults in Customize puts a wallpaper's settings back to how it shipped, on that display.
+- About > Help: export the log and settings as a zip in Downloads for a bug report, and reset every setting to its default while keeping the library.
+- Export a wallpaper from its Info view as a package zip in Downloads. A video or picture added from elsewhere goes inside the zip, so the package works on another PC.
+- Move the library to another folder or drive from About > Folders. Every wallpaper moves with it and keeps playing from the new place.
+- Library tiles show thumbnails: the Explorer thumbnail for videos, GIFs and pictures, and a frame captured a few seconds after a web page or web address starts playing.
+- An Info view for each wallpaper: type, category, tags, author, license, source, size, date added and changed, version, and a button that opens its folder.
+- Sound rules in Settings > Performance: mute the wallpaper while another app plays sound (on by default), and play sound only while the desktop has the focus.
+- Web wallpapers can ask for system information: with `"api": ["system"]` in sarab.json, the page gets `sarabSystemInfo` once a second while it plays (CPU and GPU name, CPU use, memory, network down and up).
+- Web wallpapers can show the song that is playing: with `"api": ["nowplaying"]`, the page gets `sarabNowPlaying` with title, artist, album and cover art from Windows media controls when the track changes.
+- Span one wallpaper across every display (Settings > Wallpapers). It rests only when every display would.
+- Audio visualizer wallpapers: with `"api": ["audio"]`, the page gets `sarabAudio` with 128 levels from 0 to 1, about 30 times a second, from whatever the PC plays. Capture runs only while such a wallpaper plays.
+- Screensaver (Settings > Screensaver): after 1 to 30 idle minutes a wallpaper covers every display, its own or one you pick; any key or mouse move ends it. It waits while a full-screen app is open or another app plays sound, and the desktop wallpapers rest meanwhile.
+- Interactive web wallpapers can follow the mouse (Settings > Wallpapers, off by default): moves and left clicks over the desktop reach the wallpaper under the cursor.
+- Eight more languages: German, Spanish, French, Portuguese (Brazil), Turkish, Russian, Simplified Chinese and Japanese.
+- Video and GIF fit in Settings: fill the screen (cover, the default), fit inside, stretch, or original size.
+
+### Changed
+
+- A wallpaper hidden by an app, a lock or a remote session for a set time (Settings > Performance) is unloaded to free its memory and loads again when it can be seen. On by default, after 5 minutes, on PCs with less than 8 GB of memory.
+- Deleting a wallpaper moves its folder to the Recycle Bin, so it can be restored.
+- Displays playing the same video now stay within a few milliseconds of each other, under a tenth of a frame, also right after resting: Sarab checks every second and nudges the speed instead of only jumping. YouTube wallpapers on several displays are kept in step too, to about a quarter of a second.
+- A display now rests when windows together cover it, such as two apps snapped side by side, and not only when one window fills it.
+
+### Fixed
+
+- YouTube wallpapers play again instead of showing "Video player configuration error" (Error 153). Shorts, live, mobile, YouTube Music and playlist links work too, and pausing and volume reach the YouTube player.
+
 ## [0.0.4] - 2026-10-03
 
 ### Fixed
@@ -33,6 +67,7 @@ First public release, for Windows 10 (1903 or later) and Windows 11.
 - Opening Sarab from the desktop or Start menu opens its window, also when it already runs in the background. Starting at sign-in stays in the tray.
 - Start with Windows, on by default: switched on once at the first launch, and it stays off if you turn it off. Uninstalling removes it.
 
-[Unreleased]: https://github.com/MKAbuMattar/sarab/compare/v0.0.4...HEAD
+[Unreleased]: https://github.com/MKAbuMattar/sarab/compare/v0.0.5...HEAD
+[0.0.5]: https://github.com/MKAbuMattar/sarab/compare/v0.0.4...v0.0.5
 [0.0.4]: https://github.com/MKAbuMattar/sarab/compare/v0.0.3...v0.0.4
 [0.0.3]: https://github.com/MKAbuMattar/sarab/releases/tag/v0.0.3

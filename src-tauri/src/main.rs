@@ -1,11 +1,14 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod audio;
 mod cli;
+mod feeds;
 mod library;
 mod os;
 mod pause;
 mod presets;
 mod settings;
+mod support;
 mod update;
 mod wallpaper;
 
@@ -38,6 +41,7 @@ fn changed(app: &AppHandle) {
 
 pub(crate) fn rescan(core: &mut Core) {
     core.lib = wallpaper::scan_all(&core.settings);
+    wallpaper::make_thumbnails(&core.lib);
 }
 
 /// Resolve a CLI/UI target: a library id, or a path/URL that gets added to the library first.
@@ -58,6 +62,8 @@ fn run_command(app: &AppHandle, core: &mut Core, cmd: Command) -> Result<(), Str
             for i in wallpaper::targets(core, display)? {
                 wallpaper::apply(app, core, i, &id)?;
             }
+            // A wallpaper the user picked gets a full interval before cycling moves on.
+            core.changed_at = std::time::Instant::now();
         }
         Command::Close { display } => {
             for i in wallpaper::targets(core, display)? {
@@ -84,22 +90,7 @@ fn run_command(app: &AppHandle, core: &mut Core, cmd: Command) -> Result<(), Str
             }
         }
         Command::Volume(v) => wallpaper::set_volume(app, core, v),
-        Command::Next => {
-            let cur = core.displays.first().and_then(|d| d.wallpaper.clone());
-            let pos = cur
-                .and_then(|c| core.lib.iter().position(|w| w.id == c))
-                .map_or(0, |p| p + 1);
-            let Some(next) = core
-                .lib
-                .get(pos % core.lib.len().max(1))
-                .map(|w| w.id.clone())
-            else {
-                return Err("library is empty".into());
-            };
-            for i in 0..core.displays.len() {
-                wallpaper::apply(app, core, i, &next)?;
-            }
-        }
+        Command::Next => wallpaper::next(app, core)?,
         Command::Import(zip) => {
             library::import_zip(
                 &wallpaper::library_dir(&core.settings),
@@ -219,7 +210,18 @@ async fn state(app: AppHandle) -> Value {
             "theme": page_theme(app, &core.settings.theme),
             "translucent": effects_for(&core.settings.backdrop).is_some(),
             "settings": core.settings,
-            "library": core.lib,
+            // Thumbnails reach the window through the asset protocol, opened file by file.
+            "library": core.lib.iter().map(|w| {
+                let mut v = json!(w);
+                if let Some(t) = &w.thumb {
+                    if app.asset_protocol_scope().allow_file(t).is_ok() {
+                        v["thumb_url"] = json!(wallpaper::asset_url(t));
+                    }
+                }
+                v
+            }).collect::<Vec<_>>(),
+            "categories": library::CATEGORIES,
+            "library_dir": wallpaper::library_dir(&core.settings),
             "manual": core.manual,
             "autostart": auto,
             "update": update::to_json(app),
@@ -350,30 +352,176 @@ async fn set_prop(
 }
 
 #[tauri::command]
-async fn save_settings(app: AppHandle, new: settings::Settings) -> Result<(), String> {
+async fn reset_props(app: AppHandle, display: usize) -> Result<(), String> {
     with_core(&app, move |app, core| {
-        let lib_changed = new.library_dir != core.settings.library_dir;
-        if let Some(w) = app.get_webview_window("main") {
-            if new.theme != core.settings.theme {
-                let _ = w.set_theme(theme_of(&new.theme));
-            }
-            if new.backdrop != core.settings.backdrop {
-                let _ = w.set_effects(effects_for(&new.backdrop));
+        if display >= core.displays.len() {
+            return Err("no such display".into());
+        }
+        wallpaper::reset_props(app, core, display)
+    })
+}
+
+/// Store new settings and apply what changed to the window and the wallpapers.
+fn apply_settings(app: &AppHandle, core: &mut Core, new: settings::Settings) -> Result<(), String> {
+    let lib_changed = new.library_dir != core.settings.library_dir;
+    let fit_changed = new.scaling != core.settings.scaling;
+    let span_changed = new.span != core.settings.span;
+    if let Some(w) = app.get_webview_window("main") {
+        if new.theme != core.settings.theme {
+            let _ = w.set_theme(theme_of(&new.theme));
+        }
+        if new.backdrop != core.settings.backdrop {
+            let _ = w.set_effects(effects_for(&new.backdrop));
+        }
+    }
+    let vol = new.volume;
+    core.settings = new;
+    settings::save(&wallpaper::cfg("settings.json"), &core.settings).map_err(|e| e.to_string())?;
+    if lib_changed {
+        rescan(core);
+    }
+    // Span on or off: display 0's window changes size and the others gain or lose theirs.
+    if span_changed {
+        let first = core.displays.first().and_then(|d| d.wallpaper.clone());
+        for i in 0..core.displays.len() {
+            let id = core.displays[i].wallpaper.clone().or_else(|| first.clone());
+            if let Some(id) = id {
+                let _ = wallpaper::apply(app, core, i, &id);
             }
         }
-        let vol = new.volume;
-        core.settings = new;
-        settings::save(&wallpaper::cfg("settings.json"), &core.settings)
-            .map_err(|e| e.to_string())?;
-        if lib_changed {
-            rescan(core);
+    }
+    // The fit is part of the player URL, so running videos and GIFs load again with it.
+    if fit_changed && !span_changed {
+        for i in 0..core.displays.len() {
+            let id = core.displays[i].wallpaper.clone();
+            let kind = id
+                .as_deref()
+                .and_then(|id| core.find(id))
+                .map(|w| w.info.r#type);
+            if let (Some(id), Some(library::Kind::Video | library::Kind::Gif)) = (id, kind) {
+                let _ = wallpaper::apply(app, core, i, &id);
+            }
         }
-        wallpaper::set_volume(app, core, vol);
-        wallpaper::set_fps(app, core);
-        wallpaper::tick(app, core);
+    }
+    wallpaper::set_volume(app, core, vol);
+    wallpaper::set_fps(app, core);
+    wallpaper::tick(app, core);
+    changed(app);
+    Ok(())
+}
+
+#[tauri::command]
+async fn save_settings(app: AppHandle, new: settings::Settings) -> Result<(), String> {
+    with_core(&app, move |app, core| apply_settings(app, core, new))
+}
+
+#[tauri::command]
+async fn reset_settings(app: AppHandle) -> Result<(), String> {
+    with_core(&app, move |app, core| {
+        let new = support::reset(&core.settings);
+        log("settings reset to defaults");
+        apply_settings(app, core, new)
+    })
+}
+
+/// Zip the log and settings files into Downloads and show the zip in Explorer.
+#[tauri::command]
+async fn export_logs() -> Result<String, String> {
+    let zip = support::export_logs(&settings::config_dir(), &support::downloads())
+        .map_err(|e| e.to_string())?;
+    let _ = std::process::Command::new("explorer.exe")
+        .arg(format!("/select,{}", zip.display()))
+        .spawn();
+    Ok(zip.display().to_string())
+}
+
+fn editable(core: &Core, id: &str) -> Result<library::Wallpaper, String> {
+    let w = core.find(id).cloned().ok_or("not found")?;
+    if w.preset {
+        return Err("built-in wallpapers cannot be edited".into());
+    }
+    Ok(w)
+}
+
+#[tauri::command]
+async fn edit_info(app: AppHandle, id: String, edit: library::Edit) -> Result<(), String> {
+    with_core(&app, move |app, core| {
+        let w = editable(core, &id)?;
+        library::edit_info(&w.dir, edit)?;
+        rescan(core);
         changed(app);
         Ok(())
     })
+}
+
+#[tauri::command]
+async fn details(app: AppHandle, id: String) -> Result<library::Details, String> {
+    let w = with_core(&app, move |_, core| core.find(&id).cloned()).ok_or("not found")?;
+    Ok(library::details(&w))
+}
+
+/// Ask for a folder, then move the library there. Running wallpapers close during the move and
+/// open again from the new place. Returns the new folder, or None when cancelled.
+#[tauri::command]
+async fn move_library(app: AppHandle) -> Result<Option<String>, String> {
+    let (old, owner) = with_core(&app, |app, core| {
+        let owner = app
+            .get_webview_window("main")
+            .and_then(|w| w.hwnd().ok())
+            .map(|h| h.0 as isize);
+        (wallpaper::library_dir(&core.settings), owner)
+    });
+    let owner = owner.map(|h| windows::Win32::Foundation::HWND(h as *mut _));
+    let Some(new) = os::windows::pick_folder(owner, old.parent()) else {
+        return Ok(None);
+    };
+    let new = if new.file_name().is_some_and(|n| n == "Library") {
+        new
+    } else {
+        new.join("Library")
+    };
+    with_core(&app, move |app, core| {
+        for i in 0..core.displays.len() {
+            wallpaper::unload(app, core, i);
+        }
+        let moved = library::move_library(&old, &new);
+        if moved.is_ok() {
+            core.settings.library_dir = Some(new.clone());
+            settings::save(&wallpaper::cfg("settings.json"), &core.settings)
+                .map_err(|e| e.to_string())?;
+            rescan(core);
+            log(format!("library moved to {}", new.display()));
+        }
+        for i in 0..core.displays.len() {
+            if let Some(id) = core.displays[i].wallpaper.clone() {
+                let _ = wallpaper::apply(app, core, i, &id);
+            }
+        }
+        changed(app);
+        moved.map(|_| Some(new.display().to_string()))
+    })
+}
+
+/// Saves the wallpaper as a package zip in Downloads and shows it in Explorer.
+#[tauri::command]
+async fn export_wallpaper(app: AppHandle, id: String) -> Result<String, String> {
+    let w = with_core(&app, move |_, core| core.find(&id).cloned()).ok_or("not found")?;
+    let zip = library::export_zip(&w, &support::downloads())?;
+    let _ = std::process::Command::new("explorer.exe")
+        .arg(format!("/select,{}", zip.display()))
+        .spawn();
+    Ok(zip.display().to_string())
+}
+
+/// Opens the wallpaper's own folder in Explorer. Takes an id, never a path.
+#[tauri::command]
+async fn reveal(app: AppHandle, id: String) -> Result<(), String> {
+    let w = with_core(&app, move |_, core| core.find(&id).cloned()).ok_or("not found")?;
+    std::process::Command::new("explorer.exe")
+        .arg(&w.dir)
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -399,10 +547,17 @@ async fn autostart(app: AppHandle, enable: bool) -> Result<(), String> {
 
 /// A UI string for text Rust shows itself (tray menu, notifications), from the same files as the window.
 pub(crate) fn ui_text(lang: &str, key: &str) -> String {
-    let file = if lang == "ar" {
-        include_str!("../../ui/i18n/ar.json")
-    } else {
-        include_str!("../../ui/i18n/en.json")
+    let file = match lang {
+        "ar" => include_str!("../../ui/i18n/ar.json"),
+        "de" => include_str!("../../ui/i18n/de.json"),
+        "es" => include_str!("../../ui/i18n/es.json"),
+        "fr" => include_str!("../../ui/i18n/fr.json"),
+        "ja" => include_str!("../../ui/i18n/ja.json"),
+        "pt" => include_str!("../../ui/i18n/pt.json"),
+        "ru" => include_str!("../../ui/i18n/ru.json"),
+        "tr" => include_str!("../../ui/i18n/tr.json"),
+        "zh" => include_str!("../../ui/i18n/zh.json"),
+        _ => include_str!("../../ui/i18n/en.json"),
     };
     serde_json::from_str::<Value>(file)
         .ok()
@@ -483,11 +638,19 @@ fn main() {
             resume_auto,
             props,
             set_prop,
+            reset_props,
             save_settings,
+            reset_settings,
+            export_logs,
             autostart,
             check_update,
             install_update,
-            get_preset
+            get_preset,
+            edit_info,
+            details,
+            reveal,
+            export_wallpaper,
+            move_library
         ])
         .on_window_event(|win, ev| {
             if win.label() != "main" {
@@ -530,6 +693,7 @@ fn main() {
             // reqwest is built without a default TLS provider (the updater's choice); install it once for the whole app.
             let _ = rustls::crypto::ring::default_provider().install_default();
             let h = app.handle().clone();
+            let _ = wallpaper::APP.set(h.clone());
             if let Ok(res) = app.path().resource_dir() {
                 let _ = wallpaper::PRESET_DIR.set(res.join("presets"));
             }
