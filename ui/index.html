@@ -95,6 +95,11 @@
       <label class="card stack"><i class="icon" aria-hidden="true">&#xE769;</i><span class="title" data-t="settings.appPause"></span><textarea name="app_pause" rows="2" spellcheck="false"></textarea></label>
       <label class="card stack"><i class="icon" aria-hidden="true">&#xE768;</i><span class="title" data-t="settings.appPlay"></span><textarea name="app_play" rows="2" spellcheck="false"></textarea></label>
 
+      <h2 data-t="settings.screensaver"></h2>
+      <label class="card"><i class="icon" aria-hidden="true">&#xE7F8;</i><span><span class="title" data-t="settings.screensaverAfter"></span><br><span class="caption" data-t="settings.screensaverDesc"></span></span>
+        <select name="screensaver_minutes"><option value="0" data-t="cycle.never"></option><option value="1" data-t="unload.oneMinute"></option><option value="5" data-t="cycle.fiveMinutes"></option><option value="15" data-t="cycle.fifteenMinutes"></option><option value="30" data-t="cycle.thirtyMinutes"></option></select></label>
+      <label class="card sub"><span></span><span class="title" data-t="settings.screensaverShows"></span><select name="screensaver_wallpaper"></select></label>
+
       <h2 data-t="settings.startup"></h2>
       <label class="card"><i class="icon" aria-hidden="true">&#xE7E8;</i><span class="title" data-t="settings.autostart"></span><input class="switch" type="checkbox" id="autostart"></label>
     </form>

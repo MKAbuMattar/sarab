@@ -200,5 +200,10 @@
   "settings.audioDesktopOnly": "Play sound only while the desktop has the focus",
   "about.move": "Move…",
   "settings.span": "Span one wallpaper across every display",
-  "settings.spanDesc": "One picture of the whole desktop instead of one per display. It rests only when every display would."
+  "settings.spanDesc": "One picture of the whole desktop instead of one per display. It rests only when every display would.",
+  "settings.screensaver": "Screensaver",
+  "settings.screensaverAfter": "Show a wallpaper full screen after",
+  "settings.screensaverDesc": "Any key or mouse move ends it. It waits while a full-screen app is open or another app plays sound.",
+  "settings.screensaverShows": "Show",
+  "screensaver.each": "Each display's own wallpaper"
 }

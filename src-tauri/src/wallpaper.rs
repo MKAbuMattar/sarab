@@ -53,6 +53,8 @@ pub struct Core {
     pub ticks: u64,
     /// Started the first time a playing wallpaper asks for system information.
     pub sysinfo: Option<crate::feeds::Sampler>,
+    /// The screensaver's window labels and the input stamp it started at, while it shows.
+    pub screensaver: Option<(Vec<String>, u32)>,
     /// Runs while a playing wallpaper asks for the audio levels.
     pub audio: Option<crate::audio::Feed>,
     /// Labels of the webviews the audio thread sends to.
@@ -156,6 +158,7 @@ impl Core {
             sysinfo: None,
             now_playing: None,
             audio: None,
+            screensaver: None,
             audio_to: Default::default(),
             changed_at: std::time::Instant::now(),
         }
@@ -947,6 +950,86 @@ fn push_now_playing(app: &AppHandle, core: &mut Core) {
     }
 }
 
+/// Time for the screensaver: it is on, the user has been away long enough, and nothing that
+/// keeps a screen awake on purpose is going on (a full-screen app, or sound from another app).
+fn screensaver_due(minutes: u32, idle_ms: u32, busy: bool) -> bool {
+    minutes > 0 && !busy && u64::from(idle_ms) >= u64::from(minutes) * 60_000
+}
+
+/// Open the screensaver: one topmost borderless window per display, outside the desktop.
+fn start_screensaver(app: &AppHandle, core: &mut Core, stamp: u32) {
+    let mut labels = vec![];
+    for i in 0..core.displays.len() {
+        let id = core
+            .settings
+            .screensaver_wallpaper
+            .clone()
+            .or_else(|| core.displays[i].wallpaper.clone());
+        let Some(w) = id.as_deref().and_then(|id| core.find(id)).cloned() else {
+            continue;
+        };
+        if w.info.r#type == Kind::Picture {
+            continue;
+        }
+        let Ok(url) = url_for(app, &w, &core.settings.scaling) else {
+            continue;
+        };
+        let lbl = format!("ss-{i}-{stamp}");
+        let r = core.displays[i].mon.rect;
+        let built = WebviewWindowBuilder::new(app, &lbl, WebviewUrl::External(url))
+            .title("Sarab screensaver")
+            .decorations(false)
+            .always_on_top(true)
+            .skip_taskbar(true)
+            .visible(false)
+            .shadow(false)
+            .resizable(false)
+            .initialization_script(INJECT)
+            .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
+            .build();
+        let Ok(win) = built else { continue };
+        let _ = win.set_position(tauri::PhysicalPosition::new(r.left, r.top));
+        let _ = win.set_size(tauri::PhysicalSize::new(
+            (r.right - r.left) as u32,
+            (r.bottom - r.top) as u32,
+        ));
+        let _ = win.eval("document.documentElement.style.cursor='none'");
+        let _ = win.show();
+        labels.push(lbl);
+    }
+    if !labels.is_empty() {
+        log(format!("screensaver on ({} displays)", labels.len()));
+        core.screensaver = Some((labels, stamp));
+    }
+}
+
+fn stop_screensaver(app: &AppHandle, core: &mut Core) {
+    if let Some((labels, _)) = core.screensaver.take() {
+        for l in labels {
+            if let Some(w) = app.get_webview_window(&l) {
+                let _ = w.destroy();
+            }
+        }
+        log("screensaver off");
+    }
+}
+
+/// Start the screensaver when due; end it on any input.
+fn run_screensaver(app: &AppHandle, core: &mut Core, others_playing: bool) {
+    let (idle, stamp) = os::last_input();
+    match &core.screensaver {
+        Some((_, at)) if *at != stamp => stop_screensaver(app, core),
+        Some(_) => {}
+        None => {
+            let busy =
+                core.signals.covered.iter().any(|&c| c) || others_playing || core.signals.locked;
+            if screensaver_due(core.settings.screensaver_minutes, idle, busy) {
+                start_screensaver(app, core, stamp);
+            }
+        }
+    }
+}
+
 /// Keep the audio capture running exactly while a playing wallpaper asks for "audio". The
 /// capture thread sends each spectrum straight to those webviews (eval is thread-safe).
 fn run_audio_feed(app: &AppHandle, core: &mut Core) {
@@ -1116,6 +1199,12 @@ pub fn tick(app: &AppHandle, core: &mut Core) {
             .zip(&core.displays)
             .any(|((st, why), d)| *st != d.state || *why != d.reason);
     core.signals = s;
+    // While the screensaver shows, the desktop wallpapers under it cannot be seen.
+    let decisions = if core.screensaver.is_some() {
+        vec![(State::Covered, Reason::Covered); decisions.len()]
+    } else {
+        decisions
+    };
     let decisions = if core.settings.span {
         vec![span_state(&decisions); decisions.len()]
     } else {
@@ -1129,9 +1218,14 @@ pub fn tick(app: &AppHandle, core: &mut Core) {
     push_sysinfo(app, core);
     push_now_playing(app, core);
     run_audio_feed(app, core);
-    // The session scan only runs when it can matter: a rule is on and the wallpaper has sound.
-    let others =
-        core.settings.audio_mute_others && core.settings.volume > 0 && os::other_audio_playing();
+    // The session scan only runs when it can matter: a rule is on and the wallpaper has sound,
+    // or the screensaver is about to decide whether a video is playing.
+    let ss_soon = core.settings.screensaver_minutes > 0
+        && core.screensaver.is_none()
+        && u64::from(os::last_input().0) >= u64::from(core.settings.screensaver_minutes) * 60_000;
+    let others = ((core.settings.audio_mute_others && core.settings.volume > 0) || ss_soon)
+        && os::other_audio_playing();
+    run_screensaver(app, core, others);
     let v = effective_volume(&core.settings, core.signals.desktop_focused, others);
     if v != core.volume_now {
         log(format!("volume {} -> {v} (audio rules)", core.volume_now));
@@ -1241,6 +1335,18 @@ pub fn remove(app: &AppHandle, core: &mut Core, id: &str) -> Result<(), String> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn screensaver_due_after_idle_unless_busy() {
+        let min = 60_000;
+        assert!(screensaver_due(5, 5 * min, false));
+        assert!(!screensaver_due(5, 5 * min - 1, false), "too soon");
+        assert!(!screensaver_due(0, 60 * min, false), "off");
+        assert!(
+            !screensaver_due(5, 60 * min, true),
+            "a video or game keeps it away"
+        );
+    }
 
     #[test]
     fn span_covers_all_displays() {
