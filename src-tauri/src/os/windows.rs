@@ -1345,8 +1345,17 @@ pub fn recycle(path: &std::path::Path) -> Result<(), String> {
         SHFileOperationW, FOF_ALLOWUNDO, FOF_NOCONFIRMATION, FOF_NOERRORUI, FOF_SILENT, FO_DELETE,
         SHFILEOPSTRUCTW,
     };
+    // The API rejects the \\?\ form that fs::canonicalize returns, so pass the plain path.
+    let plain = path.to_string_lossy();
+    let plain = match plain.strip_prefix(r"\\?\UNC\") {
+        Some(rest) => format!(r"\\{rest}"),
+        None => plain.strip_prefix(r"\\?\").unwrap_or(&plain).to_string(),
+    };
     // The API takes a list ending in two NULs.
-    let from: Vec<u16> = path.as_os_str().encode_wide().chain([0, 0]).collect();
+    let from: Vec<u16> = std::ffi::OsStr::new(&plain)
+        .encode_wide()
+        .chain([0, 0])
+        .collect();
     let mut op = SHFILEOPSTRUCTW {
         wFunc: FO_DELETE,
         pFrom: PCWSTR(from.as_ptr()),
@@ -1560,7 +1569,10 @@ mod tests {
         let d = std::env::temp_dir().join(format!("sarab-test-recycle-{}", std::process::id()));
         std::fs::create_dir_all(d.join("inner")).unwrap();
         std::fs::write(d.join("inner").join("a.txt"), "x").unwrap();
-        recycle(&d).unwrap();
+        // remove() passes a canonicalized \\?\ path; the Delete button failed on exactly that.
+        let canon = std::fs::canonicalize(&d).unwrap();
+        assert!(canon.to_string_lossy().starts_with(r"\\?\"));
+        recycle(&canon).unwrap();
         assert!(!d.exists());
         assert!(recycle(&d).is_err(), "nothing left to recycle");
     }
