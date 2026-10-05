@@ -23,6 +23,10 @@ pub struct Settings {
     pub scaling: String,
     /// Move to the next wallpaper in the library every this many minutes; 0 is never.
     pub cycle_minutes: u32,
+    /// Cycling and "next" go through the library "order"ly or at "random".
+    pub cycle_order: String,
+    /// Only wallpapers in this category take part in cycling and "next"; "all" for every one.
+    pub cycle_category: String,
     pub language: String,
     /// "system", "light" or "dark" for the settings window.
     pub theme: String,
@@ -50,6 +54,8 @@ impl Default for Settings {
             volume: 0,
             scaling: "cover".into(),
             cycle_minutes: 0,
+            cycle_order: "order".into(),
+            cycle_category: "all".into(),
             language: "en".into(),
             theme: "system".into(),
             backdrop: "acrylic".into(),
