@@ -40,6 +40,7 @@ fn changed(app: &AppHandle) {
 
 pub(crate) fn rescan(core: &mut Core) {
     core.lib = wallpaper::scan_all(&core.settings);
+    wallpaper::make_thumbnails(&core.lib);
 }
 
 /// Resolve a CLI/UI target: a library id, or a path/URL that gets added to the library first.
@@ -208,7 +209,16 @@ async fn state(app: AppHandle) -> Value {
             "theme": page_theme(app, &core.settings.theme),
             "translucent": effects_for(&core.settings.backdrop).is_some(),
             "settings": core.settings,
-            "library": core.lib,
+            // Thumbnails reach the window through the asset protocol, opened file by file.
+            "library": core.lib.iter().map(|w| {
+                let mut v = json!(w);
+                if let Some(t) = &w.thumb {
+                    if app.asset_protocol_scope().allow_file(t).is_ok() {
+                        v["thumb_url"] = json!(wallpaper::asset_url(t));
+                    }
+                }
+                v
+            }).collect::<Vec<_>>(),
             "categories": library::CATEGORIES,
             "library_dir": wallpaper::library_dir(&core.settings),
             "manual": core.manual,
@@ -664,6 +674,7 @@ fn main() {
             // reqwest is built without a default TLS provider (the updater's choice); install it once for the whole app.
             let _ = rustls::crypto::ring::default_provider().install_default();
             let h = app.handle().clone();
+            let _ = wallpaper::APP.set(h.clone());
             if let Ok(res) = app.path().resource_dir() {
                 let _ = wallpaper::PRESET_DIR.set(res.join("presets"));
             }

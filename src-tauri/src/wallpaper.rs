@@ -190,8 +190,123 @@ pub fn saved_props_path(id: &str, key: &str) -> PathBuf {
         .join(format!("{}.json", key_file(key)))
 }
 
+pub const THUMBNAIL: &str = "thumbnail.png";
+
+/// Set once at startup, for work that finishes on another thread.
+pub static APP: std::sync::OnceLock<AppHandle> = std::sync::OnceLock::new();
+static FAILED: Mutex<std::collections::BTreeSet<PathBuf>> =
+    Mutex::new(std::collections::BTreeSet::new());
+
+/// Give every user wallpaper that has no thumbnail one from Explorer, on a thread. Web and URL
+/// wallpapers get theirs from a frame once they play (`capture_thumbnail`).
+pub fn make_thumbnails(lib: &[Wallpaper]) {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    static RUNNING: AtomicBool = AtomicBool::new(false);
+    let Some(app) = APP.get() else { return };
+    let failed = FAILED.lock().unwrap().clone();
+    let todo: Vec<(PathBuf, PathBuf)> = lib
+        .iter()
+        .filter(|w| !w.preset && w.thumb.is_none() && !failed.contains(&w.dir))
+        .filter(|w| matches!(w.info.r#type, Kind::Video | Kind::Gif | Kind::Picture))
+        .filter_map(|w| match w.target() {
+            Some(Target::File(f)) if f.is_file() => Some((f, w.dir.clone())),
+            _ => None,
+        })
+        .collect();
+    if todo.is_empty() || RUNNING.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    let app = app.clone();
+    std::thread::spawn(move || {
+        for (src, dir) in todo {
+            match os::shell_thumbnail(&src, &dir.join(THUMBNAIL), 480)
+                .and_then(|()| library::set_thumbnail(&dir, THUMBNAIL))
+            {
+                Ok(()) => log(format!("thumbnail made for {}", dir.display())),
+                Err(e) => {
+                    log(e);
+                    // Not tried again this run, so a file Explorer cannot thumbnail never loops.
+                    FAILED.lock().unwrap().insert(dir);
+                }
+            }
+        }
+        RUNNING.store(false, Ordering::SeqCst);
+        later(&app, |app, core| {
+            crate::rescan(core);
+            let _ = app.emit_to("main", "changed", ());
+        });
+    });
+}
+
+/// Save one frame of a playing web or URL wallpaper as its thumbnail, scaled to 480 px wide.
+fn capture_thumbnail(app: &AppHandle, core: &Core, lbl: &str) {
+    use webview2_com::CapturePreviewCompletedHandler;
+    use webview2_com::Microsoft::Web::WebView2::Win32::COREWEBVIEW2_CAPTURE_PREVIEW_IMAGE_FORMAT_PNG;
+    use windows::Win32::System::Com::{STGM_CREATE, STGM_WRITE};
+    use windows::Win32::UI::Shell::SHCreateStreamOnFileEx;
+    let Some(d) = core
+        .displays
+        .iter()
+        .find(|d| d.label.as_deref() == Some(lbl))
+    else {
+        return;
+    };
+    let Some(w) = d.wallpaper.as_deref().and_then(|id| core.find(id)).cloned() else {
+        return;
+    };
+    if w.preset || w.thumb.is_some() || !matches!(w.info.r#type, Kind::Web | Kind::Url) {
+        return;
+    }
+    let Some(win) = app.get_webview_window(lbl) else {
+        return;
+    };
+    let full = std::env::temp_dir().join(format!("sarab-capture-{}.png", std::process::id()));
+    let a = app.clone();
+    let _ = win.with_webview(move |pw| unsafe {
+        let run = || -> windows::core::Result<()> {
+            let stream = SHCreateStreamOnFileEx(
+                &windows::core::HSTRING::from(full.as_os_str()),
+                (STGM_CREATE | STGM_WRITE).0,
+                0x80,
+                true,
+                None,
+            )?;
+            let done = full.clone();
+            // WebView2 holds the stream while it writes; this copy closes the file when done.
+            let keep = stream.clone();
+            let handler = CapturePreviewCompletedHandler::create(Box::new(move |r| {
+                drop(keep);
+                if r.is_ok() {
+                    let (dir, a) = (w.dir.clone(), a.clone());
+                    std::thread::spawn(move || {
+                        let r = os::shrink_png(&done, &dir.join(THUMBNAIL), 480)
+                            .and_then(|()| library::set_thumbnail(&dir, THUMBNAIL));
+                        let _ = fs::remove_file(&done);
+                        match r {
+                            Ok(()) => later(&a, |app, core| {
+                                crate::rescan(core);
+                                let _ = app.emit_to("main", "changed", ());
+                            }),
+                            Err(e) => log(format!("thumbnail capture: {e}")),
+                        }
+                    });
+                }
+                Ok(())
+            }));
+            pw.controller().CoreWebView2()?.CapturePreview(
+                COREWEBVIEW2_CAPTURE_PREVIEW_IMAGE_FORMAT_PNG,
+                &stream,
+                &handler,
+            )
+        };
+        if let Err(e) = run() {
+            log(format!("thumbnail capture: {e}"));
+        }
+    });
+}
+
 /// `http://asset.localhost/C:/dir/index.html`: forward slashes keep relative links in web wallpapers working.
-fn asset_url(p: &Path) -> String {
+pub fn asset_url(p: &Path) -> String {
     let s = p.to_string_lossy().replace('\\', "/");
     let mut out = String::from("http://asset.localhost/");
     for b in s.bytes() {
@@ -400,6 +515,13 @@ pub fn on_loaded(app: &AppHandle, core: &mut Core, lbl: &str) {
     let st = core.displays[i].state;
     apply_state(app, core, i, st, true);
     write_status(core);
+    // A web or URL wallpaper without a thumbnail gets one from its first seconds on screen.
+    let lbl = lbl.to_string();
+    let a = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_secs(4));
+        later(&a, move |app, core| capture_thumbnail(app, core, &lbl));
+    });
 }
 
 // ---- apply / close ----

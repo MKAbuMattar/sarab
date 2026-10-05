@@ -252,7 +252,7 @@ function renderLibrary() {
   $('#lib-none').hidden = lib.length === 0 || shown.length > 0;
   $('.lib-bar').hidden = $('#lib-types').hidden = lib.length === 0;
   $('#library').replaceChildren(...shown.map(w => el('li', { class: 'tile' },
-    el('div', { class: 'thumb' }, icon(ICON[w.kind] ?? '')),
+    el('div', { class: 'thumb' }, w.thumb_url ? el('img', { src: w.thumb_url, alt: '', loading: 'lazy' }) : icon(ICON[w.kind] ?? '')),
     el('div', { class: 'body' },
       el('span', { class: 'name' }, w.info.title || w.id),
       el('span', { class: 'caption' }, [t(`type.${w.kind}`), w.info.category && categoryName(w.info.category), w.preset && t('presets.builtIn')].filter(Boolean).join(' · ')),

@@ -66,6 +66,8 @@ pub struct Wallpaper {
     pub preset: bool,
     /// When the folder was created, in Unix seconds, for "newest first".
     pub added: u64,
+    /// The thumbnail image, when the package has one.
+    pub thumb: Option<PathBuf>,
 }
 
 pub enum Target {
@@ -111,6 +113,11 @@ pub fn read(dir: &Path) -> Option<Wallpaper> {
         has_props: dir.join(PROPS).is_file(),
         preset: false,
         added: secs(fs::metadata(dir).ok().and_then(|m| m.created().ok())),
+        thumb: info
+            .thumbnail
+            .as_deref()
+            .map(|t| dir.join(t))
+            .filter(|p| p.is_file() && p.starts_with(dir)),
         info,
     })
 }
@@ -498,6 +505,15 @@ pub fn move_library(from: &Path, to: &Path) -> Result<usize, String> {
         }
     }
     Ok(entries.len())
+}
+
+/// Record `name` (a file in the package) as its thumbnail in sarab.json.
+pub fn set_thumbnail(dir: &Path, name: &str) -> Result<(), String> {
+    let mut info: Manifest =
+        serde_json::from_slice(&fs::read(dir.join(INFO)).map_err(|e| e.to_string())?)
+            .map_err(|e| e.to_string())?;
+    info.thumbnail = Some(name.to_string());
+    crate::settings::save(&dir.join(INFO), &info).map_err(|e| e.to_string())
 }
 
 /// Forget the values saved for one display, so the wallpaper's own defaults apply again.
