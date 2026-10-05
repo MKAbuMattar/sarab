@@ -181,5 +181,6 @@
   "settings.cycleOrder": "Order",
   "cycle.inOrder": "In library order",
   "cycle.random": "Random",
-  "settings.cycleFrom": "From"
+  "settings.cycleFrom": "From",
+  "props.reset": "Restore defaults"
 }

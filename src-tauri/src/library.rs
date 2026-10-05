@@ -369,6 +369,14 @@ pub fn save_prop(saved_path: &Path, ctl: &Value, key: &str, value: &Value) -> io
     crate::settings::save(saved_path, &saved)
 }
 
+/// Forget the values saved for one display, so the wallpaper's own defaults apply again.
+pub fn reset_props(saved_path: &Path) -> io::Result<()> {
+    match fs::remove_file(saved_path) {
+        Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(()),
+        r => r,
+    }
+}
+
 /// The categories a wallpaper can be filed under. Keys into `category.*` UI strings.
 pub const CATEGORIES: [&str; 10] = [
     "nature", "space", "abstract", "city", "animals", "anime", "games", "vehicles", "minimal",
@@ -644,6 +652,30 @@ mod tests {
                 .count(),
             1
         );
+    }
+
+    #[test]
+    fn reset_props_restores_defaults() {
+        let d = tmp("reset");
+        fs::write(d.join(INFO), r#"{"type":"web","file":"index.html"}"#).unwrap();
+        fs::write(
+            d.join(PROPS),
+            r#"{"speed":{"type":"slider","value":1,"min":0,"max":5,"step":1}}"#,
+        )
+        .unwrap();
+        let w = read(&d).unwrap();
+        let saved = d.join("saved.json");
+        save_prop(
+            &saved,
+            &props(&w, &saved)["speed"],
+            "speed",
+            &serde_json::json!(4.0),
+        )
+        .unwrap();
+        assert_eq!(props(&w, &saved)["speed"]["value"], serde_json::json!(4.0));
+        reset_props(&saved).unwrap();
+        assert_eq!(props(&w, &saved)["speed"]["value"], serde_json::json!(1));
+        reset_props(&saved).unwrap(); // nothing saved: still fine
     }
 
     #[test]

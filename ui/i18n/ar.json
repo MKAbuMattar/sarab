@@ -181,5 +181,6 @@
   "settings.cycleOrder": "الترتيب",
   "cycle.inOrder": "بترتيب المكتبة",
   "cycle.random": "عشوائي",
-  "settings.cycleFrom": "من"
+  "settings.cycleFrom": "من",
+  "props.reset": "استعادة الافتراضي"
 }
