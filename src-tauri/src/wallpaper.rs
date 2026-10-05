@@ -53,6 +53,10 @@ pub struct Core {
     pub ticks: u64,
     /// Started the first time a playing wallpaper asks for system information.
     pub sysinfo: Option<crate::feeds::Sampler>,
+    /// Runs while a playing wallpaper asks for the audio levels.
+    pub audio: Option<crate::audio::Feed>,
+    /// Labels of the webviews the audio thread sends to.
+    pub audio_to: std::sync::Arc<Mutex<Vec<String>>>,
     /// Started the first time a playing wallpaper asks for the current track.
     pub now_playing: Option<crate::feeds::NowPlaying>,
     /// The volume the pages play at now, after the audio rules; the setting is the most it can be.
@@ -151,6 +155,8 @@ impl Core {
             volume_now,
             sysinfo: None,
             now_playing: None,
+            audio: None,
+            audio_to: Default::default(),
             changed_at: std::time::Instant::now(),
         }
     }
@@ -941,6 +947,40 @@ fn push_now_playing(app: &AppHandle, core: &mut Core) {
     }
 }
 
+/// Keep the audio capture running exactly while a playing wallpaper asks for "audio". The
+/// capture thread sends each spectrum straight to those webviews (eval is thread-safe).
+fn run_audio_feed(app: &AppHandle, core: &mut Core) {
+    let to: Vec<String> = subscribers(core, "audio")
+        .into_iter()
+        .filter_map(|i| core.displays[i].label.clone())
+        .collect();
+    let want = !to.is_empty();
+    *core.audio_to.lock().unwrap() = to;
+    match (&core.audio, want) {
+        (Some(f), false) => {
+            f.stop();
+            core.audio = None;
+        }
+        (Some(f), true) if f.running() => {}
+        (_, true) => {
+            let (a, to) = (app.clone(), core.audio_to.clone());
+            core.audio = Some(crate::audio::Feed::start(move |s| {
+                let levels: Vec<String> = s.iter().map(|v| format!("{v:.3}")).collect();
+                let js = format!(
+                    "try{{typeof sarabAudio==='function'&&sarabAudio([{}])}}catch(e){{}}",
+                    levels.join(",")
+                );
+                for lbl in to.lock().unwrap().iter() {
+                    if let Some(w) = a.get_webview_window(lbl) {
+                        let _ = w.eval(&js);
+                    }
+                }
+            }));
+        }
+        (None, false) => {}
+    }
+}
+
 /// The volume the audio rules allow: the set volume, or silence while an app has the focus
 /// (desktop only) or while another app plays sound.
 fn effective_volume(s: &Settings, desktop_focused: bool, others_playing: bool) -> u8 {
@@ -1088,6 +1128,7 @@ pub fn tick(app: &AppHandle, core: &mut Core) {
     unload_or_reload(app, core);
     push_sysinfo(app, core);
     push_now_playing(app, core);
+    run_audio_feed(app, core);
     // The session scan only runs when it can matter: a rule is on and the wallpaper has sound.
     let others =
         core.settings.audio_mute_others && core.settings.volume > 0 && os::other_audio_playing();

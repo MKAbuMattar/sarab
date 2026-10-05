@@ -19,6 +19,7 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 - Web wallpapers can ask for system information: with `"api": ["system"]` in sarab.json, the page gets `sarabSystemInfo` once a second while it plays (CPU and GPU name, CPU use, memory, network down and up).
 - Web wallpapers can show the song that is playing: with `"api": ["nowplaying"]`, the page gets `sarabNowPlaying` with title, artist, album and cover art from Windows media controls when the track changes.
 - Span one wallpaper across every display (Settings > Wallpapers). It rests only when every display would.
+- Audio visualizer wallpapers: with `"api": ["audio"]`, the page gets `sarabAudio` with 128 levels from 0 to 1, about 30 times a second, from whatever the PC plays. Capture runs only while such a wallpaper plays.
 - Video and GIF fit in Settings: fill the screen (cover, the default), fit inside, stretch, or original size.
 
 ### Changed
