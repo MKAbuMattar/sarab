@@ -4,6 +4,8 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ## [Unreleased]
 
+## [0.0.5] - 2026-10-05
+
 ### Added
 
 - Change wallpaper every 5, 15 or 30 minutes, or every hour, in library order or at random, through every wallpaper or one category. Next in the tray menu follows the same choice. It waits while the wallpaper rests, and picking a wallpaper yourself restarts the wait.
@@ -65,6 +67,7 @@ First public release, for Windows 10 (1903 or later) and Windows 11.
 - Opening Sarab from the desktop or Start menu opens its window, also when it already runs in the background. Starting at sign-in stays in the tray.
 - Start with Windows, on by default: switched on once at the first launch, and it stays off if you turn it off. Uninstalling removes it.
 
-[Unreleased]: https://github.com/MKAbuMattar/sarab/compare/v0.0.4...HEAD
+[Unreleased]: https://github.com/MKAbuMattar/sarab/compare/v0.0.5...HEAD
+[0.0.5]: https://github.com/MKAbuMattar/sarab/compare/v0.0.4...v0.0.5
 [0.0.4]: https://github.com/MKAbuMattar/sarab/compare/v0.0.3...v0.0.4
 [0.0.3]: https://github.com/MKAbuMattar/sarab/releases/tag/v0.0.3
