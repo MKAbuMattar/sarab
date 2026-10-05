@@ -223,6 +223,15 @@ dialog::backdrop { background: var(--smoke); }
 dialog .content { padding: 24px; display: grid; gap: 16px; max-height: 60vh; overflow: auto; }
 dialog h2 { margin: 0; font-size: 20px; line-height: 28px; }
 dialog label { display: grid; gap: 6px; }
+/* Library bar: search, category and sort, then type chips */
+.lib-bar { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; margin-top: 16px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 14px; }
+.chips button[aria-pressed=true] { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+#edit .footer, #info .footer { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; }
+.danger-text { color: var(--danger-text); }
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; }
+.facts dt { color: var(--text-2); }
+.facts dd { margin: 0; overflow-wrap: anywhere; }
 dialog .footer { padding: 24px; background: var(--dialog-footer); border-top: 1px solid var(--card-stroke); display: flex; justify-content: flex-end; }
 /* ContentDialog: buttons share the footer width equally, primary first */
 #ask { width: min(448px, 92vw); }
