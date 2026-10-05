@@ -338,6 +338,16 @@ async fn set_prop(
 }
 
 #[tauri::command]
+async fn reset_props(app: AppHandle, display: usize) -> Result<(), String> {
+    with_core(&app, move |app, core| {
+        if display >= core.displays.len() {
+            return Err("no such display".into());
+        }
+        wallpaper::reset_props(app, core, display)
+    })
+}
+
+#[tauri::command]
 async fn save_settings(app: AppHandle, new: settings::Settings) -> Result<(), String> {
     with_core(&app, move |app, core| {
         let lib_changed = new.library_dir != core.settings.library_dir;
@@ -521,6 +531,7 @@ fn main() {
             resume_auto,
             props,
             set_prop,
+            reset_props,
             save_settings,
             autostart,
             check_update,

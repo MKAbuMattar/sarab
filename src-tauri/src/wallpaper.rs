@@ -548,6 +548,21 @@ pub fn set_prop(
     Ok(v)
 }
 
+/// Back to the wallpaper's own defaults on display `i`, and tell the page.
+pub fn reset_props(app: &AppHandle, core: &mut Core, i: usize) -> Result<(), String> {
+    let id = core.displays[i]
+        .wallpaper
+        .clone()
+        .ok_or("no wallpaper on that display")?;
+    let w = core.find(&id).cloned().ok_or("wallpaper missing")?;
+    library::reset_props(&saved_props_path(&id, &core.displays[i].mon.key))
+        .map_err(|e| e.to_string())?;
+    if let Some(win) = window(app, &core.displays[i]) {
+        push_props(&win, &w, &core.displays[i].mon.key);
+    }
+    Ok(())
+}
+
 pub fn props_for(core: &Core, i: usize) -> Map<String, Value> {
     let Some(id) = core.displays.get(i).and_then(|d| d.wallpaper.clone()) else {
         return Map::new();

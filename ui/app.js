@@ -335,7 +335,13 @@ async function openProps(display) {
     ? entries.map(([key, c]) => control(display, key, c))
     : [el('p', { class: 'caption' }, t('props.none'))]));
   $('#props-body').querySelectorAll('select').forEach(combo);
-  $('#props').showModal();
+  $('#props-reset').hidden = !entries.length;
+  $('#props-reset').onclick = async () => {
+    try { await invoke('reset_props', { display }); } catch (e) { showError(String(e)); return; }
+    $('#props').close();
+    openProps(display);
+  };
+  if (!$('#props').open) $('#props').showModal();
 }
 
 function control(display, key, c) {
