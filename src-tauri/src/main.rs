@@ -436,6 +436,17 @@ async fn details(app: AppHandle, id: String) -> Result<library::Details, String>
     Ok(library::details(&w))
 }
 
+/// Saves the wallpaper as a package zip in Downloads and shows it in Explorer.
+#[tauri::command]
+async fn export_wallpaper(app: AppHandle, id: String) -> Result<String, String> {
+    let w = with_core(&app, move |_, core| core.find(&id).cloned()).ok_or("not found")?;
+    let zip = library::export_zip(&w, &support::downloads())?;
+    let _ = std::process::Command::new("explorer.exe")
+        .arg(format!("/select,{}", zip.display()))
+        .spawn();
+    Ok(zip.display().to_string())
+}
+
 /// Opens the wallpaper's own folder in Explorer. Takes an id, never a path.
 #[tauri::command]
 async fn reveal(app: AppHandle, id: String) -> Result<(), String> {
@@ -564,7 +575,8 @@ fn main() {
             get_preset,
             edit_info,
             details,
-            reveal
+            reveal,
+            export_wallpaper
         ])
         .on_window_event(|win, ev| {
             if win.label() != "main" {
