@@ -50,6 +50,8 @@ pub struct Core {
     /// Run video sync on the next tick (a display just resumed or loaded).
     pub sync_due: bool,
     pub ticks: u64,
+    /// The volume the pages play at now, after the audio rules; the setting is the most it can be.
+    pub volume_now: u8,
     /// When the wallpaper last changed, by the user or by cycling.
     pub changed_at: std::time::Instant,
 }
@@ -129,6 +131,7 @@ impl Core {
     pub fn load() -> Core {
         let settings: Settings = settings::load(&cfg("settings.json"));
         let lib = scan_all(&settings);
+        let volume_now = settings.volume;
         Core {
             layout: settings::load(&cfg("layout.json")),
             restore: settings::load(&cfg("restore.json")),
@@ -140,6 +143,7 @@ impl Core {
             signals: Signals::default(),
             sync_due: false,
             ticks: 0,
+            volume_now,
             changed_at: std::time::Instant::now(),
         }
     }
@@ -382,7 +386,7 @@ pub fn on_loaded(app: &AppHandle, core: &mut Core, lbl: &str) {
     };
     let _ = win.eval(format!(
         "window.__sarab&&(__sarab.setFps({}),__sarab.volume({}))",
-        core.settings.fps, core.settings.volume
+        core.settings.fps, core.volume_now
     ));
     if let Some(w) = core.find(&id).cloned() {
         push_props(&win, &w, &core.displays[i].mon.key);
@@ -579,6 +583,8 @@ pub fn props_for(core: &Core, i: usize) -> Map<String, Value> {
 
 pub fn set_volume(app: &AppHandle, core: &mut Core, v: u8) {
     core.settings.volume = v;
+    // The rules apply on the next tick; until then the new volume plays.
+    core.volume_now = v;
     let _ = settings::save(&cfg("settings.json"), &core.settings);
     for i in 0..core.displays.len() {
         if let Some(win) = window(app, &core.displays[i]) {
@@ -703,6 +709,25 @@ fn sync_video(app: &AppHandle, core: &Core) {
     }
 }
 
+/// The volume the audio rules allow: the set volume, or silence while an app has the focus
+/// (desktop only) or while another app plays sound.
+fn effective_volume(s: &Settings, desktop_focused: bool, others_playing: bool) -> u8 {
+    if (s.audio_desktop_only && !desktop_focused) || (s.audio_mute_others && others_playing) {
+        0
+    } else {
+        s.volume
+    }
+}
+
+/// Send the volume to every page without touching the saved setting.
+fn push_volume(app: &AppHandle, core: &Core, v: u8) {
+    for d in &core.displays {
+        if let Some(win) = window(app, d) {
+            let _ = win.eval(format!("window.__sarab&&__sarab.volume({v})"));
+        }
+    }
+}
+
 /// Reasons that mean nobody can see the wallpaper. Every other pause leaves it visible.
 fn unseen(why: Reason) -> bool {
     matches!(why, Reason::Covered | Reason::Locked | Reason::Remote)
@@ -824,6 +849,15 @@ pub fn tick(app: &AppHandle, core: &mut Core) {
         apply_state(app, core, i, st, false);
     }
     unload_or_reload(app, core);
+    // The session scan only runs when it can matter: a rule is on and the wallpaper has sound.
+    let others =
+        core.settings.audio_mute_others && core.settings.volume > 0 && os::other_audio_playing();
+    let v = effective_volume(&core.settings, core.signals.desktop_focused, others);
+    if v != core.volume_now {
+        log(format!("volume {} -> {v} (audio rules)", core.volume_now));
+        core.volume_now = v;
+        push_volume(app, core, v);
+    }
     core.ticks += 1;
     let playing = core.displays.iter().any(|d| d.wallpaper.is_some());
     let resting = core.displays.iter().any(|d| d.state != State::Play);
@@ -927,6 +961,42 @@ pub fn remove(app: &AppHandle, core: &mut Core, id: &str) -> Result<(), String> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn effective_volume_rules() {
+        let s = |desk: bool, others: bool| Settings {
+            volume: 60,
+            audio_desktop_only: desk,
+            audio_mute_others: others,
+            ..Settings::default()
+        };
+        assert_eq!(
+            effective_volume(&s(false, false), false, true),
+            60,
+            "no rule on"
+        );
+        assert_eq!(
+            effective_volume(&s(true, false), true, false),
+            60,
+            "desktop shown"
+        );
+        assert_eq!(
+            effective_volume(&s(true, false), false, false),
+            0,
+            "an app has focus"
+        );
+        assert_eq!(
+            effective_volume(&s(false, true), false, true),
+            0,
+            "another app plays"
+        );
+        assert_eq!(
+            effective_volume(&s(false, true), false, false),
+            60,
+            "silence elsewhere"
+        );
+        assert_eq!(effective_volume(&s(true, true), true, false), 60);
+    }
 
     #[test]
     fn should_unload_only_when_unseen() {
