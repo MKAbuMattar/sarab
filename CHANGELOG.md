@@ -11,6 +11,7 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ### Changed
 
+- Displays playing the same video now stay within a few milliseconds of each other, under a tenth of a frame, also right after resting: Sarab checks every second and nudges the speed instead of only jumping. YouTube wallpapers on several displays are kept in step too, to about a quarter of a second.
 - A display now rests when windows together cover it, such as two apps snapped side by side, and not only when one window fills it.
 
 ### Fixed
