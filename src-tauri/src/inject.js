@@ -57,6 +57,7 @@
     volume(v) {
       media().forEach(m => { m.volume = Math.min(1, v / 100); m.muted = v === 0; });
       window.__sarabVolume = v;
+      window.__sarabHooks?.volume?.(v);
     },
     // Video sync between displays. Both sides read the same machine clock, so the follower
     // can add the time the message spent in flight.

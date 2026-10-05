@@ -202,7 +202,44 @@ fn player_url(src: &str, kind: &str, fit: &str, clip: Option<[f64; 2]>) -> Strin
     format!("{APP_ORIGIN}/player.html?kind={kind}&fit={fit}{range}&src={q}")
 }
 
-/// Shadertoy and YouTube pages are heavy; their embed forms show only the content.
+/// The video and playlist ids in a YouTube link: watch, youtu.be, shorts, live, embed and
+/// playlist forms, on www, m and music. None for anything else.
+fn youtube_ids(u: &str) -> Option<(Option<String>, Option<String>)> {
+    let rest = u.split_once("://").map_or(u, |(_, r)| r);
+    let (host, path) = rest.split_once('/').unwrap_or((rest, ""));
+    let host = host
+        .trim_start_matches("www.")
+        .trim_start_matches("m.")
+        .trim_start_matches("music.");
+    let (path, query) = path.split_once('?').unwrap_or((path, ""));
+    let id_chars = |s: &str| -> Option<String> {
+        let id: String = s
+            .chars()
+            .take_while(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_')
+            .collect();
+        (!id.is_empty()).then_some(id)
+    };
+    let param = |name: &str| {
+        query
+            .split('&')
+            .find_map(|kv| kv.strip_prefix(name)?.strip_prefix('='))
+            .and_then(id_chars)
+    };
+    let video = match host {
+        "youtu.be" => id_chars(path),
+        "youtube.com" | "youtube-nocookie.com" => match path.split_once('/') {
+            Some(("shorts" | "live" | "embed" | "v", id)) => id_chars(id),
+            _ if path == "watch" => param("v"),
+            _ => None,
+        },
+        _ => return None,
+    };
+    let list = param("list");
+    (video.is_some() || list.is_some()).then_some((video, list))
+}
+
+/// Shadertoy pages are heavy; the embed form shows only the shader. YouTube refuses to play
+/// when loaded directly (Error 153), so its links open Sarab's own page, which frames the player.
 fn rewrite_url(u: &str) -> String {
     if let Some(id) = u.split("shadertoy.com/view/").nth(1) {
         return format!(
@@ -210,18 +247,11 @@ fn rewrite_url(u: &str) -> String {
             id.trim_end_matches('/')
         );
     }
-    let yt = u
-        .split("youtube.com/watch?v=")
-        .nth(1)
-        .or_else(|| u.split("youtu.be/").nth(1));
-    if let Some(id) = yt {
-        let id: String = id
-            .chars()
-            .take_while(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_')
-            .collect();
-        return format!(
-            "https://www.youtube.com/embed/{id}?autoplay=1&mute=1&loop=1&playlist={id}&controls=0"
-        );
+    if let Some((video, list)) = youtube_ids(u) {
+        let mut q = vec![];
+        q.extend(video.map(|v| format!("v={v}")));
+        q.extend(list.map(|l| format!("list={l}")));
+        return format!("{APP_ORIGIN}/youtube.html?{}", q.join("&"));
     }
     u.to_string()
 }
@@ -742,4 +772,64 @@ pub fn remove(app: &AppHandle, core: &mut Core, id: &str) -> Result<(), String> 
     let _ = fs::remove_dir_all(cfg("props").join(id));
     core.lib = scan_all(&core.settings);
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn youtube_links() {
+        let v = |id: &str| Some((Some(id.to_string()), None));
+        assert_eq!(
+            youtube_ids("https://www.youtube.com/watch?v=aqz-KE-bpKQ"),
+            v("aqz-KE-bpKQ")
+        );
+        assert_eq!(
+            youtube_ids("https://youtube.com/watch?feature=share&v=aqz-KE-bpKQ&t=30"),
+            v("aqz-KE-bpKQ")
+        );
+        assert_eq!(
+            youtube_ids("https://youtu.be/aqz-KE-bpKQ?si=x"),
+            v("aqz-KE-bpKQ")
+        );
+        assert_eq!(
+            youtube_ids("https://m.youtube.com/watch?v=aqz-KE-bpKQ"),
+            v("aqz-KE-bpKQ")
+        );
+        assert_eq!(
+            youtube_ids("https://www.youtube.com/shorts/aqz-KE-bpKQ"),
+            v("aqz-KE-bpKQ")
+        );
+        assert_eq!(
+            youtube_ids("https://www.youtube.com/live/jfKfPfyJRdk?si=y"),
+            v("jfKfPfyJRdk")
+        );
+        assert_eq!(
+            youtube_ids("https://www.youtube.com/embed/aqz-KE-bpKQ"),
+            v("aqz-KE-bpKQ")
+        );
+        assert_eq!(
+            youtube_ids("https://www.youtube.com/playlist?list=PL123_ab-C"),
+            Some((None, Some("PL123_ab-C".into())))
+        );
+        assert_eq!(
+            youtube_ids("https://www.youtube.com/watch?v=aqz-KE-bpKQ&list=PL123"),
+            Some((Some("aqz-KE-bpKQ".into()), Some("PL123".into())))
+        );
+        // Not YouTube, or YouTube without a video: left alone.
+        assert_eq!(youtube_ids("https://www.youtube.com/@blender"), None);
+        assert_eq!(
+            youtube_ids("https://notyoutube.com/watch?v=aqz-KE-bpKQ"),
+            None
+        );
+        assert_eq!(youtube_ids("https://example.com/youtu.be/x"), None);
+        // An id cannot carry anything but id characters into the page URL.
+        assert_eq!(youtube_ids("https://youtu.be/abc\"><script>"), v("abc"));
+        assert_eq!(
+            rewrite_url("https://youtu.be/aqz-KE-bpKQ"),
+            "http://tauri.localhost/youtube.html?v=aqz-KE-bpKQ"
+        );
+        assert_eq!(rewrite_url("https://example.com/"), "https://example.com/");
+    }
 }
