@@ -55,6 +55,9 @@ pub struct Core {
     pub sysinfo: Option<crate::feeds::Sampler>,
     /// The screensaver's window labels and the input stamp it started at, while it shows.
     pub screensaver: Option<(Vec<String>, u32)>,
+    /// Where the mouse hook sends input, and whether it runs.
+    pub mouse_targets: os::Targets,
+    pub mouse_on: Option<std::sync::Arc<std::sync::atomic::AtomicBool>>,
     /// Runs while a playing wallpaper asks for the audio levels.
     pub audio: Option<crate::audio::Feed>,
     /// Labels of the webviews the audio thread sends to.
@@ -158,6 +161,8 @@ impl Core {
             sysinfo: None,
             now_playing: None,
             audio: None,
+            mouse_targets: Default::default(),
+            mouse_on: None,
             screensaver: None,
             audio_to: Default::default(),
             changed_at: std::time::Instant::now(),
@@ -1030,6 +1035,41 @@ fn run_screensaver(app: &AppHandle, core: &mut Core, others_playing: bool) {
     }
 }
 
+/// Keep the mouse hook running exactly while the setting is on and a web or URL wallpaper
+/// shows, and tell it where those wallpapers are.
+fn run_mouse_input(app: &AppHandle, core: &mut Core) {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    let targets: Vec<(windows::Win32::Foundation::RECT, isize)> = if core.settings.mouse_input {
+        core.displays
+            .iter()
+            .filter(|d| {
+                d.wallpaper
+                    .as_deref()
+                    .and_then(|id| core.find(id))
+                    .is_some_and(|w| matches!(w.info.r#type, Kind::Web | Kind::Url))
+            })
+            .filter_map(|d| window(app, d)?.hwnd().ok())
+            .filter_map(|h| Some((os::window_rect(h)?, os::input_window(h)?)))
+            .collect()
+    } else {
+        vec![]
+    };
+    let want = !targets.is_empty();
+    *core.mouse_targets.lock().unwrap() = targets;
+    match (&core.mouse_on, want) {
+        (Some(on), false) => {
+            on.store(false, Ordering::Relaxed);
+            core.mouse_on = None;
+        }
+        (None, true) => {
+            let on = std::sync::Arc::new(AtomicBool::new(true));
+            os::forward_mouse(core.mouse_targets.clone(), on.clone());
+            core.mouse_on = Some(on);
+        }
+        _ => {}
+    }
+}
+
 /// Keep the audio capture running exactly while a playing wallpaper asks for "audio". The
 /// capture thread sends each spectrum straight to those webviews (eval is thread-safe).
 fn run_audio_feed(app: &AppHandle, core: &mut Core) {
@@ -1218,6 +1258,7 @@ pub fn tick(app: &AppHandle, core: &mut Core) {
     push_sysinfo(app, core);
     push_now_playing(app, core);
     run_audio_feed(app, core);
+    run_mouse_input(app, core);
     // The session scan only runs when it can matter: a rule is on and the wallpaper has sound,
     // or the screensaver is about to decide whether a video is playing.
     let ss_soon = core.settings.screensaver_minutes > 0

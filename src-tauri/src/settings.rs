@@ -33,6 +33,8 @@ pub struct Settings {
     pub screensaver_wallpaper: Option<String>,
     /// One wallpaper stretched across every display instead of one per display.
     pub span: bool,
+    /// Pass mouse moves and clicks over the desktop to web wallpapers.
+    pub mouse_input: bool,
     /// Cycling and "next" go through the library "order"ly or at "random".
     pub cycle_order: String,
     /// Only wallpapers in this category take part in cycling and "next"; "all" for every one.
@@ -72,6 +74,7 @@ impl Default for Settings {
             screensaver_minutes: 0,
             screensaver_wallpaper: None,
             span: false,
+            mouse_input: false,
             cycle_order: "order".into(),
             cycle_category: "all".into(),
             // On by default where memory is tight (SPEC F17).
