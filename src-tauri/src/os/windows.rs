@@ -1212,6 +1212,122 @@ pub fn main_window(pid: u32) -> Option<HWND> {
     f.1
 }
 
+// ---- command line ----
+
+/// `path` (a PATH value) with `dir` added at the end or taken out. Everything else stays exactly
+/// as it was, %VARIABLES% and empty entries included.
+pub fn path_with(path: &str, dir: &str, add: bool) -> String {
+    let same = |p: &str| {
+        p.trim()
+            .trim_end_matches('\\')
+            .eq_ignore_ascii_case(dir.trim_end_matches('\\'))
+    };
+    let present = path.split(';').any(same);
+    if add == present {
+        path.to_string()
+    } else if add {
+        if path.is_empty() {
+            dir.to_string()
+        } else if path.ends_with(';') {
+            // Keep the trailing ; so taking the folder out again gives back the same string.
+            format!("{path}{dir};")
+        } else {
+            format!("{path};{dir}")
+        }
+    } else {
+        path.split(';')
+            .filter(|p| !same(p))
+            .collect::<Vec<_>>()
+            .join(";")
+    }
+}
+
+/// Add Sarab's folder to the user's PATH, or take it out, so `sarab` works in any new terminal.
+/// The installer and uninstaller call this; NSIS cannot do it, since its strings stop at 1024
+/// characters and would cut a long PATH short.
+pub fn set_on_path(add: bool) -> Result<(), String> {
+    use windows::Win32::System::Registry::*;
+    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+    let dir = exe
+        .parent()
+        .ok_or("no folder")?
+        .to_string_lossy()
+        .into_owned();
+    let mut key = HKEY::default();
+    unsafe {
+        RegOpenKeyExW(
+            HKEY_CURRENT_USER,
+            w!("Environment"),
+            None,
+            KEY_QUERY_VALUE | KEY_SET_VALUE,
+            &mut key,
+        )
+    }
+    .ok()
+    .map_err(|e| e.to_string())?;
+    // Read without expanding, so %USERPROFILE% and the like are written back as they were.
+    let mut len = 0u32;
+    let flags = RRF_RT_REG_SZ | RRF_RT_REG_EXPAND_SZ | RRF_NOEXPAND;
+    let found =
+        unsafe { RegGetValueW(key, None, w!("Path"), flags, None, None, Some(&mut len)) }.is_ok();
+    let mut buf = vec![0u16; (len as usize / 2).max(1)];
+    if found {
+        unsafe {
+            RegGetValueW(
+                key,
+                None,
+                w!("Path"),
+                flags,
+                None,
+                Some(buf.as_mut_ptr() as *mut _),
+                Some(&mut len),
+            )
+        }
+        .ok()
+        .map_err(|e| e.to_string())?;
+    }
+    let cur = String::from_utf16_lossy(&buf[..(len as usize / 2).saturating_sub(1)]);
+    let cur = if found { cur } else { String::new() };
+    let next = path_with(&cur, &dir, add);
+    let r = if next == cur {
+        Ok(())
+    } else {
+        let wide: Vec<u16> = next.encode_utf16().chain([0]).collect();
+        let bytes =
+            unsafe { std::slice::from_raw_parts(wide.as_ptr() as *const u8, wide.len() * 2) };
+        unsafe { RegSetValueExW(key, w!("Path"), None, REG_EXPAND_SZ, Some(bytes)) }
+            .ok()
+            .map_err(|e| e.to_string())
+    };
+    unsafe {
+        let _ = RegCloseKey(key);
+    }
+    r?;
+    // Tell Explorer, so terminals opened from now on see the new PATH.
+    unsafe {
+        let _ = SendMessageTimeoutW(
+            HWND_BROADCAST,
+            WM_SETTINGCHANGE,
+            WPARAM(0),
+            LPARAM(w!("Environment").as_ptr() as isize),
+            SMTO_ABORTIFHUNG,
+            5000,
+            None,
+        );
+    }
+    Ok(())
+}
+
+/// Print `msg` in the terminal that started Sarab, if one did. A release build is a windowed
+/// app, which has no console of its own.
+pub fn tell_terminal(msg: &str) {
+    use std::io::Write;
+    use windows::Win32::System::Console::{AttachConsole, ATTACH_PARENT_PROCESS};
+    if unsafe { AttachConsole(ATTACH_PARENT_PROCESS) }.is_ok() {
+        let _ = writeln!(std::io::stderr(), "\n{msg}");
+    }
+}
+
 /// Installed memory in bytes, 0 if Windows will not say.
 pub fn total_ram() -> u64 {
     use windows::Win32::System::SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX};
@@ -1400,6 +1516,42 @@ mod tests {
         std::thread::sleep(std::time::Duration::from_millis(300));
         assert!(!alive(), "closing the job ends the program");
         assert!(launch_app(std::path::Path::new("C:/no/such.exe"), &[]).is_err());
+    }
+
+    #[test]
+    fn on_path_adds_once_and_removes_only_ours() {
+        let dir = r"C:\Users\a\AppData\Local\Sarab";
+        assert_eq!(path_with("", dir, true), dir);
+        assert_eq!(
+            path_with(r"%USERPROFILE%\bin;", dir, true),
+            format!(r"%USERPROFILE%\bin;{dir};")
+        );
+        for orig in ["", r"C:\x", r"C:\x;", r"%USERPROFILE%\bin;;C:\y;"] {
+            let back = path_with(&path_with(orig, dir, true), dir, false);
+            assert_eq!(back, orig, "add then remove is exact");
+        }
+        let with = path_with(r"C:\x;;C:\y", dir, true);
+        assert_eq!(with, format!(r"C:\x;;C:\y;{dir}"), "keeps empty entries");
+        assert_eq!(path_with(&with, dir, true), with, "added once");
+        assert_eq!(
+            path_with(&with.to_uppercase(), dir, true),
+            with.to_uppercase(),
+            "case does not matter"
+        );
+        assert_eq!(
+            path_with(&format!(r"{dir}\;C:\x"), dir, false),
+            r"C:\x",
+            "trailing slash still ours"
+        );
+        assert_eq!(path_with(&with, dir, false), r"C:\x;;C:\y");
+        assert_eq!(
+            path_with(r"C:\x;C:\Sarab2", r"C:\Sarab", false),
+            r"C:\x;C:\Sarab2",
+            "a longer name is not ours"
+        );
+        // The installer calls both, outside an update.
+        let hooks = include_str!("../../windows/hooks.nsh");
+        assert!(hooks.contains("--add-to-path") && hooks.contains("--remove-from-path"));
     }
 
     #[test]

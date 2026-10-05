@@ -666,6 +666,22 @@ fn tray(app: &AppHandle, lang: &str) -> tauri::Result<()> {
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
+    // The installer's calls: done here, before the window or the hand-off to a running Sarab.
+    if let Some(add) = match args.first().map(String::as_str) {
+        Some("--add-to-path") => Some(true),
+        Some("--remove-from-path") => Some(false),
+        _ => None,
+    } {
+        if let Err(e) = os::windows::set_on_path(add) {
+            log(format!("PATH: {e}"));
+        }
+        return;
+    }
+    // A mistyped command is answered in the terminal, instead of only in the log of the running copy.
+    if let Err(e) = cli::parse(&args) {
+        os::windows::tell_terminal(&format!("sarab: {e}"));
+        std::process::exit(2);
+    }
     let app = tauri::Builder::default()
         // Must be the first plugin: a second `sarab ...` process hands its args to us and exits.
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
