@@ -209,5 +209,7 @@
   "settings.mouseInput": "Let web wallpapers follow the mouse",
   "settings.mouseInputDesc": "Moves and clicks over the desktop reach interactive wallpapers. Off by default: it watches the mouse everywhere.",
   "library.tooNew": "Made for Sarab {v} or newer",
-  "library.tooNewTitle": "Play a wallpaper made for a newer Sarab?"
+  "library.tooNewTitle": "Play a wallpaper made for a newer Sarab?",
+  "settings.keepFrame": "Keep the last frame when Sarab quits",
+  "settings.keepFrameDesc": "Each display keeps the moment it showed as its Windows wallpaper."
 }

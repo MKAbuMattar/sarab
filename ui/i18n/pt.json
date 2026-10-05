@@ -209,5 +209,7 @@
   "settings.mouseInput": "Permitir que telas de fundo da web sigam o mouse",
   "settings.mouseInputDesc": "Movimentos e cliques na área de trabalho chegam às telas de fundo interativas. Desativado por padrão: monitora o mouse em todo lugar.",
   "library.tooNew": "Feito para o Sarab {v} ou mais recente",
-  "library.tooNewTitle": "Reproduzir um papel de parede feito para um Sarab mais recente?"
+  "library.tooNewTitle": "Reproduzir um papel de parede feito para um Sarab mais recente?",
+  "settings.keepFrame": "Manter o último quadro ao fechar o Sarab",
+  "settings.keepFrameDesc": "Cada tela mantém o último momento exibido como papel de parede do Windows."
 }

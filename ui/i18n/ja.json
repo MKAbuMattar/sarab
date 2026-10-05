@@ -209,5 +209,7 @@
   "settings.mouseInput": "Web 壁紙をマウスに追従させる",
   "settings.mouseInputDesc": "デスクトップ上でのマウスの移動やクリックがインタラクティブな壁紙に届きます。既定ではオフです: オンにすると、あらゆる場所のマウスを監視します。",
   "library.tooNew": "Sarab {v} 以降向けに作成",
-  "library.tooNewTitle": "新しいバージョンの Sarab 向けの壁紙を再生しますか?"
+  "library.tooNewTitle": "新しいバージョンの Sarab 向けの壁紙を再生しますか?",
+  "settings.keepFrame": "Sarab の終了時に最後のフレームを残す",
+  "settings.keepFrameDesc": "各ディスプレイで最後に表示していた場面を Windows の壁紙として残します。"
 }

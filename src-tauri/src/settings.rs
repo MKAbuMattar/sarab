@@ -35,6 +35,8 @@ pub struct Settings {
     pub span: bool,
     /// Pass mouse moves and clicks over the desktop to web wallpapers.
     pub mouse_input: bool,
+    /// On quit, leave each display's last frame as its Windows wallpaper.
+    pub keep_frame_on_quit: bool,
     /// Cycling and "next" go through the library "order"ly or at "random".
     pub cycle_order: String,
     /// Only wallpapers in this category take part in cycling and "next"; "all" for every one.
@@ -75,6 +77,7 @@ impl Default for Settings {
             screensaver_wallpaper: None,
             span: false,
             mouse_input: false,
+            keep_frame_on_quit: false,
             cycle_order: "order".into(),
             cycle_category: "all".into(),
             // On by default where memory is tight (SPEC F17).

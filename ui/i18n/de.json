@@ -209,5 +209,7 @@
   "settings.mouseInput": "Web-Hintergrundbilder der Maus folgen lassen",
   "settings.mouseInputDesc": "Bewegungen und Klicks auf dem Desktop erreichen interaktive Hintergrundbilder. Standardmäßig aus: Dabei wird die Maus überall beobachtet.",
   "library.tooNew": "Für Sarab {v} oder neuer erstellt",
-  "library.tooNewTitle": "Hintergrund für eine neuere Sarab-Version abspielen?"
+  "library.tooNewTitle": "Hintergrund für eine neuere Sarab-Version abspielen?",
+  "settings.keepFrame": "Letztes Bild beim Beenden von Sarab behalten",
+  "settings.keepFrameDesc": "Jeder Bildschirm behält den zuletzt gezeigten Moment als Windows-Hintergrund."
 }

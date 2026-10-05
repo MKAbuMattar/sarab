@@ -209,5 +209,7 @@
   "settings.mouseInput": "Permitir que los fondos web sigan el mouse",
   "settings.mouseInputDesc": "Los movimientos y clics sobre el escritorio llegan a los fondos interactivos. Desactivado de forma predeterminada: vigila el mouse en todas partes.",
   "library.tooNew": "Creado para Sarab {v} o posterior",
-  "library.tooNewTitle": "¿Reproducir un fondo creado para una versión más nueva de Sarab?"
+  "library.tooNewTitle": "¿Reproducir un fondo creado para una versión más nueva de Sarab?",
+  "settings.keepFrame": "Conservar el último fotograma al cerrar Sarab",
+  "settings.keepFrameDesc": "Cada pantalla conserva el último momento mostrado como fondo de Windows."
 }
