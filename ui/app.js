@@ -201,6 +201,7 @@ function render() {
   f.audio_desktop_only.checked = s.audio_desktop_only;
   f.unload_minutes.value = String(s.unload_minutes ?? 0);
   f.scaling.value = s.scaling || 'cover';
+  f.span.checked = s.span;
   f.cycle_minutes.value = String(s.cycle_minutes || 0);
   f.cycle_order.value = s.cycle_order || 'order';
   f.cycle_category.replaceChildren(el('option', { value: 'all' }, t('library.allCategories')),
@@ -452,6 +453,7 @@ function readSettings() {
     audio_desktop_only: f.audio_desktop_only.checked,
     unload_minutes: Number(f.unload_minutes.value),
     scaling: f.scaling.value,
+    span: f.span.checked,
     cycle_minutes: Number(f.cycle_minutes.value),
     cycle_order: f.cycle_order.value,
     cycle_category: f.cycle_category.value,

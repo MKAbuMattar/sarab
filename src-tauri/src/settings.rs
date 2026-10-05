@@ -27,6 +27,8 @@ pub struct Settings {
     pub scaling: String,
     /// Move to the next wallpaper in the library every this many minutes; 0 is never.
     pub cycle_minutes: u32,
+    /// One wallpaper stretched across every display instead of one per display.
+    pub span: bool,
     /// Cycling and "next" go through the library "order"ly or at "random".
     pub cycle_order: String,
     /// Only wallpapers in this category take part in cycling and "next"; "all" for every one.
@@ -63,6 +65,7 @@ impl Default for Settings {
             audio_mute_others: true,
             scaling: "cover".into(),
             cycle_minutes: 0,
+            span: false,
             cycle_order: "order".into(),
             cycle_category: "all".into(),
             // On by default where memory is tight (SPEC F17).

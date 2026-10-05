@@ -198,5 +198,7 @@
   "unload.oneMinute": "1 minute",
   "settings.audioMuteOthers": "Mute while another app plays sound",
   "settings.audioDesktopOnly": "Play sound only while the desktop has the focus",
-  "about.move": "Move…"
+  "about.move": "Move…",
+  "settings.span": "Span one wallpaper across every display",
+  "settings.spanDesc": "One picture of the whole desktop instead of one per display. It rests only when every display would."
 }

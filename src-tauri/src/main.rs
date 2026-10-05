@@ -364,6 +364,7 @@ async fn reset_props(app: AppHandle, display: usize) -> Result<(), String> {
 fn apply_settings(app: &AppHandle, core: &mut Core, new: settings::Settings) -> Result<(), String> {
     let lib_changed = new.library_dir != core.settings.library_dir;
     let fit_changed = new.scaling != core.settings.scaling;
+    let span_changed = new.span != core.settings.span;
     if let Some(w) = app.get_webview_window("main") {
         if new.theme != core.settings.theme {
             let _ = w.set_theme(theme_of(&new.theme));
@@ -378,8 +379,18 @@ fn apply_settings(app: &AppHandle, core: &mut Core, new: settings::Settings) -> 
     if lib_changed {
         rescan(core);
     }
+    // Span on or off: display 0's window changes size and the others gain or lose theirs.
+    if span_changed {
+        let first = core.displays.first().and_then(|d| d.wallpaper.clone());
+        for i in 0..core.displays.len() {
+            let id = core.displays[i].wallpaper.clone().or_else(|| first.clone());
+            if let Some(id) = id {
+                let _ = wallpaper::apply(app, core, i, &id);
+            }
+        }
+    }
     // The fit is part of the player URL, so running videos and GIFs load again with it.
-    if fit_changed {
+    if fit_changed && !span_changed {
         for i in 0..core.displays.len() {
             let id = core.displays[i].wallpaper.clone();
             let kind = id

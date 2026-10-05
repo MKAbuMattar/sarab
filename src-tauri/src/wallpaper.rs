@@ -13,6 +13,7 @@ use std::{
     sync::Mutex,
 };
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
+use windows::Win32::Foundation::RECT;
 
 pub const INJECT: &str = include_str!("inject.js");
 
@@ -551,6 +552,34 @@ fn restore_picture(core: &mut Core, i: usize) {
     }
 }
 
+/// The rectangle that holds every display, in screen coordinates.
+fn span_rect(rects: &[RECT]) -> RECT {
+    rects
+        .iter()
+        .fold(rects.first().copied().unwrap_or_default(), |a, r| RECT {
+            left: a.left.min(r.left),
+            top: a.top.min(r.top),
+            right: a.right.max(r.right),
+            bottom: a.bottom.max(r.bottom),
+        })
+}
+
+/// A spanned wallpaper plays while any display can play it, and otherwise rests for the
+/// reason the first display gives.
+fn span_state(decisions: &[(State, Reason)]) -> (State, Reason) {
+    decisions
+        .iter()
+        .find(|(st, _)| *st == State::Play)
+        .or(decisions.first())
+        .copied()
+        .unwrap_or((State::Play, Reason::None))
+}
+
+/// Is display `i` drawn by the spanning window on display 0 rather than its own?
+fn spanned(core: &Core, i: usize) -> bool {
+    core.settings.span && i > 0
+}
+
 pub fn apply(app: &AppHandle, core: &mut Core, i: usize, id: &str) -> Result<(), String> {
     let w = core
         .find(id)
@@ -559,7 +588,10 @@ pub fn apply(app: &AppHandle, core: &mut Core, i: usize, id: &str) -> Result<(),
     close_window(app, core, i);
     let key = core.displays[i].mon.key.clone();
     core.displays[i].error = None;
-    let result = if w.info.r#type == Kind::Picture {
+    let result = if spanned(core, i) && w.info.r#type != Kind::Picture {
+        // Drawn by display 0's window; this display only records what it shows.
+        Ok(())
+    } else if w.info.r#type == Kind::Picture {
         let Some(Target::File(f)) = w.target() else {
             return Err("picture has no file".into());
         };
@@ -618,7 +650,12 @@ fn create_window(app: &AppHandle, core: &mut Core, i: usize, w: &Wallpaper) -> R
         .map_err(|e| e.to_string())?;
     core.displays[i].label = Some(lbl);
     let attached = win.hwnd().map_err(|e| e.to_string()).and_then(|hwnd| {
-        os::attach(&desk, hwnd, core.displays[i].mon.rect).map_err(|e| e.to_string())?;
+        let rect = if core.settings.span {
+            span_rect(&core.displays.iter().map(|d| d.mon.rect).collect::<Vec<_>>())
+        } else {
+            core.displays[i].mon.rect
+        };
+        os::attach(&desk, hwnd, rect).map_err(|e| e.to_string())?;
         os::show(hwnd, true);
         Ok(())
     });
@@ -1039,6 +1076,11 @@ pub fn tick(app: &AppHandle, core: &mut Core) {
             .zip(&core.displays)
             .any(|((st, why), d)| *st != d.state || *why != d.reason);
     core.signals = s;
+    let decisions = if core.settings.span {
+        vec![span_state(&decisions); decisions.len()]
+    } else {
+        decisions
+    };
     for (i, (st, why)) in decisions.into_iter().enumerate() {
         core.displays[i].reason = why;
         apply_state(app, core, i, st, false);
@@ -1158,6 +1200,34 @@ pub fn remove(app: &AppHandle, core: &mut Core, id: &str) -> Result<(), String> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn span_covers_all_displays() {
+        let r = |left, top, right, bottom| RECT {
+            left,
+            top,
+            right,
+            bottom,
+        };
+        // A 1080p display, and a taller one to its left and lower down.
+        let both = span_rect(&[r(0, 0, 1920, 1080), r(-1080, 200, 0, 2120)]);
+        assert_eq!(both, r(-1080, 0, 1920, 2120));
+        assert_eq!(span_rect(&[r(0, 0, 10, 10)]), r(0, 0, 10, 10));
+        let play = (State::Play, Reason::None);
+        let covered = (State::Covered, Reason::Covered);
+        let battery = (State::Frozen, Reason::Battery);
+        assert_eq!(
+            span_state(&[covered, play]),
+            play,
+            "one display still shows it"
+        );
+        assert_eq!(
+            span_state(&[battery, covered]),
+            battery,
+            "all rest: the first reason"
+        );
+        assert_eq!(span_state(&[]), play);
+    }
 
     #[test]
     fn effective_volume_rules() {
