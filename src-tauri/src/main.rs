@@ -340,6 +340,7 @@ async fn set_prop(
 async fn save_settings(app: AppHandle, new: settings::Settings) -> Result<(), String> {
     with_core(&app, move |app, core| {
         let lib_changed = new.library_dir != core.settings.library_dir;
+        let fit_changed = new.scaling != core.settings.scaling;
         if let Some(w) = app.get_webview_window("main") {
             if new.theme != core.settings.theme {
                 let _ = w.set_theme(theme_of(&new.theme));
@@ -354,6 +355,19 @@ async fn save_settings(app: AppHandle, new: settings::Settings) -> Result<(), St
             .map_err(|e| e.to_string())?;
         if lib_changed {
             rescan(core);
+        }
+        // The fit is part of the player URL, so running videos and GIFs load again with it.
+        if fit_changed {
+            for i in 0..core.displays.len() {
+                let id = core.displays[i].wallpaper.clone();
+                let kind = id
+                    .as_deref()
+                    .and_then(|id| core.find(id))
+                    .map(|w| w.info.r#type);
+                if let (Some(id), Some(library::Kind::Video | library::Kind::Gif)) = (id, kind) {
+                    let _ = wallpaper::apply(app, core, i, &id);
+                }
+            }
         }
         wallpaper::set_volume(app, core, vol);
         wallpaper::set_fps(app, core);
