@@ -921,6 +921,21 @@ pub fn loopback(
     }
 }
 
+/// Milliseconds since the last key press or mouse move anywhere in this session, and the tick
+/// count of that input, which changes whenever the user touches anything.
+pub fn last_input() -> (u32, u32) {
+    use windows::Win32::System::SystemInformation::GetTickCount;
+    use windows::Win32::UI::Input::KeyboardAndMouse::{GetLastInputInfo, LASTINPUTINFO};
+    let mut li = LASTINPUTINFO {
+        cbSize: std::mem::size_of::<LASTINPUTINFO>() as u32,
+        dwTime: 0,
+    };
+    if !unsafe { GetLastInputInfo(&mut li) }.as_bool() {
+        return (0, 0);
+    }
+    (unsafe { GetTickCount() }.wrapping_sub(li.dwTime), li.dwTime)
+}
+
 /// Installed memory in bytes, 0 if Windows will not say.
 pub fn total_ram() -> u64 {
     use windows::Win32::System::SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX};

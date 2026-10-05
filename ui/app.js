@@ -201,6 +201,11 @@ function render() {
   f.audio_desktop_only.checked = s.audio_desktop_only;
   f.unload_minutes.value = String(s.unload_minutes ?? 0);
   f.scaling.value = s.scaling || 'cover';
+  f.screensaver_minutes.value = String(s.screensaver_minutes || 0);
+  f.screensaver_wallpaper.replaceChildren(el('option', { value: '' }, t('screensaver.each')),
+    ...state.library.filter(w => w.kind !== 'picture').map(w => el('option', { value: w.id }, w.info.title || w.id)));
+  f.screensaver_wallpaper.value = s.screensaver_wallpaper || '';
+  f.screensaver_wallpaper.disabled = !s.screensaver_minutes;
   f.span.checked = s.span;
   f.cycle_minutes.value = String(s.cycle_minutes || 0);
   f.cycle_order.value = s.cycle_order || 'order';
@@ -453,6 +458,8 @@ function readSettings() {
     audio_desktop_only: f.audio_desktop_only.checked,
     unload_minutes: Number(f.unload_minutes.value),
     scaling: f.scaling.value,
+    screensaver_minutes: Number(f.screensaver_minutes.value),
+    screensaver_wallpaper: f.screensaver_wallpaper.value || null,
     span: f.span.checked,
     cycle_minutes: Number(f.cycle_minutes.value),
     cycle_order: f.cycle_order.value,

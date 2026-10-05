@@ -27,6 +27,10 @@ pub struct Settings {
     pub scaling: String,
     /// Move to the next wallpaper in the library every this many minutes; 0 is never.
     pub cycle_minutes: u32,
+    /// Show a wallpaper full screen after this many idle minutes; 0 is never.
+    pub screensaver_minutes: u32,
+    /// The wallpaper the screensaver shows; None shows each display's own.
+    pub screensaver_wallpaper: Option<String>,
     /// One wallpaper stretched across every display instead of one per display.
     pub span: bool,
     /// Cycling and "next" go through the library "order"ly or at "random".
@@ -65,6 +69,8 @@ impl Default for Settings {
             audio_mute_others: true,
             scaling: "cover".into(),
             cycle_minutes: 0,
+            screensaver_minutes: 0,
+            screensaver_wallpaper: None,
             span: false,
             cycle_order: "order".into(),
             cycle_category: "all".into(),
