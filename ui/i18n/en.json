@@ -121,5 +121,13 @@
   "library.deleteBody": "It is removed from your library. A video or picture you added from elsewhere on your PC stays where it is.",
   "dialog.cancel": "Cancel",
   "dialog.close": "Close",
-  "update.notesTitle": "What's new in Sarab {v}"
+  "update.notesTitle": "What's new in Sarab {v}",
+  "settings.wallpapers": "Wallpapers",
+  "settings.cycle": "Change wallpaper every",
+  "settings.cycleDesc": "Goes through your library in order. Waits while the wallpaper rests.",
+  "cycle.never": "Never",
+  "cycle.fiveMinutes": "5 minutes",
+  "cycle.fifteenMinutes": "15 minutes",
+  "cycle.thirtyMinutes": "30 minutes",
+  "cycle.hour": "1 hour"
 }

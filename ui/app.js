@@ -208,6 +208,7 @@ function render() {
   for (const k of ['pause_fullscreen', 'per_display', 'pause_focus', 'pause_battery', 'pause_power_saver', 'pause_remote']) f[k].checked = s[k];
   f.per_display.disabled = !s.pause_fullscreen;
   f.fps.value = String(s.fps);
+  f.cycle_minutes.value = String(s.cycle_minutes || 0);
   f.volume.value = s.volume;
   fill(f.volume);
   f.theme.value = s.theme || 'system';
@@ -336,6 +337,7 @@ function readSettings() {
     pause_power_saver: f.pause_power_saver.checked,
     pause_remote: f.pause_remote.checked,
     fps: Number(f.fps.value),
+    cycle_minutes: Number(f.cycle_minutes.value),
     volume: Number(f.volume.value),
     app_pause: lines(f.app_pause.value),
     app_play: lines(f.app_play.value),

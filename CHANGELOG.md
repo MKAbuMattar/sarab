@@ -4,6 +4,18 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ## [Unreleased]
 
+### Added
+
+- Change wallpaper every 5, 15 or 30 minutes, or every hour, going through the library in order. It waits while the wallpaper rests, and picking a wallpaper yourself restarts the wait.
+
+### Changed
+
+- A display now rests when windows together cover it, such as two apps snapped side by side, and not only when one window fills it.
+
+### Fixed
+
+- YouTube wallpapers play again instead of showing "Video player configuration error" (Error 153). Shorts, live, mobile, YouTube Music and playlist links work too, and pausing and volume reach the YouTube player.
+
 ## [0.0.4] - 2026-10-03
 
 ### Fixed

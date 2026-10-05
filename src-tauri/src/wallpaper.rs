@@ -46,6 +46,8 @@ pub struct Core {
     /// Run video sync on the next tick (a display just resumed or loaded).
     pub sync_due: bool,
     pub ticks: u64,
+    /// When the wallpaper last changed, by the user or by cycling.
+    pub changed_at: std::time::Instant,
 }
 
 pub type Shared = Mutex<Core>;
@@ -134,6 +136,7 @@ impl Core {
             signals: Signals::default(),
             sync_due: false,
             ticks: 0,
+            changed_at: std::time::Instant::now(),
         }
     }
     pub fn find(&self, id: &str) -> Option<&Wallpaper> {
@@ -663,6 +666,32 @@ fn sync_video(app: &AppHandle, core: &Core) {
     }
 }
 
+/// The library entry after the one on the first display, on every display.
+pub fn next(app: &AppHandle, core: &mut Core) -> Result<(), String> {
+    let cur = core.displays.first().and_then(|d| d.wallpaper.clone());
+    let pos = cur
+        .and_then(|c| core.lib.iter().position(|w| w.id == c))
+        .map_or(0, |p| p + 1);
+    let Some(next) = core
+        .lib
+        .get(pos % core.lib.len().max(1))
+        .map(|w| w.id.clone())
+    else {
+        return Err("library is empty".into());
+    };
+    for i in 0..core.displays.len() {
+        apply(app, core, i, &next)?;
+    }
+    core.changed_at = std::time::Instant::now();
+    Ok(())
+}
+
+/// Time to move on: cycling is on, its interval has passed, something is playing, and nothing
+/// rests. A frozen or covered wallpaper is not seen, so changing it would only cost a page load.
+fn cycle_due(minutes: u32, since: std::time::Duration, playing: bool, resting: bool) -> bool {
+    minutes > 0 && playing && !resting && since.as_secs() >= u64::from(minutes) * 60
+}
+
 pub fn tick(app: &AppHandle, core: &mut Core) {
     sync_displays(app, core);
     if let Some(d) = core.desktop {
@@ -691,6 +720,22 @@ pub fn tick(app: &AppHandle, core: &mut Core) {
         apply_state(app, core, i, st, false);
     }
     core.ticks += 1;
+    let playing = core.displays.iter().any(|d| d.wallpaper.is_some());
+    let resting = core.displays.iter().any(|d| d.state != State::Play);
+    if cycle_due(
+        core.settings.cycle_minutes,
+        core.changed_at.elapsed(),
+        playing,
+        resting,
+    ) {
+        log("cycling to the next wallpaper");
+        if let Err(e) = next(app, core) {
+            log(format!("cycle: {e}"));
+        }
+        // Wait a full interval before trying again, even after a failure.
+        core.changed_at = std::time::Instant::now();
+        let _ = app.emit_to("main", "changed", ());
+    }
     if core.sync_due || core.ticks.is_multiple_of(5) {
         core.sync_due = false;
         sync_video(app, core);
@@ -777,6 +822,18 @@ pub fn remove(app: &AppHandle, core: &mut Core, id: &str) -> Result<(), String> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn cycle_due_only_when_on_playing_and_seen() {
+        use std::time::Duration;
+        let m = |n: u64| Duration::from_secs(n * 60);
+        assert!(cycle_due(15, m(15), true, false));
+        assert!(cycle_due(15, m(40), true, false));
+        assert!(!cycle_due(15, m(14), true, false), "too early");
+        assert!(!cycle_due(0, m(999), true, false), "off");
+        assert!(!cycle_due(15, m(15), false, false), "nothing playing");
+        assert!(!cycle_due(15, m(15), true, true), "resting");
+    }
 
     #[test]
     fn youtube_links() {
