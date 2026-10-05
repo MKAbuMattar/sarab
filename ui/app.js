@@ -207,6 +207,7 @@ function render() {
   f.screensaver_wallpaper.value = s.screensaver_wallpaper || '';
   f.screensaver_wallpaper.disabled = !s.screensaver_minutes;
   f.span.checked = s.span;
+  f.mouse_input.checked = s.mouse_input;
   f.cycle_minutes.value = String(s.cycle_minutes || 0);
   f.cycle_order.value = s.cycle_order || 'order';
   f.cycle_category.replaceChildren(el('option', { value: 'all' }, t('library.allCategories')),
@@ -461,6 +462,7 @@ function readSettings() {
     screensaver_minutes: Number(f.screensaver_minutes.value),
     screensaver_wallpaper: f.screensaver_wallpaper.value || null,
     span: f.span.checked,
+    mouse_input: f.mouse_input.checked,
     cycle_minutes: Number(f.cycle_minutes.value),
     cycle_order: f.cycle_order.value,
     cycle_category: f.cycle_category.value,

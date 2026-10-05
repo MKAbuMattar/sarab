@@ -205,5 +205,7 @@
   "settings.screensaverAfter": "Show a wallpaper full screen after",
   "settings.screensaverDesc": "Any key or mouse move ends it. It waits while a full-screen app is open or another app plays sound.",
   "settings.screensaverShows": "Show",
-  "screensaver.each": "Each display's own wallpaper"
+  "screensaver.each": "Each display's own wallpaper",
+  "settings.mouseInput": "Let web wallpapers follow the mouse",
+  "settings.mouseInputDesc": "Moves and clicks over the desktop reach interactive wallpapers. Off by default: it watches the mouse everywhere."
 }

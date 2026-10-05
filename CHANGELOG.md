@@ -21,6 +21,7 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 - Span one wallpaper across every display (Settings > Wallpapers). It rests only when every display would.
 - Audio visualizer wallpapers: with `"api": ["audio"]`, the page gets `sarabAudio` with 128 levels from 0 to 1, about 30 times a second, from whatever the PC plays. Capture runs only while such a wallpaper plays.
 - Screensaver (Settings > Screensaver): after 1 to 30 idle minutes a wallpaper covers every display, its own or one you pick; any key or mouse move ends it. It waits while a full-screen app is open or another app plays sound, and the desktop wallpapers rest meanwhile.
+- Interactive web wallpapers can follow the mouse (Settings > Wallpapers, off by default): moves and left clicks over the desktop reach the wallpaper under the cursor.
 - Video and GIF fit in Settings: fill the screen (cover, the default), fit inside, stretch, or original size.
 
 ### Changed
