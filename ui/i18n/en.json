@@ -197,5 +197,6 @@
   "settings.unloadDesc": "Only while an app covers it, the screen is locked or a remote session runs. It loads again when it is seen.",
   "unload.oneMinute": "1 minute",
   "settings.audioMuteOthers": "Mute while another app plays sound",
-  "settings.audioDesktopOnly": "Play sound only while the desktop has the focus"
+  "settings.audioDesktopOnly": "Play sound only while the desktop has the focus",
+  "about.move": "Move…"
 }

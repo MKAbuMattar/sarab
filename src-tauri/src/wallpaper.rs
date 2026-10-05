@@ -414,6 +414,11 @@ fn close_window(app: &AppHandle, core: &mut Core, i: usize) {
     d.label = None;
 }
 
+/// Close display `i`'s webview but keep its wallpaper and layout, to load it again later.
+pub fn unload(app: &AppHandle, core: &mut Core, i: usize) {
+    close_window(app, core, i);
+}
+
 fn restore_picture(core: &mut Core, i: usize) {
     let key = core.displays[i].mon.key.clone();
     if let Some(orig) = core.restore.remove(&key) {
