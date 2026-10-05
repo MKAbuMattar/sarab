@@ -487,6 +487,16 @@ pub fn set_picture(m: &Monitor, path: &str) -> windows::core::Result<()> {
     }
 }
 
+/// Installed memory in bytes, 0 if Windows will not say.
+pub fn total_ram() -> u64 {
+    use windows::Win32::System::SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX};
+    let mut m = MEMORYSTATUSEX {
+        dwLength: std::mem::size_of::<MEMORYSTATUSEX>() as u32,
+        ..Default::default()
+    };
+    unsafe { GlobalMemoryStatusEx(&mut m) }.map_or(0, |_| m.ullTotalPhys)
+}
+
 /// Move a file or folder to the Recycle Bin, so a deleted wallpaper can be restored.
 pub fn recycle(path: &std::path::Path) -> Result<(), String> {
     use std::os::windows::ffi::OsStrExt;

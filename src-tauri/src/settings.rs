@@ -27,6 +27,9 @@ pub struct Settings {
     pub cycle_order: String,
     /// Only wallpapers in this category take part in cycling and "next"; "all" for every one.
     pub cycle_category: String,
+    /// Unload a wallpaper nobody can see (covered, locked, remote) after this many minutes, to
+    /// free its memory; it loads again when it would play. 0 is never.
+    pub unload_minutes: u32,
     pub language: String,
     /// "system", "light" or "dark" for the settings window.
     pub theme: String,
@@ -56,6 +59,12 @@ impl Default for Settings {
             cycle_minutes: 0,
             cycle_order: "order".into(),
             cycle_category: "all".into(),
+            // On by default where memory is tight (SPEC F17).
+            unload_minutes: if crate::os::windows::total_ram() < 8 << 30 {
+                5
+            } else {
+                0
+            },
             language: "en".into(),
             theme: "system".into(),
             backdrop: "acrylic".into(),

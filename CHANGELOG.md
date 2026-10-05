@@ -17,6 +17,7 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ### Changed
 
+- A wallpaper hidden by an app, a lock or a remote session for a set time (Settings > Performance) is unloaded to free its memory and loads again when it can be seen. On by default, after 5 minutes, on PCs with less than 8 GB of memory.
 - Deleting a wallpaper moves its folder to the Recycle Bin, so it can be restored.
 - Displays playing the same video now stay within a few milliseconds of each other, under a tenth of a frame, also right after resting: Sarab checks every second and nudges the speed instead of only jumping. YouTube wallpapers on several displays are kept in step too, to about a quarter of a second.
 - A display now rests when windows together cover it, such as two apps snapped side by side, and not only when one window fills it.
