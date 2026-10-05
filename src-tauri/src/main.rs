@@ -133,7 +133,7 @@ fn run_command(app: &AppHandle, core: &mut Core, cmd: Command) -> Result<(), Str
     Ok(())
 }
 
-fn handle_args(app: &AppHandle, args: &[String]) {
+pub(crate) fn handle_args(app: &AppHandle, args: &[String]) {
     match cli::parse(args) {
         Ok(Some(cmd)) => {
             let r = with_core(app, move |app, core| run_command(app, core, cmd));
@@ -188,6 +188,7 @@ fn page_theme(app: &AppHandle, setting: &str) -> &'static str {
 
 /// Callers pass the settings because they may already hold the core lock.
 fn open_ui(app: &AppHandle, theme: &str, backdrop: &str) {
+    update::check_if_stale(app);
     if let Some(w) = app.get_webview_window("main") {
         let _ = w.unminimize();
         let _ = w.set_focus();
@@ -576,17 +577,36 @@ pub(crate) fn ui_text(lang: &str, key: &str) -> String {
         .unwrap_or_else(|| key.to_string())
 }
 
-fn tray(app: &AppHandle, lang: &str) -> tauri::Result<()> {
+/// The tray menu; with an update waiting, its first item installs it.
+pub(crate) fn tray_menu(
+    app: &AppHandle,
+    lang: &str,
+    update: Option<&str>,
+) -> tauri::Result<Menu<tauri::Wry>> {
     let t = |k: &str| ui_text(lang, k);
-    let menu = Menu::with_items(
-        app,
-        &[
-            &MenuItem::with_id(app, "toggle", t("tray.toggle"), true, None::<&str>)?,
-            &MenuItem::with_id(app, "next", t("tray.next"), true, None::<&str>)?,
-            &MenuItem::with_id(app, "ui", t("tray.open"), true, None::<&str>)?,
-            &MenuItem::with_id(app, "quit", t("tray.quit"), true, None::<&str>)?,
-        ],
-    )?;
+    let menu = Menu::new(app)?;
+    if let Some(v) = update {
+        menu.append(&MenuItem::with_id(
+            app,
+            "install-update",
+            t("update.trayItem").replace("{v}", v),
+            true,
+            None::<&str>,
+        )?)?;
+    }
+    for (id, key) in [
+        ("toggle", "tray.toggle"),
+        ("next", "tray.next"),
+        ("ui", "tray.open"),
+        ("quit", "tray.quit"),
+    ] {
+        menu.append(&MenuItem::with_id(app, id, t(key), true, None::<&str>)?)?;
+    }
+    Ok(menu)
+}
+
+fn tray(app: &AppHandle, lang: &str) -> tauri::Result<()> {
+    let menu = tray_menu(app, lang, None)?;
     let mut b = TrayIconBuilder::with_id("sarab")
         .tooltip("Sarab")
         .menu(&menu)
@@ -599,6 +619,7 @@ fn tray(app: &AppHandle, lang: &str) -> tauri::Result<()> {
             "toggle" => "toggle",
             "next" => "next",
             "ui" => "ui",
+            "install-update" => "install-update",
             _ => "quit",
         };
         handle_args(app, &[cmd.to_string()]);
@@ -632,7 +653,6 @@ fn main() {
             Some(vec![AUTOSTART_FLAG]),
         ))
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_notification::init())
         .manage::<update::Updates>(Default::default())
         .manage::<presets::Downloads>(Default::default())
         .manage::<Shared>(Mutex::new(Core::load()))

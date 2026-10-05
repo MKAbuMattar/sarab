@@ -107,7 +107,6 @@
   "update.never": "Henüz denetlenmedi.",
   "update.failed": "Güncellemeler denetlenemedi:",
   "update.tooltip": "Sarab: {v} sürümü kullanılabilir",
-  "update.toast": "Sarab {v} kullanılabilir. Güncellemek için Sarab'ı açın.",
   "about.updates": "Güncellemeler",
   "about.autoUpdate": "Güncellemeleri otomatik olarak denetle",
   "about.autoUpdateDesc": "Günde bir kez. Şimdi güncelle'yi seçene kadar hiçbir şey indirilmez.",
@@ -211,5 +210,8 @@
   "library.tooNew": "Sarab {v} veya daha yenisi için hazırlandı",
   "library.tooNewTitle": "Daha yeni bir Sarab için hazırlanmış duvar kâğıdı oynatılsın mı?",
   "settings.keepFrame": "Sarab kapanınca son kareyi koru",
-  "settings.keepFrameDesc": "Her ekran gösterdiği son anı Windows duvar kâğıdı olarak tutar."
+  "settings.keepFrameDesc": "Her ekran gösterdiği son anı Windows duvar kâğıdı olarak tutar.",
+  "update.toastTitle": "Sarab {v} kullanıma hazır",
+  "update.toastBody": "Şimdi yükleyin: Sarab kapanır, güncellenir ve yeniden açılır.",
+  "update.trayItem": "{v} sürümüne güncelle"
 }

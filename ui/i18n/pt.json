@@ -107,7 +107,6 @@
   "update.never": "Ainda não verificado.",
   "update.failed": "Não foi possível verificar atualizações:",
   "update.tooltip": "Sarab: a versão {v} está disponível",
-  "update.toast": "O Sarab {v} está disponível. Abra o Sarab para atualizar.",
   "about.updates": "Atualizações",
   "about.autoUpdate": "Verificar atualizações automaticamente",
   "about.autoUpdateDesc": "Uma vez por dia. Nada é baixado até você escolher Atualizar agora.",
@@ -211,5 +210,8 @@
   "library.tooNew": "Feito para o Sarab {v} ou mais recente",
   "library.tooNewTitle": "Reproduzir um papel de parede feito para um Sarab mais recente?",
   "settings.keepFrame": "Manter o último quadro ao fechar o Sarab",
-  "settings.keepFrameDesc": "Cada tela mantém o último momento exibido como papel de parede do Windows."
+  "settings.keepFrameDesc": "Cada tela mantém o último momento exibido como papel de parede do Windows.",
+  "update.toastTitle": "O Sarab {v} está disponível",
+  "update.toastBody": "Instale agora: o Sarab fecha, atualiza e abre de novo.",
+  "update.trayItem": "Atualizar para {v}"
 }

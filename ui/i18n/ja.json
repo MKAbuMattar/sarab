@@ -107,7 +107,6 @@
   "update.never": "まだ確認していません。",
   "update.failed": "更新を確認できませんでした:",
   "update.tooltip": "Sarab: バージョン {v} が利用可能です",
-  "update.toast": "Sarab {v} が利用可能です。Sarab を開いて更新してください。",
   "about.updates": "更新",
   "about.autoUpdate": "更新を自動的に確認する",
   "about.autoUpdateDesc": "1 日 1 回確認します。[今すぐ更新] を選ぶまで何もダウンロードされません。",
@@ -211,5 +210,8 @@
   "library.tooNew": "Sarab {v} 以降向けに作成",
   "library.tooNewTitle": "新しいバージョンの Sarab 向けの壁紙を再生しますか?",
   "settings.keepFrame": "Sarab の終了時に最後のフレームを残す",
-  "settings.keepFrameDesc": "各ディスプレイで最後に表示していた場面を Windows の壁紙として残します。"
+  "settings.keepFrameDesc": "各ディスプレイで最後に表示していた場面を Windows の壁紙として残します。",
+  "update.toastTitle": "Sarab {v} が利用可能です",
+  "update.toastBody": "今すぐインストール: Sarab が終了し、更新してから再び起動します。",
+  "update.trayItem": "{v} に更新"
 }
