@@ -230,6 +230,14 @@ async fn state(app: AppHandle) -> Value {
                         v["thumb_url"] = json!(wallpaper::asset_url(t));
                     }
                 }
+                // Videos and GIFs play on their tile while the pointer rests on it.
+                if let (Some(library::Target::File(f)), library::Kind::Video | library::Kind::Gif) =
+                    (w.target(), w.info.r#type)
+                {
+                    if f.is_file() && app.asset_protocol_scope().allow_file(&f).is_ok() {
+                        v["preview_url"] = json!(wallpaper::asset_url(&f));
+                    }
+                }
                 v
             }).collect::<Vec<_>>(),
             "categories": library::CATEGORIES,
