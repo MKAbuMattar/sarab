@@ -15,6 +15,7 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 - An Info view for each wallpaper: type, category, tags, author, license, source, size, date added and changed, version, and a button that opens its folder.
 - Sound rules in Settings > Performance: mute the wallpaper while another app plays sound (on by default), and play sound only while the desktop has the focus.
 - Web wallpapers can ask for system information: with `"api": ["system"]` in sarab.json, the page gets `sarabSystemInfo` once a second while it plays (CPU and GPU name, CPU use, memory, network down and up).
+- Web wallpapers can show the song that is playing: with `"api": ["nowplaying"]`, the page gets `sarabNowPlaying` with title, artist, album and cover art from Windows media controls when the track changes.
 - Video and GIF fit in Settings: fill the screen (cover, the default), fit inside, stretch, or original size.
 
 ### Changed

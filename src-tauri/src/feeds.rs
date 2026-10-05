@@ -64,9 +64,106 @@ impl Sampler {
     }
 }
 
+/// What `sarabNowPlaying(track)` receives when the track changes. Thumbnail is the cover as a
+/// base64 data URL, or empty.
+#[derive(Serialize, Debug, Clone, PartialEq, Default)]
+#[serde(rename_all = "PascalCase")]
+pub struct Track {
+    pub title: String,
+    pub artist: String,
+    pub album_title: String,
+    pub album_artist: String,
+    pub thumbnail: String,
+}
+
+fn base64(bytes: &[u8]) -> String {
+    const ABC: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
+    for c in bytes.chunks(3) {
+        let n = (u32::from(c[0]) << 16)
+            | (u32::from(*c.get(1).unwrap_or(&0)) << 8)
+            | u32::from(*c.get(2).unwrap_or(&0));
+        for (i, shift) in [18, 12, 6, 0].into_iter().enumerate() {
+            out.push(if i <= c.len() {
+                ABC[(n >> shift) as usize & 63] as char
+            } else {
+                '='
+            });
+        }
+    }
+    out
+}
+
+/// The current track, from Windows media controls.
+pub fn read_track() -> Option<Track> {
+    let (title, artist, album_title, album_artist, art) = os::now_playing()?;
+    let thumbnail = if art.is_empty() {
+        String::new()
+    } else {
+        // Media apps hand over PNG or JPEG; the browser sniffs either from a data URL.
+        let kind = if art.starts_with(b"\x89PNG") {
+            "png"
+        } else {
+            "jpeg"
+        };
+        format!("data:image/{kind};base64,{}", base64(&art))
+    };
+    Some(Track {
+        title,
+        artist,
+        album_title,
+        album_artist,
+        thumbnail,
+    })
+}
+
+/// Polls media controls every 2 s on its own thread, only while `wanted` is set. The tick reads
+/// `latest` and sends it when it changed.
+pub struct NowPlaying {
+    pub wanted: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    pub latest: std::sync::Arc<std::sync::Mutex<Option<Track>>>,
+    pub sent: Option<Option<Track>>,
+}
+
+impl NowPlaying {
+    pub fn start() -> NowPlaying {
+        use std::sync::atomic::Ordering;
+        let wanted = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));
+        let latest = std::sync::Arc::new(std::sync::Mutex::new(None));
+        let (w, l) = (wanted.clone(), latest.clone());
+        std::thread::spawn(move || loop {
+            if w.load(Ordering::Relaxed) {
+                let t = read_track();
+                *l.lock().unwrap() = t;
+            }
+            std::thread::sleep(std::time::Duration::from_secs(2));
+        });
+        NowPlaying {
+            wanted,
+            latest,
+            sent: None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn now_playing_shape() {
+        assert_eq!(base64(b""), "");
+        assert_eq!(base64(b"f"), "Zg==");
+        assert_eq!(base64(b"fo"), "Zm8=");
+        assert_eq!(base64(b"foo"), "Zm9v");
+        assert_eq!(base64(b"foobar"), "Zm9vYmFy");
+        let json = serde_json::to_value(Track::default()).unwrap();
+        for k in ["Title", "Artist", "AlbumTitle", "AlbumArtist", "Thumbnail"] {
+            assert!(json.get(k).is_some(), "{k}");
+        }
+        // Reading the real session must not panic, whatever is or is not playing.
+        let _ = read_track();
+    }
 
     #[test]
     fn sysinfo_reads_real_numbers() {
