@@ -266,10 +266,11 @@ function renderLibrary() {
   $('#library').replaceChildren(...shown.map(w => el('li', { class: 'tile' },
     thumbFor(w),
     el('div', { class: 'body' },
-      el('span', { class: 'name' }, wpTitle(w)),
-      el('span', { class: 'caption' }, [t(`type.${w.kind}`), w.info.category && categoryName(w.info.category), w.preset && t('presets.builtIn')].filter(Boolean).join(' · ')),
+      el('span', { class: 'name', title: wpTitle(w) }, wpTitle(w)),
+      el('span', { class: 'caption line' }, [t(`type.${w.kind}`), w.info.category && categoryName(w.info.category), w.preset && t('presets.builtIn')].filter(Boolean).join(' · ')),
       w.too_new ? el('span', { class: 'caption danger-text' }, t('library.tooNew', { v: w.info.app_version })) : '',
-      el('div', { class: 'row' },
+      // One row that never wraps: the main action, then icon buttons with tooltips.
+      el('div', { class: 'actions' },
         btn('accent', '', t('library.set'), async () => {
           // A package made for a newer Sarab may use what this one lacks: ask first.
           if (w.too_new && !await ask({ title: t('library.tooNewTitle'), body: t('library.tooNew', { v: w.info.app_version }), ok: t('library.set'), cancel: t('dialog.cancel') })) return;
@@ -277,12 +278,13 @@ function renderLibrary() {
           if (w.kind === 'app' && !await ask({ title: t('library.appTitle', { title: wpTitle(w) }), body: t('library.appBody'), ok: t('library.run'), cancel: t('dialog.cancel'), danger: true })) return;
           run(() => invoke('set_wallpaper', { target: w.id, display: selectedDisplay() }));
         }),
+        el('span', { class: 'spacer' }),
         iconBtn('', t('library.info'), () => openInfo(w)),
         w.preset ? '' : iconBtn('', t('library.edit'), () => openEdit(w)),
-        w.preset ? '' : btn('subtle danger', '', t('library.delete'), async () => {
+        w.preset ? '' : iconBtn('', t('library.delete'), async () => {
           const ok = await ask({ title: t('library.deleteTitle', { title: wpTitle(w) }), body: t('library.deleteBody'), ok: t('library.delete'), cancel: t('dialog.cancel'), danger: true });
           if (ok) run(() => invoke('remove', { id: w.id }));
-        }))))));
+        }, 'danger'))))));
   document.querySelectorAll('.lib-bar select').forEach(combo);
 }
 
@@ -294,19 +296,87 @@ function thumbFor(w) {
   const box = el('div', { class: 'thumb' }, still());
   if (!w.preview_url) return box;
   box.addEventListener('pointerenter', () => {
-    if (lessMotion.matches) return;
-    const media = w.kind === 'gif'
-      ? el('img', { src: w.preview_url, alt: '' })
-      : Object.assign(el('video', { src: w.preview_url }), { muted: true, autoplay: true, loop: true, playsInline: true });
-    box.replaceChildren(media);
+    if (lessMotion.matches || box.querySelector('.preview')) return;
+    const gif = w.kind === 'gif';
+    const media = gif
+      ? el('img', { class: 'preview', src: w.preview_url, alt: '' })
+      : Object.assign(el('video', { class: 'preview', src: w.preview_url }), { muted: true, autoplay: true, loop: true, playsInline: true });
+    // Shown over the still only once it has a frame, so hovering never flashes black.
+    media.addEventListener(gif ? 'load' : 'playing', () => media.classList.add('on'), { once: true });
+    box.append(media);
   });
-  box.addEventListener('pointerleave', () => box.replaceChildren(still()));
+  box.addEventListener('pointerleave', () => box.querySelector('.preview')?.remove());
   return box;
 }
 
+// Right-click menu. The window is an app, not a web page, so the browser's menu (Back, Refresh,
+// Print) never shows. Text fields keep theirs for cut, copy and paste. A card gets a Windows 11
+// menu built from its own buttons, so the menu always offers exactly what the card does.
+function closeMenu() {
+  const m = $('#menu');
+  if (m.hidden) return;
+  m.hidden = true;
+  m.replaceChildren();
+  menuReturn?.focus({ preventScroll: true });
+}
+let menuReturn = null;
+function openMenu(x, y, buttons, keyboard) {
+  const m = $('#menu');
+  m.replaceChildren(...buttons.map(b => el('button', {
+    type: 'button', role: 'menuitem', class: b.classList.contains('danger') ? 'danger' : '',
+    onclick: () => { closeMenu(); b.click(); },
+  }, icon(b.querySelector('.icon')?.textContent ?? ''), el('span', {}, b.getAttribute('aria-label') || b.querySelector('span')?.textContent || ''))));
+  m.hidden = false;
+  // Keep it on screen, flipping to the other side of the pointer near an edge.
+  const r = m.getBoundingClientRect();
+  // It opens toward the reading direction (left in Arabic) and flips back near an edge.
+  const left = document.documentElement.dir === 'rtl' ? (x - r.width < 4 ? x : x - r.width) : (x + r.width > innerWidth ? x - r.width : x);
+  m.style.left = `${Math.max(4, left)}px`;
+  m.style.top = `${Math.max(4, y + r.height > innerHeight ? y - r.height : y)}px`;
+  // From the keyboard the first item is selected, as in Windows; from the mouse none is.
+  // preventScroll: a scroll closes the menu, so focusing it must never scroll the page.
+  (keyboard ? m.querySelector('button') : m).focus({ preventScroll: true });
+}
+document.addEventListener('contextmenu', e => {
+  if (e.target.closest('input, textarea')) return;
+  e.preventDefault();
+  const tile = e.target.closest('.tile');
+  const buttons = tile ? [...tile.querySelectorAll('.actions button, .row button')] : [];
+  if (!buttons.length) return closeMenu();
+  menuReturn = document.activeElement;
+  // The menu key and Shift+F10 report no pointer position: open under the card's title.
+  const keyboard = !e.clientX && !e.clientY;
+  const at = keyboard ? (r => [r.left, r.bottom])(tile.querySelector('.body').getBoundingClientRect()) : [e.clientX, e.clientY];
+  openMenu(...at, buttons, keyboard);
+});
+document.addEventListener('pointerdown', e => { if (!e.target.closest('#menu')) closeMenu(); });
+addEventListener('blur', closeMenu);
+addEventListener('resize', closeMenu);
+document.addEventListener('scroll', closeMenu, true);
+$('#menu').addEventListener('keydown', e => {
+  const items = [...$('#menu').querySelectorAll('button')];
+  const i = items.indexOf(document.activeElement);
+  const go = n => { e.preventDefault(); items[(i + n + items.length) % items.length].focus(); };
+  if (e.key === 'ArrowDown') go(1);
+  else if (e.key === 'ArrowUp') go(-1);
+  else if (e.key === 'Home') go(-i);
+  else if (e.key === 'End') go(items.length - 1 - i);
+  else if (e.key === 'Escape' || e.key === 'Tab') { e.preventDefault(); closeMenu(); }
+});
+
+// The browser menu's shortcuts would reload, print, save or go back in the window. An app has none
+// of that. Copy, paste, select all and undo stay.
+document.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  const browser = ['F5', 'F7', 'BrowserBack', 'BrowserForward', 'BrowserRefresh'].includes(e.key)
+    || (e.ctrlKey && ['r', 'p', 's', 'u', 'f', 'g', 'j', 'h'].includes(k))
+    || (e.altKey && ['ArrowLeft', 'ArrowRight', 'Home'].includes(e.key));
+  if (browser) e.preventDefault();
+}, true);
+
 // An icon-only button still has a name for screen readers and a tooltip for the mouse.
-const iconBtn = (glyph, label, onclick) =>
-  el('button', { class: 'subtle icon-only', type: 'button', 'aria-label': label, title: label, onclick }, icon(glyph));
+const iconBtn = (glyph, label, onclick, cls = '') =>
+  el('button', { class: `subtle icon-only ${cls}`, type: 'button', 'aria-label': label, title: label, onclick }, icon(glyph));
 
 function openEdit(w) {
   const d = $('#edit'), f = $('#edit-form');
