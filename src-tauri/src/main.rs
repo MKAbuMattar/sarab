@@ -58,6 +58,8 @@ fn run_command(app: &AppHandle, core: &mut Core, cmd: Command) -> Result<(), Str
             for i in wallpaper::targets(core, display)? {
                 wallpaper::apply(app, core, i, &id)?;
             }
+            // A wallpaper the user picked gets a full interval before cycling moves on.
+            core.changed_at = std::time::Instant::now();
         }
         Command::Close { display } => {
             for i in wallpaper::targets(core, display)? {
@@ -84,22 +86,7 @@ fn run_command(app: &AppHandle, core: &mut Core, cmd: Command) -> Result<(), Str
             }
         }
         Command::Volume(v) => wallpaper::set_volume(app, core, v),
-        Command::Next => {
-            let cur = core.displays.first().and_then(|d| d.wallpaper.clone());
-            let pos = cur
-                .and_then(|c| core.lib.iter().position(|w| w.id == c))
-                .map_or(0, |p| p + 1);
-            let Some(next) = core
-                .lib
-                .get(pos % core.lib.len().max(1))
-                .map(|w| w.id.clone())
-            else {
-                return Err("library is empty".into());
-            };
-            for i in 0..core.displays.len() {
-                wallpaper::apply(app, core, i, &next)?;
-            }
-        }
+        Command::Next => wallpaper::next(app, core)?,
         Command::Import(zip) => {
             library::import_zip(
                 &wallpaper::library_dir(&core.settings),

@@ -19,7 +19,10 @@ pub struct Settings {
     pub app_play: Vec<String>,
     pub fps: u32,
     pub volume: u8,
+    /// How videos and GIFs fill the display: "cover", "contain", "fill" or "none".
     pub scaling: String,
+    /// Move to the next wallpaper in the library every this many minutes; 0 is never.
+    pub cycle_minutes: u32,
     pub language: String,
     /// "system", "light" or "dark" for the settings window.
     pub theme: String,
@@ -46,6 +49,7 @@ impl Default for Settings {
             fps: 30,
             volume: 0,
             scaling: "cover".into(),
+            cycle_minutes: 0,
             language: "en".into(),
             theme: "system".into(),
             backdrop: "acrylic".into(),

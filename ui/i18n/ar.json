@@ -121,5 +121,13 @@
   "library.deleteBody": "ستُزال من مكتبتك. أما الفيديو أو الصورة التي أضفتها من مكان آخر على جهازك فتبقى في مكانها.",
   "dialog.cancel": "إلغاء",
   "dialog.close": "إغلاق",
-  "update.notesTitle": "ما الجديد في سراب {v}"
+  "update.notesTitle": "ما الجديد في سراب {v}",
+  "settings.wallpapers": "الخلفيات",
+  "settings.cycle": "تغيير الخلفية كل",
+  "settings.cycleDesc": "تنتقل بين خلفيات مكتبتك بالترتيب، وتنتظر أثناء استراحة الخلفية.",
+  "cycle.never": "أبدًا",
+  "cycle.fiveMinutes": "5 دقائق",
+  "cycle.fifteenMinutes": "15 دقيقة",
+  "cycle.thirtyMinutes": "30 دقيقة",
+  "cycle.hour": "ساعة واحدة"
 }
