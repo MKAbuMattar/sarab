@@ -220,5 +220,8 @@
   "about.channel": "Canal de mise à jour",
   "about.channelDesc": "Bêta reçoit les versions de test avant tout le monde. Elles peuvent avoir des défauts.",
   "channel.stable": "Stable",
-  "channel.beta": "Bêta"
+  "channel.beta": "Bêta",
+  "library.appTitle": "Lancer {title} comme fond d’écran ?",
+  "library.appBody": "C’est un programme. Il s’exécute avec les mêmes droits que toute app que vous ouvrez : n’utilisez que des programmes de confiance. Sarab le ferme quand le fond change ou quand Sarab quitte.",
+  "library.run": "Lancer"
 }

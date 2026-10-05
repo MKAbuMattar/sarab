@@ -150,6 +150,7 @@ pub fn kind_for(target: &str) -> Option<Kind> {
         "gif" => Kind::Gif,
         "jpg" | "jpeg" | "png" | "bmp" | "webp" | "jfif" | "tif" | "tiff" => Kind::Picture,
         "html" | "htm" => Kind::Web,
+        "exe" => Kind::App,
         _ => return None,
     })
 }

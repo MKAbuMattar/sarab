@@ -220,5 +220,8 @@
   "about.channel": "Güncelleme kanalı",
   "about.channelDesc": "Beta, test sürümlerini herkesten önce alır. Bazı kusurlar olabilir.",
   "channel.stable": "Kararlı",
-  "channel.beta": "Beta"
+  "channel.beta": "Beta",
+  "library.appTitle": "{title} duvar kâğıdı olarak çalıştırılsın mı?",
+  "library.appBody": "Bu bir program. Açtığınız her uygulamayla aynı yetkilerle çalışır; yalnızca güvendiğiniz programları kullanın. Duvar kâğıdı değişince veya Sarab kapanınca Sarab onu kapatır.",
+  "library.run": "Çalıştır"
 }
