@@ -33,6 +33,7 @@
   window.cancelAnimationFrame = id => { pending.delete(id); };
 
   const media = () => document.querySelectorAll('video, audio');
+  const now = () => performance.timeOrigin + performance.now();
 
   window.__sarab = {
     setFps(n) { fps = Math.max(0, n | 0); },
@@ -60,19 +61,33 @@
       window.__sarabHooks?.volume?.(v);
     },
     // Video sync between displays. Both sides read the same machine clock, so the follower
-    // can add the time the message spent in flight.
+    // can add the time the message spent in flight. performance.now() keeps the fractions of a
+    // millisecond that Date.now() drops.
     time() {
       const v = document.querySelector('video');
-      return v && !v.paused ? { t: v.currentTime, at: Date.now(), d: v.duration || 0 } : null;
+      const hook = window.__sarabHooks?.time?.();
+      if (hook !== undefined) return hook;
+      if (!v || v.paused) return null;
+      v.playbackRate = 1;  // only the leader is asked; one that used to follow stops adjusting
+      return { t: v.currentTime, at: now(), d: v.duration || 0 };
     },
     follow(lead) {
+      if (window.__sarabHooks?.follow) return window.__sarabHooks.follow(lead);
       const v = document.querySelector('video');
       if (!v || !lead || v.paused) return;
-      let target = lead.t + (Date.now() - lead.at) / 1000;
+      let target = lead.t + (now() - lead.at) / 1000;
       if (lead.d) target %= lead.d;
       let drift = v.currentTime - target;
       if (lead.d) drift = ((drift % lead.d) + lead.d * 1.5) % lead.d - lead.d / 2;  // shortest way round the loop
-      if (Math.abs(drift) > 0.05) v.currentTime = target;
+      if (Math.abs(drift) > 0.5) {
+        // Too far to catch up unseen, after a rest for example: jump.
+        v.currentTime = target;
+        v.playbackRate = 1;
+      } else {
+        // Close: play up to 10% faster or slower so the gap closes by the next call (once a
+        // second) without a visible jump. A seek lands anywhere within a frame of the target.
+        v.playbackRate = Math.abs(drift) < 0.002 ? 1 : Math.min(1.1, Math.max(0.9, 1 - drift));
+      }
     },
     status() {
       return {

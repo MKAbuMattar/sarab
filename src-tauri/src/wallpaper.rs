@@ -629,22 +629,38 @@ pub fn sync_displays(app: &AppHandle, core: &mut Core) {
 /// The same video on several displays plays in step: the leftmost playing display leads, the
 /// others follow. Displays are independent webviews, so without this they start at different
 /// moments and drift further apart every time one is paused and resumed.
-fn sync_video(app: &AppHandle, core: &Core) {
+/// Displays to keep in step: those playing the same video or YouTube link, two or more to a
+/// group, leftmost first. Each entry is a display's wallpaper id and whether it can be synced now.
+fn sync_groups(displays: impl Iterator<Item = (Option<String>, bool)>) -> Vec<Vec<usize>> {
     let mut groups: BTreeMap<String, Vec<usize>> = BTreeMap::new();
-    for (i, d) in core.displays.iter().enumerate() {
-        let video = d
-            .wallpaper
-            .as_deref()
-            .and_then(|id| core.find(id))
-            .is_some_and(|w| w.info.r#type == Kind::Video);
-        if video && d.loaded && d.state == State::Play {
-            groups
-                .entry(d.wallpaper.clone().unwrap_or_default())
-                .or_default()
-                .push(i);
+    for (i, (id, syncable)) in displays.enumerate() {
+        if let (Some(id), true) = (id, syncable) {
+            groups.entry(id).or_default().push(i);
         }
     }
-    for idx in groups.into_values().filter(|g| g.len() > 1) {
+    groups.into_values().filter(|g| g.len() > 1).collect()
+}
+
+fn sync_video(app: &AppHandle, core: &Core) {
+    let syncable = |d: &Display| {
+        let w = d.wallpaper.as_deref().and_then(|id| core.find(id));
+        let media = w.is_some_and(|w| match w.info.r#type {
+            Kind::Video => true,
+            Kind::Url => w
+                .info
+                .file
+                .as_deref()
+                .is_some_and(|u| youtube_ids(u).is_some()),
+            _ => false,
+        });
+        media && d.loaded && d.state == State::Play
+    };
+    let groups = sync_groups(
+        core.displays
+            .iter()
+            .map(|d| (d.wallpaper.clone(), syncable(d))),
+    );
+    for idx in groups {
         let Some(lead) = window(app, &core.displays[idx[0]]) else {
             continue;
         };
@@ -736,10 +752,9 @@ pub fn tick(app: &AppHandle, core: &mut Core) {
         core.changed_at = std::time::Instant::now();
         let _ = app.emit_to("main", "changed", ());
     }
-    if core.sync_due || core.ticks.is_multiple_of(5) {
-        core.sync_due = false;
-        sync_video(app, core);
-    }
+    // Every tick: a follower corrects its speed once a second, so it holds within a frame.
+    core.sync_due = false;
+    sync_video(app, core);
     if changed {
         write_status(core);
         let _ = app.emit_to("main", "changed", ());
@@ -822,6 +837,23 @@ pub fn remove(app: &AppHandle, core: &mut Core, id: &str) -> Result<(), String> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn sync_groups_pick_shared_videos() {
+        let d = |id: Option<&str>, ok: bool| (id.map(String::from), ok);
+        // Displays 0 and 2 share a video; 1 plays something else alone; 3 shares but is resting.
+        let groups = sync_groups(
+            vec![
+                d(Some("a"), true),
+                d(Some("b"), true),
+                d(Some("a"), true),
+                d(Some("a"), false),
+            ]
+            .into_iter(),
+        );
+        assert_eq!(groups, vec![vec![0, 2]]);
+        assert!(sync_groups(vec![d(Some("a"), true), d(None, true)].into_iter()).is_empty());
+    }
 
     #[test]
     fn cycle_due_only_when_on_playing_and_seen() {
