@@ -263,8 +263,13 @@ function renderLibrary() {
     el('div', { class: 'body' },
       el('span', { class: 'name' }, w.info.title || w.id),
       el('span', { class: 'caption' }, [t(`type.${w.kind}`), w.info.category && categoryName(w.info.category), w.preset && t('presets.builtIn')].filter(Boolean).join(' · ')),
+      w.too_new ? el('span', { class: 'caption danger-text' }, t('library.tooNew', { v: w.info.app_version })) : '',
       el('div', { class: 'row' },
-        btn('accent', '', t('library.set'), () => run(() => invoke('set_wallpaper', { target: w.id, display: selectedDisplay() }))),
+        btn('accent', '', t('library.set'), async () => {
+          // A package made for a newer Sarab may use what this one lacks: ask first.
+          if (w.too_new && !await ask({ title: t('library.tooNewTitle'), body: t('library.tooNew', { v: w.info.app_version }), ok: t('library.set'), cancel: t('dialog.cancel') })) return;
+          run(() => invoke('set_wallpaper', { target: w.id, display: selectedDisplay() }));
+        }),
         iconBtn('', t('library.info'), () => openInfo(w)),
         w.preset ? '' : iconBtn('', t('library.edit'), () => openEdit(w)),
         w.preset ? '' : btn('subtle danger', '', t('library.delete'), async () => {

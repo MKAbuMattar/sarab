@@ -207,5 +207,7 @@
   "settings.screensaverShows": "Mostrar",
   "screensaver.each": "El fondo propio de cada pantalla",
   "settings.mouseInput": "Permitir que los fondos web sigan el mouse",
-  "settings.mouseInputDesc": "Los movimientos y clics sobre el escritorio llegan a los fondos interactivos. Desactivado de forma predeterminada: vigila el mouse en todas partes."
+  "settings.mouseInputDesc": "Los movimientos y clics sobre el escritorio llegan a los fondos interactivos. Desactivado de forma predeterminada: vigila el mouse en todas partes.",
+  "library.tooNew": "Creado para Sarab {v} o posterior",
+  "library.tooNewTitle": "¿Reproducir un fondo creado para una versión más nueva de Sarab?"
 }

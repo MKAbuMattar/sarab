@@ -207,5 +207,7 @@
   "settings.screensaverShows": "Göster",
   "screensaver.each": "Her ekranın kendi duvar kâğıdı",
   "settings.mouseInput": "Web duvar kâğıtlarının fareyi izlemesine izin ver",
-  "settings.mouseInputDesc": "Masaüstü üzerindeki hareketler ve tıklamalar etkileşimli duvar kâğıtlarına ulaşır. Varsayılan olarak kapalı: fareyi her yerde izler."
+  "settings.mouseInputDesc": "Masaüstü üzerindeki hareketler ve tıklamalar etkileşimli duvar kâğıtlarına ulaşır. Varsayılan olarak kapalı: fareyi her yerde izler.",
+  "library.tooNew": "Sarab {v} veya daha yenisi için hazırlandı",
+  "library.tooNewTitle": "Daha yeni bir Sarab için hazırlanmış duvar kâğıdı oynatılsın mı?"
 }

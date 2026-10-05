@@ -207,5 +207,7 @@
   "settings.screensaverShows": "Show",
   "screensaver.each": "Each display's own wallpaper",
   "settings.mouseInput": "Let web wallpapers follow the mouse",
-  "settings.mouseInputDesc": "Moves and clicks over the desktop reach interactive wallpapers. Off by default: it watches the mouse everywhere."
+  "settings.mouseInputDesc": "Moves and clicks over the desktop reach interactive wallpapers. Off by default: it watches the mouse everywhere.",
+  "library.tooNew": "Made for Sarab {v} or newer",
+  "library.tooNewTitle": "Play a wallpaper made for a newer Sarab?"
 }

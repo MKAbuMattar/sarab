@@ -207,5 +207,7 @@
   "settings.screensaverShows": "显示",
   "screensaver.each": "每台显示器各自的壁纸",
   "settings.mouseInput": "让网页壁纸跟随鼠标",
-  "settings.mouseInputDesc": "桌面上的鼠标移动和点击会传递给交互式壁纸。默认关闭：开启后会监视所有位置的鼠标。"
+  "settings.mouseInputDesc": "桌面上的鼠标移动和点击会传递给交互式壁纸。默认关闭：开启后会监视所有位置的鼠标。",
+  "library.tooNew": "为 Sarab {v} 或更高版本制作",
+  "library.tooNewTitle": "要播放为更新版本 Sarab 制作的壁纸吗？"
 }
