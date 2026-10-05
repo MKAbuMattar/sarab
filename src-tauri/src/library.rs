@@ -45,7 +45,8 @@ pub struct Manifest {
     pub external: bool,
     pub thumbnail: Option<String>,
     /// Data the page asks Sarab for: "system" (sarabSystemInfo once a second) and
-    /// "nowplaying" (sarabNowPlaying when the track changes).
+    /// "nowplaying" (sarabNowPlaying when the track changes), and "audio" (sarabAudio, 128
+    /// levels about 30 times a second).
     pub api: Vec<String>,
     /// One of `CATEGORIES`, for the library filter.
     pub category: Option<String>,
