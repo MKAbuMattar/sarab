@@ -173,9 +173,11 @@ fn notify(app: &AppHandle, version: &str) {
 
 /// Check now if the last check is older than an hour (or never ran) and checks are allowed.
 /// Called when the window opens, so an update shows up without waiting for the timer.
-pub fn check_if_stale(app: &AppHandle) {
+/// `allowed` comes from the caller, which holds the core lock: locking it again here would
+/// deadlock the main thread (it did, in a 0.0.6 test build).
+pub fn check_if_stale(app: &AppHandle, allowed: bool) {
     let last = app.state::<Updates>().lock().unwrap().checked;
-    if !allowed(app) || last.is_some_and(|t| now().saturating_sub(t) < FRESH) {
+    if !allowed || last.is_some_and(|t| now().saturating_sub(t) < FRESH) {
         return;
     }
     let a = app.clone();
