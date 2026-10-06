@@ -117,7 +117,9 @@ function el(tag, attrs = {}, ...children) {
 const icon = glyph => el('i', { class: 'icon', 'aria-hidden': 'true' }, glyph);
 const btn = (cls, glyph, label, onclick) => el('button', { class: cls, type: 'button', onclick }, icon(glyph), el('span', {}, label));
 
-const title = id => state.library.find(w => w.id === id)?.info?.title ?? id;
+const lang = () => state?.settings?.language || 'en';
+const wpTitle = w => shownTitle(w, lang());
+const title = id => { const w = state.library.find(w => w.id === id); return w ? wpTitle(w) : id; };
 const kindOf = id => state.library.find(w => w.id === id)?.kind;
 const selectedDisplay = () => selected;
 
@@ -197,17 +199,19 @@ function render() {
   for (const k of ['pause_fullscreen', 'per_display', 'pause_focus', 'pause_battery', 'pause_power_saver', 'pause_remote']) f[k].checked = s[k];
   f.per_display.disabled = !s.pause_fullscreen;
   f.fps.value = String(s.fps);
+  f.pause_cpu.value = String(s.pause_cpu || 0);
   f.audio_mute_others.checked = s.audio_mute_others;
   f.audio_desktop_only.checked = s.audio_desktop_only;
   f.unload_minutes.value = String(s.unload_minutes ?? 0);
   f.scaling.value = s.scaling || 'cover';
   f.screensaver_minutes.value = String(s.screensaver_minutes || 0);
   f.screensaver_wallpaper.replaceChildren(el('option', { value: '' }, t('screensaver.each')),
-    ...state.library.filter(w => w.kind !== 'picture').map(w => el('option', { value: w.id }, w.info.title || w.id)));
+    ...state.library.filter(w => w.kind !== 'picture').map(w => el('option', { value: w.id }, wpTitle(w))));
   f.screensaver_wallpaper.value = s.screensaver_wallpaper || '';
   f.screensaver_wallpaper.disabled = !s.screensaver_minutes;
   f.span.checked = s.span;
   f.mouse_input.checked = s.mouse_input;
+  f.keep_frame_on_quit.checked = s.keep_frame_on_quit;
   f.cycle_minutes.value = String(s.cycle_minutes || 0);
   f.cycle_order.value = s.cycle_order || 'order';
   f.cycle_category.replaceChildren(el('option', { value: 'all' }, t('library.allCategories')),
@@ -223,6 +227,7 @@ function render() {
   if (document.activeElement !== f.app_play) f.app_play.value = s.app_play.join('\n');
   $('#autostart').checked = state.autostart;
   $('#check-updates').checked = s.check_updates;
+  $('#update-channel').value = s.update_channel === 'beta' ? 'beta' : 'stable';
   $('#about-version').textContent = t('about.version', { v: state.version });
   $('#about-webview').textContent = state.webview;
   $('#library-dir').textContent = state.library_dir;
@@ -254,29 +259,124 @@ function renderLibrary() {
   $('#lib-sort').value = filters.sort || 'name';
   if (document.activeElement !== $('#lib-search')) $('#lib-search').value = filters.query || '';
 
-  const shown = filterLibrary(lib, { type: filters.type || 'all', category: cat.value, query: filters.query || '', sort: filters.sort || 'name', label: categoryName });
+  const shown = filterLibrary(lib, { type: filters.type || 'all', category: cat.value, query: filters.query || '', sort: filters.sort || 'name', label: categoryName, lang: lang() });
   $('#lib-empty').hidden = lib.length > 0;
   $('#lib-none').hidden = lib.length === 0 || shown.length > 0;
   $('.lib-bar').hidden = $('#lib-types').hidden = lib.length === 0;
   $('#library').replaceChildren(...shown.map(w => el('li', { class: 'tile' },
-    el('div', { class: 'thumb' }, w.thumb_url ? el('img', { src: w.thumb_url, alt: '', loading: 'lazy' }) : icon(ICON[w.kind] ?? '')),
+    thumbFor(w),
     el('div', { class: 'body' },
-      el('span', { class: 'name' }, w.info.title || w.id),
-      el('span', { class: 'caption' }, [t(`type.${w.kind}`), w.info.category && categoryName(w.info.category), w.preset && t('presets.builtIn')].filter(Boolean).join(' · ')),
-      el('div', { class: 'row' },
-        btn('accent', '', t('library.set'), () => run(() => invoke('set_wallpaper', { target: w.id, display: selectedDisplay() }))),
+      el('span', { class: 'name', title: wpTitle(w) }, wpTitle(w)),
+      el('span', { class: 'caption line' }, [t(`type.${w.kind}`), w.info.category && categoryName(w.info.category), w.preset && t('presets.builtIn')].filter(Boolean).join(' · ')),
+      w.too_new ? el('span', { class: 'caption danger-text' }, t('library.tooNew', { v: w.info.app_version })) : '',
+      // One row that never wraps: the main action, then icon buttons with tooltips.
+      el('div', { class: 'actions' },
+        btn('accent', '', t('library.set'), async () => {
+          // A package made for a newer Sarab may use what this one lacks: ask first.
+          if (w.too_new && !await ask({ title: t('library.tooNewTitle'), body: t('library.tooNew', { v: w.info.app_version }), ok: t('library.set'), cancel: t('dialog.cancel') })) return;
+          // An app wallpaper is a program that runs with the user's rights: ask every time.
+          if (w.kind === 'app' && !await ask({ title: t('library.appTitle', { title: wpTitle(w) }), body: t('library.appBody'), ok: t('library.run'), cancel: t('dialog.cancel'), danger: true })) return;
+          run(() => invoke('set_wallpaper', { target: w.id, display: selectedDisplay() }));
+        }),
+        el('span', { class: 'spacer' }),
         iconBtn('', t('library.info'), () => openInfo(w)),
         w.preset ? '' : iconBtn('', t('library.edit'), () => openEdit(w)),
-        w.preset ? '' : btn('subtle danger', '', t('library.delete'), async () => {
-          const ok = await ask({ title: t('library.deleteTitle', { title: w.info.title || w.id }), body: t('library.deleteBody'), ok: t('library.delete'), cancel: t('dialog.cancel'), danger: true });
+        w.preset ? '' : iconBtn('', t('library.delete'), async () => {
+          const ok = await ask({ title: t('library.deleteTitle', { title: wpTitle(w) }), body: t('library.deleteBody'), ok: t('library.delete'), cancel: t('dialog.cancel'), danger: true });
           if (ok) run(() => invoke('remove', { id: w.id }));
-        }))))));
+        }, 'danger'))))));
   document.querySelectorAll('.lib-bar select').forEach(combo);
 }
 
+// The tile picture. A video or GIF plays, muted, only while the pointer rests on it, and never
+// when Windows asks for less motion.
+const lessMotion = matchMedia('(prefers-reduced-motion: reduce)');
+function thumbFor(w) {
+  const still = () => w.thumb_url ? el('img', { src: w.thumb_url, alt: '', loading: 'lazy' }) : icon(ICON[w.kind] ?? '');
+  const box = el('div', { class: 'thumb' }, still());
+  if (!w.preview_url) return box;
+  box.addEventListener('pointerenter', () => {
+    if (lessMotion.matches || box.querySelector('.preview')) return;
+    const gif = w.kind === 'gif';
+    const media = gif
+      ? el('img', { class: 'preview', src: w.preview_url, alt: '' })
+      : Object.assign(el('video', { class: 'preview', src: w.preview_url }), { muted: true, autoplay: true, loop: true, playsInline: true });
+    // Shown over the still only once it has a frame, so hovering never flashes black.
+    media.addEventListener(gif ? 'load' : 'playing', () => media.classList.add('on'), { once: true });
+    box.append(media);
+  });
+  box.addEventListener('pointerleave', () => box.querySelector('.preview')?.remove());
+  return box;
+}
+
+// Right-click menu. The window is an app, not a web page, so the browser's menu (Back, Refresh,
+// Print) never shows. Text fields keep theirs for cut, copy and paste. A card gets a Windows 11
+// menu built from its own buttons, so the menu always offers exactly what the card does.
+function closeMenu() {
+  const m = $('#menu');
+  if (m.hidden) return;
+  m.hidden = true;
+  m.replaceChildren();
+  menuReturn?.focus({ preventScroll: true });
+}
+let menuReturn = null;
+function openMenu(x, y, buttons, keyboard) {
+  const m = $('#menu');
+  m.replaceChildren(...buttons.map(b => el('button', {
+    type: 'button', role: 'menuitem', class: b.classList.contains('danger') ? 'danger' : '',
+    onclick: () => { closeMenu(); b.click(); },
+  }, icon(b.querySelector('.icon')?.textContent ?? ''), el('span', {}, b.getAttribute('aria-label') || b.querySelector('span')?.textContent || ''))));
+  m.hidden = false;
+  // Keep it on screen, flipping to the other side of the pointer near an edge.
+  const r = m.getBoundingClientRect();
+  // It opens toward the reading direction (left in Arabic) and flips back near an edge.
+  const left = document.documentElement.dir === 'rtl' ? (x - r.width < 4 ? x : x - r.width) : (x + r.width > innerWidth ? x - r.width : x);
+  m.style.left = `${Math.max(4, left)}px`;
+  m.style.top = `${Math.max(4, y + r.height > innerHeight ? y - r.height : y)}px`;
+  // From the keyboard the first item is selected, as in Windows; from the mouse none is.
+  // preventScroll: a scroll closes the menu, so focusing it must never scroll the page.
+  (keyboard ? m.querySelector('button') : m).focus({ preventScroll: true });
+}
+document.addEventListener('contextmenu', e => {
+  if (e.target.closest('input, textarea')) return;
+  e.preventDefault();
+  const tile = e.target.closest('.tile');
+  const buttons = tile ? [...tile.querySelectorAll('.actions button, .row button')] : [];
+  if (!buttons.length) return closeMenu();
+  menuReturn = document.activeElement;
+  // The menu key and Shift+F10 report no pointer position: open under the card's title.
+  const keyboard = !e.clientX && !e.clientY;
+  const at = keyboard ? (r => [r.left, r.bottom])(tile.querySelector('.body').getBoundingClientRect()) : [e.clientX, e.clientY];
+  openMenu(...at, buttons, keyboard);
+});
+document.addEventListener('pointerdown', e => { if (!e.target.closest('#menu')) closeMenu(); });
+addEventListener('blur', closeMenu);
+addEventListener('resize', closeMenu);
+document.addEventListener('scroll', closeMenu, true);
+$('#menu').addEventListener('keydown', e => {
+  const items = [...$('#menu').querySelectorAll('button')];
+  const i = items.indexOf(document.activeElement);
+  const go = n => { e.preventDefault(); items[(i + n + items.length) % items.length].focus(); };
+  if (e.key === 'ArrowDown') go(1);
+  else if (e.key === 'ArrowUp') go(-1);
+  else if (e.key === 'Home') go(-i);
+  else if (e.key === 'End') go(items.length - 1 - i);
+  else if (e.key === 'Escape' || e.key === 'Tab') { e.preventDefault(); closeMenu(); }
+});
+
+// The browser menu's shortcuts would reload, print, save or go back in the window. An app has none
+// of that. Copy, paste, select all and undo stay.
+document.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  const browser = ['F5', 'F7', 'BrowserBack', 'BrowserForward', 'BrowserRefresh'].includes(e.key)
+    || (e.ctrlKey && ['r', 'p', 's', 'u', 'f', 'g', 'j', 'h'].includes(k))
+    || (e.altKey && ['ArrowLeft', 'ArrowRight', 'Home'].includes(e.key));
+  if (browser) e.preventDefault();
+}, true);
+
 // An icon-only button still has a name for screen readers and a tooltip for the mouse.
-const iconBtn = (glyph, label, onclick) =>
-  el('button', { class: 'subtle icon-only', type: 'button', 'aria-label': label, title: label, onclick }, icon(glyph));
+const iconBtn = (glyph, label, onclick, cls = '') =>
+  el('button', { class: `subtle icon-only ${cls}`, type: 'button', 'aria-label': label, title: label, onclick }, icon(glyph));
 
 function openEdit(w) {
   const d = $('#edit'), f = $('#edit-form');
@@ -326,9 +426,9 @@ async function openInfo(w) {
     ['info.version', String(w.info.version || 1)],
     ['info.customize', det.has_props ? t('info.yes') : t('info.no')],
   ];
-  $('#info-title').textContent = w.info.title || w.id;
-  $('#info-desc').textContent = w.info.description || '';
-  $('#info-desc').hidden = !w.info.description;
+  $('#info-title').textContent = wpTitle(w);
+  $('#info-desc').textContent = shownDescription(w, lang());
+  $('#info-desc').hidden = !shownDescription(w, lang());
   $('#info-list').replaceChildren(...rows.flatMap(([k, v]) => [el('dt', {}, t(k)), el('dd', {}, v)]));
   $('#info-folder').onclick = () => run(() => invoke('reveal', { id: w.id }));
   $('#info-export').onclick = () => run(() => invoke('export_wallpaper', { id: w.id }));
@@ -385,6 +485,17 @@ function control(display, key, c) {
       input.addEventListener('input', () => send(input.value));
       return el('label', {}, label, input);
     }
+    case 'number': {
+      const input = el('input', { type: 'number', min: c.min, max: c.max, step: c.step ?? 1, value: c.value ?? 0 });
+      input.addEventListener('change', () => send(input.value));
+      return el('label', {}, label, input);
+    }
+    case 'password': {
+      // Shown as dots; the page receives the text as typed.
+      const input = el('input', { type: 'password', value: c.value ?? '', autocomplete: 'off' });
+      input.addEventListener('change', () => send(input.value));
+      return el('label', {}, label, input);
+    }
     case 'button':
       return el('div', {}, el('button', { type: 'button', onclick: () => send(true) }, c.value || label));
     case 'label':
@@ -405,8 +516,25 @@ document.addEventListener('input', e => { if (e.target.type === 'range') fill(e.
 // Update banner: shown on every page while a newer version exists. "Later" hides it until the
 // window is opened again; the check itself repeats once a day.
 let updateLater = false;
+// The version whose dialog already showed in this window, so it asks once per release.
+let updateAsked = null;
+
+// An update was found: ask in Sarab's own dialog, with the release notes, instead of only a bar.
+async function askUpdate(u) {
+  updateAsked = u.available.version;
+  // Release notes are Markdown; the dialog shows plain text, so heading marks go.
+  const plain = (u.available.notes || '').replace(/^#+\s*/gm, '').trim();
+  const notes = plain ? `${t('update.toastBody', { v: u.available.version })}
+
+${plain}` : t('update.toastBody', { v: u.available.version });
+  const ok = await ask({ title: t('update.toastTitle', { v: u.available.version }), body: notes, ok: t('update.now'), cancel: t('update.later') });
+  if (ok) run(() => invoke('install_update'));
+  else { updateLater = true; render(); }
+}
+
 function renderUpdate() {
   const u = state.update;
+  if (u.available && u.progress == null && updateAsked !== u.available.version && !$('#ask').open) askUpdate(u);
   const bar = $('#update-bar');
   bar.hidden = !u.available || (updateLater && u.progress == null);
   if (u.available) {
@@ -455,6 +583,7 @@ function readSettings() {
     pause_power_saver: f.pause_power_saver.checked,
     pause_remote: f.pause_remote.checked,
     fps: Number(f.fps.value),
+    pause_cpu: Number(f.pause_cpu.value),
     audio_mute_others: f.audio_mute_others.checked,
     audio_desktop_only: f.audio_desktop_only.checked,
     unload_minutes: Number(f.unload_minutes.value),
@@ -463,6 +592,7 @@ function readSettings() {
     screensaver_wallpaper: f.screensaver_wallpaper.value || null,
     span: f.span.checked,
     mouse_input: f.mouse_input.checked,
+    keep_frame_on_quit: f.keep_frame_on_quit.checked,
     cycle_minutes: Number(f.cycle_minutes.value),
     cycle_order: f.cycle_order.value,
     cycle_category: f.cycle_category.value,
@@ -472,6 +602,7 @@ function readSettings() {
     theme: f.theme.value,
     backdrop: f.backdrop.value,
     check_updates: $('#check-updates').checked,
+    update_channel: $('#update-channel').value,
     language: f.language.value,
   };
 }

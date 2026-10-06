@@ -57,6 +57,24 @@ fn resolve(core: &mut Core, target: &str) -> Result<String, String> {
 fn run_command(app: &AppHandle, core: &mut Core, cmd: Command) -> Result<(), String> {
     log(format!("command {cmd:?}"));
     match cmd {
+        // ffmpeg can take minutes, so it runs off the core; the MP4 is set when it is ready.
+        Command::Set { target, display } if library::needs_convert(&target) => {
+            let lib = wallpaper::library_dir(&core.settings);
+            let a = app.clone();
+            log(format!("converting {target} to MP4"));
+            std::thread::spawn(move || {
+                match library::convert(&lib, std::path::Path::new(&target)) {
+                    Ok(mp4) => wallpaper::later(&a, move |app, core| {
+                        let target = mp4.to_string_lossy().into_owned();
+                        if let Err(e) = run_command(app, core, Command::Set { target, display }) {
+                            log(format!("set converted video: {e}"));
+                        }
+                        changed(app);
+                    }),
+                    Err(e) => log(format!("convert {target}: {e}")),
+                }
+            });
+        }
         Command::Set { target, display } => {
             let id = resolve(core, &target)?;
             for i in wallpaper::targets(core, display)? {
@@ -99,7 +117,10 @@ fn run_command(app: &AppHandle, core: &mut Core, cmd: Command) -> Result<(), Str
             )?;
             rescan(core);
         }
-        Command::Ui => open_ui(app, &core.settings.theme, &core.settings.backdrop),
+        Command::Ui => open_ui(app, &core.settings),
+        Command::Quit if core.settings.keep_frame_on_quit => {
+            wallpaper::keep_frames_then_exit(app, core)
+        }
         Command::Quit => app.exit(0),
         Command::Status => wallpaper::probe_pages(app, core),
         // Network work runs on the async runtime; the main thread only starts it.
@@ -110,6 +131,14 @@ fn run_command(app: &AppHandle, core: &mut Core, cmd: Command) -> Result<(), Str
         Command::CheckUpdate => {
             let a = app.clone();
             tauri::async_runtime::spawn(async move { update::check(&a).await });
+        }
+        Command::Screenshot { path, display } => {
+            // The command reaches the running Sarab, whose working folder is not the caller's.
+            let path = std::path::PathBuf::from(path);
+            if !path.is_absolute() {
+                return Err("give screenshot a full path, for example C:/shots/desktop.png".into());
+            }
+            wallpaper::screenshot(app, core, display.unwrap_or(0), path)?;
         }
         Command::InstallUpdate => {
             let a = app.clone();
@@ -122,7 +151,7 @@ fn run_command(app: &AppHandle, core: &mut Core, cmd: Command) -> Result<(), Str
     Ok(())
 }
 
-fn handle_args(app: &AppHandle, args: &[String]) {
+pub(crate) fn handle_args(app: &AppHandle, args: &[String]) {
     match cli::parse(args) {
         Ok(Some(cmd)) => {
             let r = with_core(app, move |app, core| run_command(app, core, cmd));
@@ -176,7 +205,9 @@ fn page_theme(app: &AppHandle, setting: &str) -> &'static str {
 }
 
 /// Callers pass the settings because they may already hold the core lock.
-fn open_ui(app: &AppHandle, theme: &str, backdrop: &str) {
+fn open_ui(app: &AppHandle, s: &settings::Settings) {
+    let (theme, backdrop) = (s.theme.as_str(), s.backdrop.as_str());
+    update::check_if_stale(app, s.check_updates);
     if let Some(w) = app.get_webview_window("main") {
         let _ = w.unminimize();
         let _ = w.set_focus();
@@ -216,6 +247,14 @@ async fn state(app: AppHandle) -> Value {
                 if let Some(t) = &w.thumb {
                     if app.asset_protocol_scope().allow_file(t).is_ok() {
                         v["thumb_url"] = json!(wallpaper::asset_url(t));
+                    }
+                }
+                // Videos and GIFs play on their tile while the pointer rests on it.
+                if let (Some(library::Target::File(f)), library::Kind::Video | library::Kind::Gif) =
+                    (w.target(), w.info.r#type)
+                {
+                    if f.is_file() && app.asset_protocol_scope().allow_file(&f).is_ok() {
+                        v["preview_url"] = json!(wallpaper::asset_url(&f));
                     }
                 }
                 v
@@ -565,17 +604,36 @@ pub(crate) fn ui_text(lang: &str, key: &str) -> String {
         .unwrap_or_else(|| key.to_string())
 }
 
-fn tray(app: &AppHandle, lang: &str) -> tauri::Result<()> {
+/// The tray menu; with an update waiting, its first item installs it.
+pub(crate) fn tray_menu(
+    app: &AppHandle,
+    lang: &str,
+    update: Option<&str>,
+) -> tauri::Result<Menu<tauri::Wry>> {
     let t = |k: &str| ui_text(lang, k);
-    let menu = Menu::with_items(
-        app,
-        &[
-            &MenuItem::with_id(app, "toggle", t("tray.toggle"), true, None::<&str>)?,
-            &MenuItem::with_id(app, "next", t("tray.next"), true, None::<&str>)?,
-            &MenuItem::with_id(app, "ui", t("tray.open"), true, None::<&str>)?,
-            &MenuItem::with_id(app, "quit", t("tray.quit"), true, None::<&str>)?,
-        ],
-    )?;
+    let menu = Menu::new(app)?;
+    if let Some(v) = update {
+        menu.append(&MenuItem::with_id(
+            app,
+            "install-update",
+            t("update.trayItem").replace("{v}", v),
+            true,
+            None::<&str>,
+        )?)?;
+    }
+    for (id, key) in [
+        ("toggle", "tray.toggle"),
+        ("next", "tray.next"),
+        ("ui", "tray.open"),
+        ("quit", "tray.quit"),
+    ] {
+        menu.append(&MenuItem::with_id(app, id, t(key), true, None::<&str>)?)?;
+    }
+    Ok(menu)
+}
+
+fn tray(app: &AppHandle, lang: &str) -> tauri::Result<()> {
+    let menu = tray_menu(app, lang, None)?;
     let mut b = TrayIconBuilder::with_id("sarab")
         .tooltip("Sarab")
         .menu(&menu)
@@ -588,6 +646,7 @@ fn tray(app: &AppHandle, lang: &str) -> tauri::Result<()> {
             "toggle" => "toggle",
             "next" => "next",
             "ui" => "ui",
+            "install-update" => "install-update",
             _ => "quit",
         };
         handle_args(app, &[cmd.to_string()]);
@@ -608,6 +667,22 @@ fn tray(app: &AppHandle, lang: &str) -> tauri::Result<()> {
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
+    // The installer's calls: done here, before the window or the hand-off to a running Sarab.
+    if let Some(add) = match args.first().map(String::as_str) {
+        Some("--add-to-path") => Some(true),
+        Some("--remove-from-path") => Some(false),
+        _ => None,
+    } {
+        if let Err(e) = os::windows::set_on_path(add) {
+            log(format!("PATH: {e}"));
+        }
+        return;
+    }
+    // A mistyped command is answered in the terminal, instead of only in the log of the running copy.
+    if let Err(e) = cli::parse(&args) {
+        os::windows::tell_terminal(&format!("sarab: {e}"));
+        std::process::exit(2);
+    }
     let app = tauri::Builder::default()
         // Must be the first plugin: a second `sarab ...` process hands its args to us and exits.
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
@@ -621,7 +696,6 @@ fn main() {
             Some(vec![AUTOSTART_FLAG]),
         ))
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_notification::init())
         .manage::<update::Updates>(Default::default())
         .manage::<presets::Downloads>(Default::default())
         .manage::<Shared>(Mutex::new(Core::load()))

@@ -1,4 +1,4 @@
-//! Update checks. A check runs a minute after start and then once a day, only while the user
+//! Update checks. A check runs a minute after start and then every 3 hours, only while the user
 //! allows it in Settings. Nothing is downloaded until the user chooses "Update now"; the updater
 //! plugin then verifies the installer's signature against the public key in tauri.conf.json.
 
@@ -7,8 +7,31 @@ use serde_json::{json, Value};
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager};
-use tauri_plugin_notification::NotificationExt;
-use tauri_plugin_updater::UpdaterExt;
+use tauri_plugin_updater::{Updater, UpdaterExt};
+
+/// The feed for a channel. Stable reads the newest full release. Beta reads a fixed `beta`
+/// release whose feed every release refreshes, stable ones included, so beta never lags behind.
+pub fn feed(channel: &str) -> &'static str {
+    match channel {
+        "beta" => "https://github.com/MKAbuMattar/sarab/releases/download/beta/latest.json",
+        _ => "https://github.com/MKAbuMattar/sarab/releases/latest/download/latest.json",
+    }
+}
+
+fn updater(app: &AppHandle) -> Result<Updater, String> {
+    let channel = app
+        .state::<Shared>()
+        .lock()
+        .unwrap()
+        .settings
+        .update_channel
+        .clone();
+    let url = feed(&channel).parse().map_err(|e| format!("{e}"))?;
+    app.updater_builder()
+        .endpoints(vec![url])
+        .and_then(|b| b.build())
+        .map_err(|e| e.to_string())
+}
 
 #[derive(Default)]
 pub struct State {
@@ -26,7 +49,10 @@ pub struct State {
 pub type Updates = Mutex<State>;
 
 const FIRST_CHECK: Duration = Duration::from_secs(60);
-const INTERVAL: Duration = Duration::from_secs(24 * 60 * 60);
+/// One small GET to GitHub, so checking often costs nothing and a release shows up the same day.
+const INTERVAL: Duration = Duration::from_secs(3 * 60 * 60);
+/// Opening the window checks too, unless the last check is this recent.
+const FRESH: u64 = 60 * 60;
 
 fn now() -> u64 {
     SystemTime::now()
@@ -71,7 +97,7 @@ pub fn spawn(app: AppHandle) {
 
 /// Ask the release feed whether a newer version exists. Returns the new version, if any.
 pub async fn check(app: &AppHandle) -> Result<Option<String>, String> {
-    let result = match app.updater() {
+    let result = match updater(app) {
         Ok(u) => u.check().await.map_err(|e| e.to_string()),
         Err(e) => Err(e.to_string()),
     };
@@ -120,24 +146,50 @@ fn notify(app: &AppHandle, version: &str) {
     log(format!("update available: {version}"));
     if let Some(tray) = app.tray_by_id("sarab") {
         let _ = tray.set_tooltip(Some(t("update.tooltip")));
+        if let Ok(menu) = crate::tray_menu(app, &lang, Some(version)) {
+            let _ = tray.set_menu(Some(menu));
+        }
     }
-    let shown = app
-        .notification()
-        .builder()
-        .title("Sarab")
-        .body(t("update.toast"))
-        .show();
+    let xml = crate::os::windows::update_toast_xml(
+        &t("update.toastTitle"),
+        &t("update.toastBody"),
+        &t("update.now"),
+        &t("update.later"),
+    );
+    let a = app.clone();
+    let shown = crate::os::windows::show_toast(crate::settings::APP_ID, &xml, move |answer| {
+        log(format!("update toast: {answer:?}"));
+        match answer.as_str() {
+            "install" => crate::handle_args(&a, &["install-update".to_string()]),
+            "later" => {}
+            // A click on the toast itself opens the window, where the update bar waits.
+            _ => crate::handle_args(&a, &["ui".to_string()]),
+        }
+    });
     if let Err(e) = shown {
         log(format!("update notification: {e}"));
     }
 }
 
+/// Check now if the last check is older than an hour (or never ran) and checks are allowed.
+/// Called when the window opens, so an update shows up without waiting for the timer.
+/// `allowed` comes from the caller, which holds the core lock: locking it again here would
+/// deadlock the main thread (it did, in a 0.0.6 test build).
+pub fn check_if_stale(app: &AppHandle, allowed: bool) {
+    let last = app.state::<Updates>().lock().unwrap().checked;
+    if !allowed || last.is_some_and(|t| now().saturating_sub(t) < FRESH) {
+        return;
+    }
+    let a = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let _ = check(&a).await;
+    });
+}
+
 /// Download, verify and run the installer. On Windows the app exits once the installer starts;
 /// the installer reopens Sarab when it finishes.
 pub async fn install(app: &AppHandle) -> Result<(), String> {
-    let update = app
-        .updater()
-        .map_err(|e| e.to_string())?
+    let update = updater(app)?
         .check()
         .await
         .map_err(|e| e.to_string())?
@@ -173,4 +225,23 @@ pub async fn install(app: &AppHandle) -> Result<(), String> {
     }
     changed(app);
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn update_feed() {
+        assert!(feed("stable").ends_with("/releases/latest/download/latest.json"));
+        assert!(feed("beta").ends_with("/releases/download/beta/latest.json"));
+        assert_eq!(
+            feed("anything else"),
+            feed("stable"),
+            "an unknown channel falls back to stable"
+        );
+        // The beta feed must name the tag release.yml uploads it to.
+        let wf = include_str!("../../.github/workflows/release.yml");
+        assert!(wf.contains("gh release upload beta latest.json"));
+    }
 }

@@ -36,6 +36,10 @@ impl Kind {
 pub struct Manifest {
     pub title: Option<String>,
     pub description: Option<String>,
+    /// The title and description in other languages, by language code ("ar", "fr"...).
+    /// `title` and `description` stay the fallback.
+    pub titles: std::collections::BTreeMap<String, String>,
+    pub descriptions: std::collections::BTreeMap<String, String>,
     pub author: Option<String>,
     pub license: Option<String>,
     pub r#type: Kind,
@@ -52,6 +56,8 @@ pub struct Manifest {
     pub category: Option<String>,
     pub tags: Vec<String>,
     pub version: u32,
+    /// The Sarab version the package was made for. Older versions flag it and ask before playing.
+    pub app_version: Option<String>,
     /// Play only this range of a video, in seconds, and loop inside it.
     pub clip: Option<[f64; 2]>,
 }
@@ -69,6 +75,8 @@ pub struct Wallpaper {
     pub added: u64,
     /// The thumbnail image, when the package has one.
     pub thumb: Option<PathBuf>,
+    /// Made for a newer Sarab than this one.
+    pub too_new: bool,
 }
 
 pub enum Target {
@@ -114,6 +122,10 @@ pub fn read(dir: &Path) -> Option<Wallpaper> {
         has_props: dir.join(PROPS).is_file(),
         preset: false,
         added: secs(fs::metadata(dir).ok().and_then(|m| m.created().ok())),
+        too_new: info
+            .app_version
+            .as_deref()
+            .is_some_and(|v| newer(v, env!("CARGO_PKG_VERSION"))),
         thumb: info
             .thumbnail
             .as_deref()
@@ -138,6 +150,7 @@ pub fn kind_for(target: &str) -> Option<Kind> {
         "gif" => Kind::Gif,
         "jpg" | "jpeg" | "png" | "bmp" | "webp" | "jfif" | "tif" | "tiff" => Kind::Picture,
         "html" | "htm" => Kind::Web,
+        "exe" => Kind::App,
         _ => return None,
     })
 }
@@ -231,6 +244,88 @@ pub fn add(lib: &Path, existing: &[Wallpaper], target: &str) -> Result<Wallpaper
     let dir = new_dir(lib, &title).map_err(|e| e.to_string())?;
     crate::settings::save(&dir.join(INFO), &info).map_err(|e| e.to_string())?;
     read(&dir).ok_or_else(|| "write failed".into())
+}
+
+/// Formats WebView2 cannot play. Sarab turns them into MP4 with ffmpeg, when it is installed.
+pub fn needs_convert(target: &str) -> bool {
+    !target.contains("://")
+        && Path::new(target)
+            .extension()
+            .and_then(|e| e.to_str())
+            .is_some_and(|e| {
+                matches!(
+                    e.to_ascii_lowercase().as_str(),
+                    "avi" | "wmv" | "mpg" | "mpeg"
+                )
+            })
+}
+
+/// Turn `src` into an MP4 under the library's `converted` folder, in a folder named after the
+/// source path, so adding it again reuses the first result. Needs ffmpeg on PATH. Written to a
+/// .part file first, so a stopped run never leaves a broken video behind.
+pub fn convert(lib: &Path, src: &Path) -> Result<PathBuf, String> {
+    let abs = fs::canonicalize(src).map_err(|e| format!("{}: {e}", src.display()))?;
+    let stem = src
+        .file_stem()
+        .map(|s| s.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    let dir = lib.join("converted").join(format!(
+        "{:08x}",
+        fnv(dunce_str(&abs).to_lowercase().as_bytes())
+    ));
+    let out = dir.join(format!("{stem}.mp4"));
+    if out.is_file() {
+        return Ok(out);
+    }
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let part = dir.join("video.part");
+    let mut cmd = std::process::Command::new("ffmpeg");
+    cmd.args(["-y", "-v", "error", "-i"])
+        .arg(&abs)
+        // H.264 needs even sizes; faststart lets playback begin before the whole file is read.
+        .args([
+            "-vf",
+            "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+        ])
+        .args([
+            "-crf",
+            "20",
+            "-pix_fmt",
+            "yuv420p",
+            "-c:a",
+            "aac",
+            "-movflags",
+            "+faststart",
+            "-f",
+            "mp4",
+        ])
+        .arg(&part);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW: no console flashes up
+    }
+    let r = cmd.output().map_err(|e| match e.kind() {
+        io::ErrorKind::NotFound => {
+            "this video format needs ffmpeg: install it (winget install Gyan.FFmpeg) and try again"
+                .to_string()
+        }
+        _ => format!("ffmpeg: {e}"),
+    })?;
+    if !r.status.success() {
+        let _ = fs::remove_file(&part);
+        return Err(format!(
+            "ffmpeg could not convert {}: {}",
+            src.display(),
+            String::from_utf8_lossy(&r.stderr).trim()
+        ));
+    }
+    fs::rename(&part, &out).map_err(|e| e.to_string())?;
+    Ok(out)
 }
 
 /// `canonicalize` on Windows returns `\\?\C:\...`; strip it so paths stay readable and URL friendly.
@@ -343,8 +438,15 @@ pub fn coerce(ctl: &Value, raw: &Value) -> Result<Value, String> {
         v => v.to_string(),
     };
     Ok(match ty {
-        "slider" => {
-            let n: f64 = s.parse().map_err(|_| format!("{s} is not a number"))?;
+        // A number field is a slider without the slider: the same range rules.
+        "slider" | "number" => {
+            let n: f64 = s
+                .trim()
+                .parse()
+                .map_err(|_| format!("{s} is not a number"))?;
+            if !n.is_finite() {
+                return Err(format!("{s} is not a number"));
+            }
             let min = ctl.get("min").and_then(Value::as_f64).unwrap_or(f64::MIN);
             let max = ctl.get("max").and_then(Value::as_f64).unwrap_or(f64::MAX);
             serde_json::json!(n.clamp(min, max))
@@ -402,6 +504,9 @@ pub fn export_zip(w: &Wallpaper, dest: &Path) -> Result<PathBuf, String> {
         .collect();
     let path = dest.join(format!("{}.zip", name.trim()));
     let mut info = w.info.clone();
+    // Record the version that made it, so an older Sarab can warn before playing it.
+    info.app_version
+        .get_or_insert_with(|| env!("CARGO_PKG_VERSION").to_string());
     let outside = match w.target() {
         Some(Target::File(f)) if w.info.external => {
             let file = f
@@ -523,6 +628,18 @@ pub fn reset_props(saved_path: &Path) -> io::Result<()> {
         Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(()),
         r => r,
     }
+}
+
+/// Is version `a` newer than `b`? Compares the numbers in order, so 0.0.10 is newer than 0.0.9.
+pub fn newer(a: &str, b: &str) -> bool {
+    let parts = |v: &str| -> Vec<u64> {
+        v.trim_start_matches('v')
+            .split(['.', '-', '+'])
+            .take(3)
+            .map(|p| p.parse().unwrap_or(0))
+            .collect()
+    };
+    parts(a) > parts(b)
 }
 
 /// The categories a wallpaper can be filed under. Keys into `category.*` UI strings.
@@ -773,6 +890,60 @@ mod tests {
     }
 
     #[test]
+    fn needs_convert_then_converts_once() {
+        assert!(
+            needs_convert("C:/clips/Rain.AVI") && needs_convert("a.wmv") && needs_convert("a.mpeg")
+        );
+        assert!(
+            !needs_convert("a.mp4")
+                && !needs_convert("a.webm")
+                && !needs_convert("https://x.com/a.avi")
+        );
+        let d = tmp("convert");
+        let avi = d.join("Rain.avi");
+        let made = std::process::Command::new("ffmpeg")
+            .args([
+                "-y",
+                "-v",
+                "error",
+                "-f",
+                "lavfi",
+                "-i",
+                "testsrc=size=65x49:rate=5",
+                "-t",
+                "1",
+                "-c:v",
+                "mpeg4",
+            ])
+            .arg(&avi)
+            .status();
+        if !made.is_ok_and(|s| s.success()) {
+            eprintln!("ffmpeg not installed: conversion not tested");
+            return;
+        }
+        let lib = d.join("lib");
+        let mp4 = convert(&lib, &avi).unwrap();
+        assert_eq!(
+            mp4.file_name().unwrap(),
+            "Rain.mp4",
+            "keeps the name, so the title reads well"
+        );
+        assert!(fs::metadata(&mp4).unwrap().len() > 0);
+        let when = fs::metadata(&mp4).unwrap().modified().unwrap();
+        assert_eq!(convert(&lib, &avi).unwrap(), mp4);
+        assert_eq!(
+            fs::metadata(&mp4).unwrap().modified().unwrap(),
+            when,
+            "second add reuses it"
+        );
+        assert!(
+            scan(&lib).is_empty(),
+            "the converted folder is not a wallpaper"
+        );
+        assert!(convert(&lib, &d.join("missing.avi")).is_err());
+    }
+
+    #[test]
     fn add_file_and_url() {
         let d = tmp("add");
         let lib = d.join("lib");
@@ -879,6 +1050,50 @@ mod tests {
         assert_eq!(
             fs::read_to_string(back.dir.join("clip.mp4")).unwrap(),
             "video bytes"
+        );
+    }
+
+    #[test]
+    fn too_new_packages_are_flagged() {
+        assert!(newer("0.0.10", "0.0.9"));
+        assert!(newer("v1.0.0", "0.9.9"));
+        assert!(!newer("0.0.5", "0.0.5"));
+        assert!(!newer("0.0.4", "0.0.5"));
+        let d = tmp("too-new");
+        fs::write(
+            d.join(INFO),
+            r#"{"type":"web","file":"index.html","app_version":"99.0.0"}"#,
+        )
+        .unwrap();
+        assert!(read(&d).unwrap().too_new);
+        fs::write(
+            d.join(INFO),
+            r#"{"type":"web","file":"index.html","app_version":"0.0.1"}"#,
+        )
+        .unwrap();
+        assert!(!read(&d).unwrap().too_new);
+        fs::write(d.join(INFO), r#"{"type":"web","file":"index.html"}"#).unwrap();
+        assert!(!read(&d).unwrap().too_new, "no version: assume it fits");
+    }
+
+    #[test]
+    fn number_and_password_fields() {
+        let num = serde_json::json!({"type": "number", "value": 3, "min": 1, "max": 10});
+        assert_eq!(
+            coerce(&num, &Value::String(" 7 ".into())).unwrap(),
+            serde_json::json!(7.0)
+        );
+        assert_eq!(
+            coerce(&num, &Value::String("50".into())).unwrap(),
+            serde_json::json!(10.0),
+            "clamped"
+        );
+        assert!(coerce(&num, &Value::String("seven".into())).is_err());
+        assert!(coerce(&num, &Value::String("NaN".into())).is_err());
+        let pw = serde_json::json!({"type": "password", "value": ""});
+        assert_eq!(
+            coerce(&pw, &Value::String("s3cret !".into())).unwrap(),
+            Value::String("s3cret !".into())
         );
     }
 

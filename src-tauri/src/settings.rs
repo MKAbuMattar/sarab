@@ -15,6 +15,8 @@ pub struct Settings {
     pub pause_power_saver: bool,
     pub pause_remote: bool,
     pub per_display: bool,
+    /// Rest while other apps keep the CPU at or over this percent; 0 is never.
+    pub pause_cpu: u8,
     pub app_pause: Vec<String>,
     pub app_play: Vec<String>,
     pub fps: u32,
@@ -35,6 +37,8 @@ pub struct Settings {
     pub span: bool,
     /// Pass mouse moves and clicks over the desktop to web wallpapers.
     pub mouse_input: bool,
+    /// On quit, leave each display's last frame as its Windows wallpaper.
+    pub keep_frame_on_quit: bool,
     /// Cycling and "next" go through the library "order"ly or at "random".
     pub cycle_order: String,
     /// Only wallpapers in this category take part in cycling and "next"; "all" for every one.
@@ -47,8 +51,10 @@ pub struct Settings {
     pub theme: String,
     /// Settings window backdrop: "acrylic" (see-through), "mica", or "solid".
     pub backdrop: String,
-    /// Look for a newer release once a day. Nothing downloads without the user's consent.
+    /// Look for a newer release every few hours. Nothing downloads without the user's consent.
     pub check_updates: bool,
+    /// "stable", or "beta" for test builds too; see `update::feed`.
+    pub update_channel: String,
     /// Start with Windows has been switched on once (at first launch); never forced again.
     pub autostart_set: bool,
 }
@@ -63,6 +69,7 @@ impl Default for Settings {
             pause_power_saver: true,
             pause_remote: true,
             per_display: true,
+            pause_cpu: 0,
             app_pause: vec![],
             app_play: vec![],
             fps: 30,
@@ -75,6 +82,7 @@ impl Default for Settings {
             screensaver_wallpaper: None,
             span: false,
             mouse_input: false,
+            keep_frame_on_quit: false,
             cycle_order: "order".into(),
             cycle_category: "all".into(),
             // On by default where memory is tight (SPEC F17).
@@ -87,6 +95,7 @@ impl Default for Settings {
             theme: "system".into(),
             backdrop: "acrylic".into(),
             check_updates: true,
+            update_channel: "stable".into(),
             autostart_set: false,
         }
     }

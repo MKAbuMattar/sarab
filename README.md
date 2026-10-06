@@ -46,7 +46,9 @@ Sarab lives in the notification area as an iris icon. Left-click it to open the 
 
 ## Command line
 
-A second `sarab` process hands its arguments to the running one and exits.
+The installer adds Sarab's folder to your PATH, so `sarab` works in any terminal opened after
+installing. A second `sarab` process hands its arguments to the running one and exits; a mistyped
+command prints its error in the terminal, and everything else is written to the log.
 
 | Command                                                      | Does                                                              |
 | ------------------------------------------------------------ | ----------------------------------------------------------------- |
@@ -59,6 +61,7 @@ A second `sarab` process hands its arguments to the running one and exits.
 | `sarab import <zip>`                                         | Import a Sarab package                                            |
 | `sarab preset <id>` | Download a 4K preset (ids are in `src-tauri/src/presets.json`) |
 | `sarab check-update` / `install-update` | Check for a new version now, or install it |
+| `sarab screenshot C:/shots/desktop.png [--display N]` | Save what a display shows as a PNG (a full path) |
 | `sarab ui` / `status` / `quit` | Open the window, write `status.json`, exit |
 
 ## Wallpaper packages

@@ -4,6 +4,34 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ## [Unreleased]
 
+## [0.0.6] - 2026-10-06
+
+### Added
+
+- Hovering a video or GIF tile plays it there, muted; it stops when the pointer leaves, and never plays when Windows asks for less motion.
+- Keep the last frame when Sarab quits (Settings > Wallpapers, off by default): each display keeps the moment it showed as its Windows wallpaper.
+- `sarab screenshot <full path.png> [--display N]` saves what a display shows as a PNG.
+- Packages can carry their title and description in other languages (`titles` and `descriptions` in sarab.json); the window shows the one for its language, and search and sorting use it.
+- Customize has two more control types for packages: number (with min, max and step) and password (shown as dots).
+- A package made for a newer Sarab says so on its tile and asks before it plays. Exported packages record the version that made them.
+- Pause while other apps keep the CPU over 70, 80 or 90 percent (Settings > Pausing, off by default). Sarab's own work never counts, so a heavy wallpaper cannot pause itself, and short spikes do not flip it.
+- AVI, WMV and MPEG videos play: `sarab set <file>` converts them to MP4 with ffmpeg when it is installed, once, and keeps the result in the library.
+- Beta update channel (About > Updates): test builds arrive before everyone else. Stable stays the default.
+- App wallpapers: a program (.exe) can run behind the icons. The window asks every time before running one, cycling never picks one, and Sarab ends the program, and anything it started, when the wallpaper changes or Sarab quits.
+- `sarab` works in any terminal opened after installing: the installer adds Sarab's folder to your PATH, and uninstalling takes it out. A mistyped command now prints its error in the terminal.
+- Right-click a wallpaper card for a menu with its actions: Set, Info, Edit and Delete.
+
+### Changed
+
+- Update notices are easier to act on. The Windows notification stays on screen until answered and has Update now and Later buttons; clicking it opens Sarab. The tray menu gains an Update to X item, and the window asks in its own dialog with the release notes. Sarab checks every 3 hours and whenever the window opens, instead of once a day.
+- Wallpapers rest while the Windows screensaver runs, as they do on the lock screen.
+- Library cards follow Windows 11: one row of actions that never wraps, with Info, Edit and Delete as icon buttons, equal heights, and a quiet hover. The hover preview fades in instead of flashing black.
+- The window no longer shows the browser's right-click menu (Back, Refresh, Print) or reacts to browser shortcuts such as F5 and Ctrl+P. Text boxes keep cut, copy and paste.
+
+### Fixed
+
+- Delete in the library works again; it failed on every wallpaper.
+
 ## [0.0.5] - 2026-10-05
 
 ### Added
@@ -67,7 +95,8 @@ First public release, for Windows 10 (1903 or later) and Windows 11.
 - Opening Sarab from the desktop or Start menu opens its window, also when it already runs in the background. Starting at sign-in stays in the tray.
 - Start with Windows, on by default: switched on once at the first launch, and it stays off if you turn it off. Uninstalling removes it.
 
-[Unreleased]: https://github.com/MKAbuMattar/sarab/compare/v0.0.5...HEAD
+[Unreleased]: https://github.com/MKAbuMattar/sarab/compare/v0.0.6...HEAD
+[0.0.6]: https://github.com/MKAbuMattar/sarab/compare/v0.0.5...v0.0.6
 [0.0.5]: https://github.com/MKAbuMattar/sarab/compare/v0.0.4...v0.0.5
 [0.0.4]: https://github.com/MKAbuMattar/sarab/compare/v0.0.3...v0.0.4
 [0.0.3]: https://github.com/MKAbuMattar/sarab/releases/tag/v0.0.3

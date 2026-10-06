@@ -426,12 +426,30 @@ pub fn signals(mons: &[Monitor]) -> Signals {
         manual: None,
         on_battery: power && ps.ACLineStatus == 0,
         power_saver: power && ps.SystemStatusFlag == 1,
-        locked: is_locked(),
+        // The Windows screensaver hides the desktop just as the lock screen does.
+        locked: is_locked() || screensaver_running(),
         remote: unsafe { GetSystemMetrics(SM_REMOTESESSION) } != 0,
         foreground_app,
         desktop_focused,
         covered,
+        // Set by the tick, which keeps the readings between calls.
+        cpu_busy: false,
     }
+}
+
+/// Is the Windows screensaver on screen right now?
+fn screensaver_running() -> bool {
+    let mut on = BOOL(0);
+    unsafe {
+        SystemParametersInfoW(
+            SPI_GETSCREENSAVERRUNNING,
+            0,
+            Some(&mut on as *mut _ as *mut _),
+            SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS(0),
+        )
+    }
+    .is_ok()
+        && on.as_bool()
 }
 
 /// The lock screen and UAC prompts switch to the secure desktop, which we cannot open.
@@ -1033,6 +1051,283 @@ pub fn forward_mouse(targets: Targets, running: std::sync::Arc<std::sync::atomic
     });
 }
 
+// ---- update notification ----
+
+fn xml_escape(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+}
+
+/// The update toast: a reminder, so it stays on screen until answered, with two buttons. A click
+/// on the toast itself sends "open"; the buttons send "install" and "later".
+pub fn update_toast_xml(title: &str, body: &str, install: &str, later: &str) -> String {
+    format!(
+        concat!(
+            r#"<toast scenario="reminder" launch="open" activationType="foreground">"#,
+            r#"<visual><binding template="ToastGeneric"><text>{}</text><text>{}</text></binding></visual>"#,
+            r#"<actions><action content="{}" arguments="install" activationType="foreground"/>"#,
+            r#"<action content="{}" arguments="later" activationType="foreground"/></actions></toast>"#
+        ),
+        xml_escape(title),
+        xml_escape(body),
+        xml_escape(install),
+        xml_escape(later)
+    )
+}
+
+/// Show `xml` as a toast from `app_id` and call `on_answer` with the arguments of whatever the
+/// user clicked. The toast is kept alive here, or Windows drops its click events.
+pub fn show_toast(
+    app_id: &str,
+    xml: &str,
+    on_answer: impl Fn(String) + Send + Sync + 'static,
+) -> windows::core::Result<()> {
+    use windows::core::Interface;
+    use windows::Data::Xml::Dom::XmlDocument;
+    use windows::Foundation::TypedEventHandler;
+    use windows::UI::Notifications::{
+        ToastActivatedEventArgs, ToastNotification, ToastNotificationManager,
+    };
+    static SHOWN: std::sync::Mutex<Option<ToastNotification>> = std::sync::Mutex::new(None);
+    let doc = XmlDocument::new()?;
+    doc.LoadXml(&HSTRING::from(xml))?;
+    let toast = ToastNotification::CreateToastNotification(&doc)?;
+    toast.Activated(&TypedEventHandler::new(
+        move |_, args: windows::core::Ref<windows::core::IInspectable>| {
+            let what = args
+                .as_ref()
+                .and_then(|a| a.cast::<ToastActivatedEventArgs>().ok())
+                .and_then(|a| a.Arguments().ok())
+                .map(|h| h.to_string())
+                .unwrap_or_default();
+            on_answer(what);
+            Ok(())
+        },
+    ))?;
+    ToastNotificationManager::CreateToastNotifierWithId(&HSTRING::from(app_id))?.Show(&toast)?;
+    *SHOWN.lock().unwrap() = Some(toast);
+    Ok(())
+}
+
+/// CPU time used by Sarab and every process it started (WebView2 included), in 100 ns units.
+pub fn own_cpu_time() -> u64 {
+    use windows::Win32::Foundation::FILETIME;
+    use windows::Win32::System::Threading::GetProcessTimes;
+    own_processes()
+        .into_iter()
+        .filter_map(|pid| unsafe {
+            let h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid).ok()?;
+            let (mut c, mut e, mut k, mut u) = (
+                FILETIME::default(),
+                FILETIME::default(),
+                FILETIME::default(),
+                FILETIME::default(),
+            );
+            let r = GetProcessTimes(h, &mut c, &mut e, &mut k, &mut u);
+            let _ = CloseHandle(h);
+            r.ok().map(|_| filetime(k) + filetime(u))
+        })
+        .sum()
+}
+
+// ---- app wallpapers ----
+
+/// A program running as a wallpaper. It lives in a job object that ends it, and anything it
+/// started, when this is dropped, and also when Sarab exits or crashes.
+pub struct AppProcess {
+    job: isize,
+    pub pid: u32,
+    /// Its window, once it has one and sits behind the icons.
+    pub hwnd: Option<isize>,
+}
+
+impl Drop for AppProcess {
+    fn drop(&mut self) {
+        unsafe {
+            let _ = CloseHandle(windows::Win32::Foundation::HANDLE(self.job as _));
+        }
+    }
+}
+
+pub fn launch_app(exe: &std::path::Path, args: &[&str]) -> Result<AppProcess, String> {
+    use std::os::windows::io::AsRawHandle;
+    use windows::Win32::Foundation::HANDLE;
+    use windows::Win32::System::JobObjects::*;
+    let job = unsafe { CreateJobObjectW(None, PCWSTR::null()) }.map_err(|e| e.to_string())?;
+    let mut p = AppProcess {
+        job: job.0 as isize,
+        pid: 0,
+        hwnd: None,
+    };
+    let mut limits = JOBOBJECT_EXTENDED_LIMIT_INFORMATION::default();
+    limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+    unsafe {
+        SetInformationJobObject(
+            job,
+            JobObjectExtendedLimitInformation,
+            &limits as *const _ as *const _,
+            std::mem::size_of_val(&limits) as u32,
+        )
+    }
+    .map_err(|e| e.to_string())?;
+    let mut child = std::process::Command::new(exe)
+        .args(args)
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .current_dir(exe.parent().unwrap_or(std::path::Path::new(".")))
+        .spawn()
+        .map_err(|e| format!("{}: {e}", exe.display()))?;
+    // ponytail: the program runs a moment before it joins the job, so a process it starts in
+    // that moment escapes; start it suspended and resume it after joining if that ever matters.
+    if let Err(e) = unsafe { AssignProcessToJobObject(job, HANDLE(child.as_raw_handle())) } {
+        let _ = child.kill();
+        return Err(e.to_string());
+    }
+    p.pid = child.id();
+    Ok(p)
+}
+
+/// The visible, unowned top-level window of process `pid`, once it has one.
+pub fn main_window(pid: u32) -> Option<HWND> {
+    unsafe extern "system" fn cb(hwnd: HWND, l: LPARAM) -> BOOL {
+        let f = &mut *(l.0 as *mut (u32, Option<HWND>));
+        let mut p = 0;
+        GetWindowThreadProcessId(hwnd, Some(&mut p));
+        if p == f.0
+            && IsWindowVisible(hwnd).as_bool()
+            && GetWindow(hwnd, GW_OWNER).map_or(true, |o| o.is_invalid())
+        {
+            f.1 = Some(hwnd);
+            return false.into();
+        }
+        true.into()
+    }
+    let mut f: (u32, Option<HWND>) = (pid, None);
+    unsafe {
+        let _ = EnumWindows(Some(cb), LPARAM(&mut f as *mut _ as isize));
+    }
+    f.1
+}
+
+// ---- command line ----
+
+/// `path` (a PATH value) with `dir` added at the end or taken out. Everything else stays exactly
+/// as it was, %VARIABLES% and empty entries included.
+pub fn path_with(path: &str, dir: &str, add: bool) -> String {
+    let same = |p: &str| {
+        p.trim()
+            .trim_end_matches('\\')
+            .eq_ignore_ascii_case(dir.trim_end_matches('\\'))
+    };
+    let present = path.split(';').any(same);
+    if add == present {
+        path.to_string()
+    } else if add {
+        if path.is_empty() {
+            dir.to_string()
+        } else if path.ends_with(';') {
+            // Keep the trailing ; so taking the folder out again gives back the same string.
+            format!("{path}{dir};")
+        } else {
+            format!("{path};{dir}")
+        }
+    } else {
+        path.split(';')
+            .filter(|p| !same(p))
+            .collect::<Vec<_>>()
+            .join(";")
+    }
+}
+
+/// Add Sarab's folder to the user's PATH, or take it out, so `sarab` works in any new terminal.
+/// The installer and uninstaller call this; NSIS cannot do it, since its strings stop at 1024
+/// characters and would cut a long PATH short.
+pub fn set_on_path(add: bool) -> Result<(), String> {
+    use windows::Win32::System::Registry::*;
+    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+    let dir = exe
+        .parent()
+        .ok_or("no folder")?
+        .to_string_lossy()
+        .into_owned();
+    let mut key = HKEY::default();
+    unsafe {
+        RegOpenKeyExW(
+            HKEY_CURRENT_USER,
+            w!("Environment"),
+            None,
+            KEY_QUERY_VALUE | KEY_SET_VALUE,
+            &mut key,
+        )
+    }
+    .ok()
+    .map_err(|e| e.to_string())?;
+    // Read without expanding, so %USERPROFILE% and the like are written back as they were.
+    let mut len = 0u32;
+    let flags = RRF_RT_REG_SZ | RRF_RT_REG_EXPAND_SZ | RRF_NOEXPAND;
+    let found =
+        unsafe { RegGetValueW(key, None, w!("Path"), flags, None, None, Some(&mut len)) }.is_ok();
+    let mut buf = vec![0u16; (len as usize / 2).max(1)];
+    if found {
+        unsafe {
+            RegGetValueW(
+                key,
+                None,
+                w!("Path"),
+                flags,
+                None,
+                Some(buf.as_mut_ptr() as *mut _),
+                Some(&mut len),
+            )
+        }
+        .ok()
+        .map_err(|e| e.to_string())?;
+    }
+    let cur = String::from_utf16_lossy(&buf[..(len as usize / 2).saturating_sub(1)]);
+    let cur = if found { cur } else { String::new() };
+    let next = path_with(&cur, &dir, add);
+    let r = if next == cur {
+        Ok(())
+    } else {
+        let wide: Vec<u16> = next.encode_utf16().chain([0]).collect();
+        let bytes =
+            unsafe { std::slice::from_raw_parts(wide.as_ptr() as *const u8, wide.len() * 2) };
+        unsafe { RegSetValueExW(key, w!("Path"), None, REG_EXPAND_SZ, Some(bytes)) }
+            .ok()
+            .map_err(|e| e.to_string())
+    };
+    unsafe {
+        let _ = RegCloseKey(key);
+    }
+    r?;
+    // Tell Explorer, so terminals opened from now on see the new PATH.
+    unsafe {
+        let _ = SendMessageTimeoutW(
+            HWND_BROADCAST,
+            WM_SETTINGCHANGE,
+            WPARAM(0),
+            LPARAM(w!("Environment").as_ptr() as isize),
+            SMTO_ABORTIFHUNG,
+            5000,
+            None,
+        );
+    }
+    Ok(())
+}
+
+/// Print `msg` in the terminal that started Sarab, if one did. A release build is a windowed
+/// app, which has no console of its own.
+pub fn tell_terminal(msg: &str) {
+    use std::io::Write;
+    use windows::Win32::System::Console::{AttachConsole, ATTACH_PARENT_PROCESS};
+    if unsafe { AttachConsole(ATTACH_PARENT_PROCESS) }.is_ok() {
+        let _ = writeln!(std::io::stderr(), "\n{msg}");
+    }
+}
+
 /// Installed memory in bytes, 0 if Windows will not say.
 pub fn total_ram() -> u64 {
     use windows::Win32::System::SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX};
@@ -1050,8 +1345,17 @@ pub fn recycle(path: &std::path::Path) -> Result<(), String> {
         SHFileOperationW, FOF_ALLOWUNDO, FOF_NOCONFIRMATION, FOF_NOERRORUI, FOF_SILENT, FO_DELETE,
         SHFILEOPSTRUCTW,
     };
+    // The API rejects the \\?\ form that fs::canonicalize returns, so pass the plain path.
+    let plain = path.to_string_lossy();
+    let plain = match plain.strip_prefix(r"\\?\UNC\") {
+        Some(rest) => format!(r"\\{rest}"),
+        None => plain.strip_prefix(r"\\?\").unwrap_or(&plain).to_string(),
+    };
     // The API takes a list ending in two NULs.
-    let from: Vec<u16> = path.as_os_str().encode_wide().chain([0, 0]).collect();
+    let from: Vec<u16> = std::ffi::OsStr::new(&plain)
+        .encode_wide()
+        .chain([0, 0])
+        .collect();
     let mut op = SHFILEOPSTRUCTW {
         wFunc: FO_DELETE,
         pFrom: PCWSTR(from.as_ptr()),
@@ -1178,12 +1482,97 @@ mod tests {
     }
 
     #[test]
+    fn screensaver_running_reads_the_real_state() {
+        // Tests run while someone (or CI) works, so no screensaver is on screen.
+        assert!(!screensaver_running());
+    }
+
+    #[test]
+    fn update_toast_has_buttons_and_escapes() {
+        let x = update_toast_xml(
+            "Sarab 0.0.6 is available",
+            "Fixes & <more>",
+            "Update now",
+            "Later",
+        );
+        assert!(x.contains(r#"scenario="reminder""#), "stays until answered");
+        assert!(x.contains(r#"launch="open""#));
+        assert!(x.contains(r#"arguments="install""#) && x.contains(r#"arguments="later""#));
+        assert!(x.contains("Fixes &amp; &lt;more&gt;"));
+        let doc = windows::Data::Xml::Dom::XmlDocument::new().unwrap();
+        doc.LoadXml(&HSTRING::from(x)).expect("well-formed XML");
+    }
+
+    #[test]
+    fn app_wallpaper_ends_with_its_job() {
+        use windows::Win32::System::Threading::{
+            GetExitCodeProcess, PROCESS_QUERY_LIMITED_INFORMATION,
+        };
+        let ping = std::path::Path::new(r"C:\Windows\System32\PING.EXE");
+        let p = launch_app(ping, &["-n", "60", "127.0.0.1"]).unwrap();
+        let pid = p.pid;
+        let alive = || unsafe {
+            let Ok(h) = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) else {
+                return false;
+            };
+            let mut code = 0;
+            let _ = GetExitCodeProcess(h, &mut code);
+            let _ = CloseHandle(h);
+            code == 259 // STILL_ACTIVE
+        };
+        assert!(alive(), "running");
+        drop(p);
+        std::thread::sleep(std::time::Duration::from_millis(300));
+        assert!(!alive(), "closing the job ends the program");
+        assert!(launch_app(std::path::Path::new("C:/no/such.exe"), &[]).is_err());
+    }
+
+    #[test]
+    fn on_path_adds_once_and_removes_only_ours() {
+        let dir = r"C:\Users\a\AppData\Local\Sarab";
+        assert_eq!(path_with("", dir, true), dir);
+        assert_eq!(
+            path_with(r"%USERPROFILE%\bin;", dir, true),
+            format!(r"%USERPROFILE%\bin;{dir};")
+        );
+        for orig in ["", r"C:\x", r"C:\x;", r"%USERPROFILE%\bin;;C:\y;"] {
+            let back = path_with(&path_with(orig, dir, true), dir, false);
+            assert_eq!(back, orig, "add then remove is exact");
+        }
+        let with = path_with(r"C:\x;;C:\y", dir, true);
+        assert_eq!(with, format!(r"C:\x;;C:\y;{dir}"), "keeps empty entries");
+        assert_eq!(path_with(&with, dir, true), with, "added once");
+        assert_eq!(
+            path_with(&with.to_uppercase(), dir, true),
+            with.to_uppercase(),
+            "case does not matter"
+        );
+        assert_eq!(
+            path_with(&format!(r"{dir}\;C:\x"), dir, false),
+            r"C:\x",
+            "trailing slash still ours"
+        );
+        assert_eq!(path_with(&with, dir, false), r"C:\x;;C:\y");
+        assert_eq!(
+            path_with(r"C:\x;C:\Sarab2", r"C:\Sarab", false),
+            r"C:\x;C:\Sarab2",
+            "a longer name is not ours"
+        );
+        // The installer calls both, outside an update.
+        let hooks = include_str!("../../windows/hooks.nsh");
+        assert!(hooks.contains("--add-to-path") && hooks.contains("--remove-from-path"));
+    }
+
+    #[test]
     fn recycle_moves_to_bin() {
         // Leaves one small folder named sarab-test-recycle-<pid> in the Recycle Bin.
         let d = std::env::temp_dir().join(format!("sarab-test-recycle-{}", std::process::id()));
         std::fs::create_dir_all(d.join("inner")).unwrap();
         std::fs::write(d.join("inner").join("a.txt"), "x").unwrap();
-        recycle(&d).unwrap();
+        // remove() passes a canonicalized \\?\ path; the Delete button failed on exactly that.
+        let canon = std::fs::canonicalize(&d).unwrap();
+        assert!(canon.to_string_lossy().starts_with(r"\\?\"));
+        recycle(&canon).unwrap();
         assert!(!d.exists());
         assert!(recycle(&d).is_err(), "nothing left to recycle");
     }

@@ -17,6 +17,9 @@ jobs:
   windows:
     name: Windows build and checks
     runs-on: windows-latest
+    # A normal run takes about 7 minutes. A runner that hangs (as in the 2026-10-05 Actions
+    # outage) fails here instead of holding the PR for the default 6 hours.
+    timeout-minutes: 20
     defaults:
       run:
         shell: pwsh

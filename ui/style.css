@@ -11,6 +11,8 @@
   --layer-stroke: rgba(0, 0, 0, 0.0578);
   --card: rgba(255, 255, 255, 0.7);
   --card-stroke: rgba(0, 0, 0, 0.0578);
+  --card-hover: rgba(246, 246, 246, 0.9);
+  --card-stroke-hover: rgba(0, 0, 0, 0.1);
   --control: rgba(255, 255, 255, 0.7);
   --control-hover: rgba(249, 249, 249, 0.5);
   --control-input: #FFFFFF;
@@ -39,6 +41,8 @@
   --layer-stroke: rgba(0, 0, 0, 0.1);
   --card: rgba(255, 255, 255, 0.0512);
   --card-stroke: rgba(0, 0, 0, 0.1);
+  --card-hover: rgba(255, 255, 255, 0.0837);
+  --card-stroke-hover: rgba(255, 255, 255, 0.0698);
   --control: rgba(255, 255, 255, 0.0605);
   --control-hover: rgba(255, 255, 255, 0.0837);
   --control-input: rgba(30, 30, 30, 0.7);
@@ -110,7 +114,7 @@ h2 { font-size: 14px; line-height: 20px; font-weight: 600; margin: 24px 0 8px; }
 .grow { flex: 1 1 280px; min-width: 0; }
 
 /* ---- controls ---- */
-button, select, input[type=text], textarea {
+button, select, input[type=text], input[type=number], input[type=password], textarea {
   font: inherit; color: var(--text); border-radius: 4px; min-height: 32px;
   border: 1px solid var(--control-stroke); border-bottom-color: var(--control-stroke-bottom);
   background: var(--control);
@@ -124,7 +128,7 @@ button.subtle { background: transparent; border-color: transparent; }
 button.subtle:hover { background: var(--subtle-hover); }
 button.danger .icon { color: var(--danger-text); }
 select { padding: 5px 30px 5px 11px; padding-inline: 11px 30px; }
-input[type=text], textarea { padding: 5px 11px; background: var(--control); }
+input[type=text], input[type=number], input[type=password], textarea { padding: 5px 11px; background: var(--control); }
 input[type=text]:focus, textarea:focus { outline: none; background: var(--control-input); border-bottom: 2px solid var(--accent); padding-bottom: 4px; }
 input[type=text]::placeholder { color: var(--text-3); }
 textarea { width: 100%; resize: vertical; }
@@ -175,16 +179,31 @@ input.switch:checked::before { inset-inline-start: 23px; background: var(--on-ac
 
 /* ---- tiles ---- */
 .tiles { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
-.tile { background: var(--card); border: 1px solid var(--card-stroke); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+.tile {
+  background: var(--card); border: 1px solid var(--card-stroke); border-radius: 8px; overflow: hidden;
+  display: flex; flex-direction: column; transition: background-color 83ms linear, border-color 83ms linear;
+}
+/* Fluent card hover: a slightly lighter fill and a visible edge, nothing moves. */
+.tile:hover { background: var(--card-hover); border-color: var(--card-stroke-hover); }
 .thumb {
+  position: relative; overflow: hidden;
   aspect-ratio: 16 / 9; display: grid; place-items: center;
   background: linear-gradient(135deg, var(--tile-a), var(--tile-b));
 }
 .thumb .icon { font-size: 32px; color: var(--jo-sand); }
-.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.tile .body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 2px; flex: 1; }
-.tile .name { font-weight: 600; overflow-wrap: anywhere; }
+.thumb img, .thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb .preview { position: absolute; inset: 0; opacity: 0; transition: opacity 167ms linear; }
+.thumb .preview.on { opacity: 1; }
+.tile .body { padding: 12px; display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.tile .name, .tile .line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile .name { font-weight: 600; }
 .tile .row { margin-top: 10px; }
+.tile .actions { display: flex; align-items: center; gap: 4px; margin-top: auto; padding-top: 12px; }
+.tile .actions .spacer { flex: 1; }
+button.icon-only { width: 32px; padding: 0; justify-content: center; }
+/* Delete stays neutral like the other icons and turns red only when pointed at. */
+.tile button.danger .icon { color: inherit; }
+.tile button.danger:hover .icon { color: var(--danger-text); }
 .display-tile .thumb { aspect-ratio: auto; height: 96px; }
 .badge { display: inline-block; padding: 0 8px; border-radius: 10px; font-size: 12px; line-height: 20px; font-weight: 600; color: #FFFFFF; }
 .badge.Play { background: var(--jo-olive); }        /* 4.64 */
@@ -219,6 +238,23 @@ input.switch:checked::before { inset-inline-start: 23px; background: var(--on-ac
 .infobar[hidden] { display: none; }
 
 /* ---- ContentDialog ---- */
+/* Fluent MenuFlyout: an 8px-radius flyout with 4px padding and 32px rows. */
+.menu {
+  position: fixed; z-index: 10; min-width: 180px; padding: 4px; display: grid; gap: 2px;
+  background: var(--dialog); color: var(--text); border: 1px solid var(--card-stroke-hover);
+  border-radius: 8px; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.26);
+}
+.menu[hidden] { display: none; }
+.menu:focus { outline: none; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.26); }
+.menu button {
+  border: 0; background: transparent; min-height: 32px; padding: 0 12px; gap: 12px;
+  justify-content: flex-start; text-align: start; width: 100%;
+}
+.menu button:hover, .menu button:focus-visible { background: var(--subtle-hover); outline: none; box-shadow: none; }
+.menu button .icon { font-size: 16px; }
+.menu button.danger .icon { color: inherit; }
+.menu button.danger:hover .icon, .menu button.danger:focus-visible .icon { color: var(--danger-text); }
+@media (forced-colors: active) { .menu { border-color: CanvasText; } .menu button:focus-visible { outline: 2px solid Highlight; } }
 dialog { padding: 0; border: 1px solid var(--card-stroke); border-radius: 8px; background: var(--dialog); color: var(--text); width: min(540px, 92vw); box-shadow: 0 32px 64px rgba(0, 0, 0, 0.28); }
 dialog::backdrop { background: var(--smoke); }
 dialog .content { padding: 24px; display: grid; gap: 16px; max-height: 60vh; overflow: auto; }

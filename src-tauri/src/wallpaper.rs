@@ -36,6 +36,8 @@ pub struct Display {
     pub unseen_since: Option<std::time::Instant>,
     /// Its webview was closed to free memory; it loads again when it would play.
     pub unloaded: bool,
+    /// The program an app wallpaper runs; dropping it ends the program.
+    pub app: Option<os::AppProcess>,
 }
 
 pub struct Core {
@@ -58,6 +60,9 @@ pub struct Core {
     /// Where the mouse hook sends input, and whether it runs.
     pub mouse_targets: os::Targets,
     pub mouse_on: Option<std::sync::Arc<std::sync::atomic::AtomicBool>>,
+    /// CPU counters at the last tick (idle, busy, Sarab's own) and the gate that steadies them.
+    pub cpu_prev: Option<(u64, u64, u64)>,
+    pub cpu_gate: pause::CpuGate,
     /// Runs while a playing wallpaper asks for the audio levels.
     pub audio: Option<crate::audio::Feed>,
     /// Labels of the webviews the audio thread sends to.
@@ -161,6 +166,8 @@ impl Core {
             sysinfo: None,
             now_playing: None,
             audio: None,
+            cpu_prev: None,
+            cpu_gate: Default::default(),
             mouse_targets: Default::default(),
             mouse_on: None,
             screensaver: None,
@@ -254,11 +261,57 @@ pub fn make_thumbnails(lib: &[Wallpaper]) {
 }
 
 /// Save one frame of a playing web or URL wallpaper as its thumbnail, scaled to 480 px wide.
-fn capture_thumbnail(app: &AppHandle, core: &Core, lbl: &str) {
+/// Save what the webview `win` shows as a full-size PNG at `path`, then call `done` with
+/// whether it worked, on WebView2's thread. Used by thumbnails, `sarab screenshot` and the
+/// last frame kept on quit.
+pub fn capture_png(win: &WebviewWindow, path: PathBuf, done: impl FnOnce(bool) + Send + 'static) {
     use webview2_com::CapturePreviewCompletedHandler;
     use webview2_com::Microsoft::Web::WebView2::Win32::COREWEBVIEW2_CAPTURE_PREVIEW_IMAGE_FORMAT_PNG;
     use windows::Win32::System::Com::{STGM_CREATE, STGM_WRITE};
     use windows::Win32::UI::Shell::SHCreateStreamOnFileEx;
+    let done = std::sync::Arc::new(Mutex::new(Some(done)));
+    let fail = done.clone();
+    let started = win.with_webview(move |pw| unsafe {
+        let run = || -> windows::core::Result<()> {
+            let stream = SHCreateStreamOnFileEx(
+                &windows::core::HSTRING::from(path.as_os_str()),
+                (STGM_CREATE | STGM_WRITE).0,
+                0x80,
+                true,
+                None,
+            )?;
+            // WebView2 holds the stream while it writes; this copy closes the file when done.
+            let keep = stream.clone();
+            let d = done.clone();
+            let handler = CapturePreviewCompletedHandler::create(Box::new(move |r| {
+                drop(keep);
+                if let Some(f) = d.lock().unwrap().take() {
+                    f(r.is_ok());
+                }
+                Ok(())
+            }));
+            pw.controller().CoreWebView2()?.CapturePreview(
+                COREWEBVIEW2_CAPTURE_PREVIEW_IMAGE_FORMAT_PNG,
+                &stream,
+                &handler,
+            )
+        };
+        if let Err(e) = run() {
+            log(format!("capture: {e}"));
+            if let Some(f) = done.lock().unwrap().take() {
+                f(false);
+            }
+        }
+    });
+    if started.is_err() {
+        if let Some(f) = fail.lock().unwrap().take() {
+            f(false);
+        }
+    }
+}
+
+/// Save one frame of a playing web or URL wallpaper as its thumbnail, scaled to 480 px wide.
+fn capture_thumbnail(app: &AppHandle, core: &Core, lbl: &str) {
     let Some(d) = core
         .displays
         .iter()
@@ -276,48 +329,79 @@ fn capture_thumbnail(app: &AppHandle, core: &Core, lbl: &str) {
         return;
     };
     let full = std::env::temp_dir().join(format!("sarab-capture-{}.png", std::process::id()));
-    let a = app.clone();
-    let _ = win.with_webview(move |pw| unsafe {
-        let run = || -> windows::core::Result<()> {
-            let stream = SHCreateStreamOnFileEx(
-                &windows::core::HSTRING::from(full.as_os_str()),
-                (STGM_CREATE | STGM_WRITE).0,
-                0x80,
-                true,
-                None,
-            )?;
-            let done = full.clone();
-            // WebView2 holds the stream while it writes; this copy closes the file when done.
-            let keep = stream.clone();
-            let handler = CapturePreviewCompletedHandler::create(Box::new(move |r| {
-                drop(keep);
-                if r.is_ok() {
-                    let (dir, a) = (w.dir.clone(), a.clone());
-                    std::thread::spawn(move || {
-                        let r = os::shrink_png(&done, &dir.join(THUMBNAIL), 480)
-                            .and_then(|()| library::set_thumbnail(&dir, THUMBNAIL));
-                        let _ = fs::remove_file(&done);
-                        match r {
-                            Ok(()) => later(&a, |app, core| {
-                                crate::rescan(core);
-                                let _ = app.emit_to("main", "changed", ());
-                            }),
-                            Err(e) => log(format!("thumbnail capture: {e}")),
-                        }
-                    });
-                }
-                Ok(())
-            }));
-            pw.controller().CoreWebView2()?.CapturePreview(
-                COREWEBVIEW2_CAPTURE_PREVIEW_IMAGE_FORMAT_PNG,
-                &stream,
-                &handler,
-            )
-        };
-        if let Err(e) = run() {
-            log(format!("thumbnail capture: {e}"));
+    let (a, done) = (app.clone(), full.clone());
+    capture_png(&win, full, move |ok| {
+        if !ok {
+            return;
         }
+        std::thread::spawn(move || {
+            let r = os::shrink_png(&done, &w.dir.join(THUMBNAIL), 480)
+                .and_then(|()| library::set_thumbnail(&w.dir, THUMBNAIL));
+            let _ = fs::remove_file(&done);
+            match r {
+                Ok(()) => later(&a, |app, core| {
+                    crate::rescan(core);
+                    let _ = app.emit_to("main", "changed", ());
+                }),
+                Err(e) => log(format!("thumbnail capture: {e}")),
+            }
+        });
     });
+}
+
+/// Where display `key` (such as \\.\DISPLAY1) keeps its last frame: letters and digits only.
+fn frame_path(key: &str) -> PathBuf {
+    cfg("frames").join(format!("{}.png", key_file(key)))
+}
+
+/// Quit, after leaving each display's last frame as its Windows wallpaper. Waits at most 4 s,
+/// so a stuck capture never keeps Sarab from quitting.
+pub fn keep_frames_then_exit(app: &AppHandle, core: &Core) {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    let shots: Vec<(WebviewWindow, os::Monitor, PathBuf)> = core
+        .displays
+        .iter()
+        .filter_map(|d| Some((window(app, d)?, d.mon.clone(), frame_path(&d.mon.key))))
+        .collect();
+    if shots.is_empty() {
+        app.exit(0);
+        return;
+    }
+    let _ = fs::create_dir_all(cfg("frames"));
+    let left = std::sync::Arc::new(AtomicUsize::new(shots.len()));
+    for (win, mon, path) in shots {
+        let (a, left, file) = (app.clone(), left.clone(), path.clone());
+        capture_png(&win, path, move |ok| {
+            if ok {
+                if let Err(e) = os::set_picture(&mon, &file.to_string_lossy()) {
+                    log(format!("keep last frame on {}: {e}", mon.key));
+                }
+            }
+            if left.fetch_sub(1, Ordering::SeqCst) == 1 {
+                a.exit(0);
+            }
+        });
+    }
+    let a = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_secs(4));
+        a.exit(0);
+    });
+}
+
+/// `sarab screenshot`: save what display `i` shows as a PNG at `path`.
+pub fn screenshot(app: &AppHandle, core: &Core, i: usize, path: PathBuf) -> Result<(), String> {
+    let d = core.displays.get(i).ok_or("no such display")?;
+    let win = window(app, d).ok_or("that display shows no web, video or GIF wallpaper")?;
+    let shown = path.display().to_string();
+    capture_png(&win, path, move |ok| {
+        log(if ok {
+            format!("screenshot saved to {shown}")
+        } else {
+            format!("screenshot to {shown} failed")
+        });
+    });
+    Ok(())
 }
 
 /// `http://asset.localhost/C:/dir/index.html`: forward slashes keep relative links in web wallpapers working.
@@ -549,6 +633,7 @@ fn close_window(app: &AppHandle, core: &mut Core, i: usize) {
     d.loaded = false;
     d.page = Value::Null;
     d.label = None;
+    d.app = None;
 }
 
 /// Close display `i`'s webview but keep its wallpaper and layout, to load it again later.
@@ -634,7 +719,79 @@ pub fn apply(app: &AppHandle, core: &mut Core, i: usize, id: &str) -> Result<(),
     result
 }
 
+/// Where display `i`'s wallpaper window goes: its display, or all of them when spanned.
+fn wallpaper_rect(core: &Core, i: usize) -> RECT {
+    if core.settings.span {
+        span_rect(&core.displays.iter().map(|d| d.mon.rect).collect::<Vec<_>>())
+    } else {
+        core.displays[i].mon.rect
+    }
+}
+
+/// Run a program as display `i`'s wallpaper. Its window appears when the program is ready, so a
+/// thread waits for it (up to 20 s) and then moves it behind the icons.
+// ponytail: app wallpapers keep running while others rest; suspending the process would cover
+// Frozen and Covered too.
+fn start_app(app: &AppHandle, core: &mut Core, i: usize, w: &Wallpaper) -> Result<(), String> {
+    core.desktop.ok_or("desktop layer not found")?;
+    let Some(Target::File(exe)) = w.target() else {
+        return Err("app wallpaper has no file".into());
+    };
+    if !exe.is_file() {
+        return Err(format!("missing file {}", exe.display()));
+    }
+    let p = os::launch_app(&exe, &[])?;
+    let pid = p.pid;
+    core.displays[i].app = Some(p);
+    let a = app.clone();
+    std::thread::spawn(move || {
+        for _ in 0..80 {
+            std::thread::sleep(std::time::Duration::from_millis(250));
+            if let Some(hwnd) = os::main_window(pid) {
+                let hwnd = hwnd.0 as isize;
+                later(&a, move |_, core| attach_app(core, i, pid, hwnd));
+                return;
+            }
+        }
+        log(format!("app wallpaper {pid} showed no window in 20 s"));
+    });
+    Ok(())
+}
+
+fn attach_app(core: &mut Core, i: usize, pid: u32, hwnd: isize) {
+    // The display may have changed wallpaper while the program started.
+    if core
+        .displays
+        .get(i)
+        .and_then(|d| d.app.as_ref())
+        .map(|p| p.pid)
+        != Some(pid)
+    {
+        return;
+    }
+    let Some(desk) = core.desktop else {
+        return;
+    };
+    let h = windows::Win32::Foundation::HWND(hwnd as _);
+    match os::attach(&desk, h, wallpaper_rect(core, i)) {
+        Ok(()) => {
+            os::show(h, true);
+            if let Some(p) = core.displays[i].app.as_mut() {
+                p.hwnd = Some(hwnd);
+            }
+        }
+        Err(e) => {
+            log(format!("app wallpaper on display {i}: {e}"));
+            core.displays[i].error = Some(e.to_string());
+            core.displays[i].app = None;
+        }
+    }
+}
+
 fn create_window(app: &AppHandle, core: &mut Core, i: usize, w: &Wallpaper) -> Result<(), String> {
+    if w.info.r#type == Kind::App {
+        return start_app(app, core, i, w);
+    }
     let desk = core.desktop.ok_or("desktop layer not found")?;
     let url = url_for(app, w, &core.settings.scaling)?;
     let origin = url.origin();
@@ -664,12 +821,7 @@ fn create_window(app: &AppHandle, core: &mut Core, i: usize, w: &Wallpaper) -> R
         .map_err(|e| e.to_string())?;
     core.displays[i].label = Some(lbl);
     let attached = win.hwnd().map_err(|e| e.to_string()).and_then(|hwnd| {
-        let rect = if core.settings.span {
-            span_rect(&core.displays.iter().map(|d| d.mon.rect).collect::<Vec<_>>())
-        } else {
-            core.displays[i].mon.rect
-        };
-        os::attach(&desk, hwnd, rect).map_err(|e| e.to_string())?;
+        os::attach(&desk, hwnd, wallpaper_rect(core, i)).map_err(|e| e.to_string())?;
         os::show(hwnd, true);
         Ok(())
     });
@@ -822,6 +974,7 @@ pub fn sync_displays(app: &AppHandle, core: &mut Core) {
             label: None,
             unseen_since: None,
             unloaded: false,
+            app: None,
         })
         .collect();
     for i in 0..core.displays.len() {
@@ -1195,6 +1348,8 @@ pub fn next(app: &AppHandle, core: &mut Core) -> Result<(), String> {
         .filter(|w| {
             s.cycle_category == "all" || w.info.category.as_deref() == Some(&s.cycle_category)
         })
+        // A program runs only when the user picks it, never because a timer did.
+        .filter(|w| w.info.r#type != Kind::App)
         .map(|w| w.id.clone())
         .collect();
     let seed = std::time::SystemTime::now()
@@ -1216,6 +1371,33 @@ fn cycle_due(minutes: u32, since: std::time::Duration, playing: bool, resting: b
     minutes > 0 && playing && !resting && since.as_secs() >= u64::from(minutes) * 60
 }
 
+/// Are other apps keeping the CPU busy? Sarab's own processes are taken out of the reading,
+/// so a heavy wallpaper never pauses itself. Measured only while the setting is on.
+fn cpu_busy(core: &mut Core) -> bool {
+    let limit = core.settings.pause_cpu;
+    if limit == 0 {
+        core.cpu_prev = None;
+        return core.cpu_gate.step(0.0, 0);
+    }
+    let (idle, busy) = os::cpu_times();
+    let own = os::own_cpu_time();
+    let percent = match core.cpu_prev.replace((idle, busy, own)) {
+        Some((i0, b0, o0)) => {
+            let total = idle.saturating_sub(i0) + busy.saturating_sub(b0);
+            let others = busy
+                .saturating_sub(b0)
+                .saturating_sub(own.saturating_sub(o0));
+            if total == 0 {
+                0.0
+            } else {
+                others as f64 * 100.0 / total as f64
+            }
+        }
+        None => 0.0,
+    };
+    core.cpu_gate.step(percent, limit)
+}
+
 pub fn tick(app: &AppHandle, core: &mut Core) {
     sync_displays(app, core);
     if let Some(d) = core.desktop {
@@ -1224,6 +1406,12 @@ pub fn tick(app: &AppHandle, core: &mut Core) {
             .iter()
             .filter_map(|x| window(app, x))
             .filter_map(|w| w.hwnd().ok())
+            .chain(
+                core.displays
+                    .iter()
+                    .filter_map(|x| x.app.as_ref()?.hwnd)
+                    .map(|h| windows::Win32::Foundation::HWND(h as _)),
+            )
             .collect();
         if os::ensure_order(&d, &wins) {
             log("desktop z-order repaired: a wallpaper had fallen below WorkerW or was hidden");
@@ -1232,6 +1420,7 @@ pub fn tick(app: &AppHandle, core: &mut Core) {
     let mons: Vec<os::Monitor> = core.displays.iter().map(|d| d.mon.clone()).collect();
     let mut s = os::signals(&mons);
     s.manual = core.manual;
+    s.cpu_busy = cpu_busy(core);
     let decisions = pause::decide(&s, &core.settings);
     let changed = s != core.signals
         || decisions
@@ -1376,6 +1565,13 @@ pub fn remove(app: &AppHandle, core: &mut Core, id: &str) -> Result<(), String> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn keep_frame_path_is_safe() {
+        let p = frame_path(r"\\.\DISPLAY2");
+        assert_eq!(p.file_name().unwrap(), "DISPLAY2.png");
+        assert_eq!(p.parent().unwrap().file_name().unwrap(), "frames");
+    }
 
     #[test]
     fn screensaver_due_after_idle_unless_busy() {
