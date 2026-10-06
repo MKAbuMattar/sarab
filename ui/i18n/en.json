@@ -216,5 +216,9 @@
   "update.trayItem": "Update to {v}",
   "settings.pauseCpu": "Pause while other apps keep the CPU over",
   "settings.pauseCpuDesc": "Sarab's own work never counts, so a wallpaper cannot pause itself.",
-  "reason.busy": "Resting: other apps keep the CPU busy"
+  "reason.busy": "Resting: other apps keep the CPU busy",
+  "about.channel": "Update channel",
+  "about.channelDesc": "Beta gets test builds before everyone else. They may have rough edges.",
+  "channel.stable": "Stable",
+  "channel.beta": "Beta"
 }

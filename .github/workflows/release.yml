@@ -70,17 +70,31 @@ jobs:
         with:
           name: Sarab ${{ env.VERSION }}
           body_path: notes.md
-          # Not a prerelease: the updater's releases/latest link skips prereleases.
-          prerelease: false
+          # A tag like v0.0.7-beta.1 is a prerelease, which the stable feed (releases/latest) skips.
+          prerelease: ${{ contains(github.ref_name, '-') }}
           files: |
             src-tauri/target/release/bundle/nsis/*-setup.exe
             src-tauri/target/release/bundle/nsis/*-setup.exe.sig
             latest.json
           fail_on_unmatched_files: true
 
+      # The beta feed lives on a fixed `beta` release. Every release refreshes it, so the beta
+      # channel gets stable releases too.
+      - name: Refresh the beta feed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view beta --repo ${{ github.repository }} *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create beta --repo ${{ github.repository }} --prerelease --title "Beta feed" --notes "The update feed for the beta channel. Install from the versioned releases."
+          }
+          gh release upload beta latest.json --clobber --repo ${{ github.repository }}
+
   winget:
     name: Submit to winget
     needs: windows
+    # winget gets full releases only.
+    if: ${{ !contains(github.ref_name, '-') }}
     runs-on: windows-latest
     defaults:
       run:

@@ -216,5 +216,9 @@
   "update.trayItem": "Atualizar para {v}",
   "settings.pauseCpu": "Pausar enquanto outros apps mantêm a CPU acima de",
   "settings.pauseCpuDesc": "O trabalho do próprio Sarab nunca conta, então um papel de parede não pausa a si mesmo.",
-  "reason.busy": "Em pausa: outros apps mantêm a CPU ocupada"
+  "reason.busy": "Em pausa: outros apps mantêm a CPU ocupada",
+  "about.channel": "Canal de atualização",
+  "about.channelDesc": "Beta recebe versões de teste antes de todos. Elas podem ter falhas.",
+  "channel.stable": "Estável",
+  "channel.beta": "Beta"
 }

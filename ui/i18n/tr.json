@@ -216,5 +216,9 @@
   "update.trayItem": "{v} sürümüne güncelle",
   "settings.pauseCpu": "Diğer uygulamalar CPU’yu şu değerin üstünde tutarken duraklat",
   "settings.pauseCpuDesc": "Sarab’ın kendi işi hiç sayılmaz; bu yüzden bir duvar kâğıdı kendini duraklatamaz.",
-  "reason.busy": "Dinleniyor: diğer uygulamalar CPU’yu meşgul ediyor"
+  "reason.busy": "Dinleniyor: diğer uygulamalar CPU’yu meşgul ediyor",
+  "about.channel": "Güncelleme kanalı",
+  "about.channelDesc": "Beta, test sürümlerini herkesten önce alır. Bazı kusurlar olabilir.",
+  "channel.stable": "Kararlı",
+  "channel.beta": "Beta"
 }

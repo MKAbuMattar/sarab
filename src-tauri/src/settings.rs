@@ -51,8 +51,10 @@ pub struct Settings {
     pub theme: String,
     /// Settings window backdrop: "acrylic" (see-through), "mica", or "solid".
     pub backdrop: String,
-    /// Look for a newer release once a day. Nothing downloads without the user's consent.
+    /// Look for a newer release every few hours. Nothing downloads without the user's consent.
     pub check_updates: bool,
+    /// "stable", or "beta" for test builds too; see `update::feed`.
+    pub update_channel: String,
     /// Start with Windows has been switched on once (at first launch); never forced again.
     pub autostart_set: bool,
 }
@@ -93,6 +95,7 @@ impl Default for Settings {
             theme: "system".into(),
             backdrop: "acrylic".into(),
             check_updates: true,
+            update_channel: "stable".into(),
             autostart_set: false,
         }
     }

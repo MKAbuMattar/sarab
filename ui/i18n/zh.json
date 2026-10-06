@@ -216,5 +216,9 @@
   "update.trayItem": "更新到 {v}",
   "settings.pauseCpu": "其他应用让 CPU 占用超过此值时暂停",
   "settings.pauseCpuDesc": "Sarab 自身的占用从不计入，因此壁纸不会让自己暂停。",
-  "reason.busy": "休息中：其他应用正占用 CPU"
+  "reason.busy": "休息中：其他应用正占用 CPU",
+  "about.channel": "更新渠道",
+  "about.channelDesc": "Beta 渠道会比其他人更早收到测试版本，可能不够完善。",
+  "channel.stable": "稳定版",
+  "channel.beta": "测试版"
 }
