@@ -62,7 +62,11 @@ sarab/
 │  ├─ tauri.conf.json
 │  ├─ capabilities/main.json        # commands allowed for the "main" (settings) window only
 │  └─ src/
-│     ├─ main.rs                    # setup: tray, single-instance, CLI dispatch, event loop
+│     ├─ main.rs                    # start-up: module list and main()
+│     ├─ app/                       # the running app, one file per job
+│     │  ├─ dispatch.rs             # commands from CLI, tray, window → core
+│     │  ├─ commands.rs             # settings window commands (main window only)
+│     │  ├─ window.rs  tray.rs  i18n.rs  settings_window.rs
 │     ├─ cli/
 │     │  ├─ mod.rs                  # argv → Command enum
 │     │  └─ terminal.rs             # sarab.com, the console twin: answers in the terminal
@@ -72,17 +76,17 @@ sarab/
 │     │  ├─ update.rs               # update checks, notice, install
 │     │  └─ support.rs              # logs export, settings reset
 │     ├─ engine/
-│     │  ├─ wallpaper.rs            # apply/close per display, window lifecycle, JS bridge
+│     │  ├─ wallpaper/              # core state (mod.rs) + one file per job:
+│     │  │                          #   apply, tick, page (JS bridge), sync, cycle, screensaver,
+│     │  │                          #   status, capture, props, playback, unload, span, app, …
 │     │  ├─ audio.rs                # loopback capture, FFT
 │     │  └─ feeds.rs                # sysinfo, now-playing → JS calls
-│     ├─ library/
-│     │  ├─ mod.rs                  # scan, add, import Sarab zip, export, thumbnails
-│     │  ├─ presets.rs, presets.json  # 4K presets, pinned by size and SHA-256
-│     │  └─ wallpaper_engine.rs     # project.json → sarab.json + properties.json
+│     ├─ library/                   # types (mod.rs); scan, add, package (zip), props, edit,
+│     │                             # convert (ffmpeg), details, folder, presets, wallpaper_engine
 │     ├─ scripts/
 │     │  └─ inject.js               # rAF throttle, freeze/unfreeze, video sync, WE page API (include_str!)
 │     └─ os/
-│        ├─ windows.rs              # WorkerW embed + probes + GSMTC
+│        ├─ windows/                # one file per API area: desktop, probes, picture, audio, toast, …
 │        ├─ macos.rs                # desktop-level window + probes
 │        ├─ x11.rs                  # desktop-type window + probes
 │        └─ wayland.rs              # layer-shell + foreign-toplevel + probes

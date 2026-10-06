@@ -10,12 +10,14 @@ Sarab is a Windows animated-wallpaper app: Rust and Tauri v2 on the system WebVi
 
 | Path | What |
 |---|---|
-| `src-tauri/src/main.rs` | Tray, single instance, CLI dispatch, Tauri commands for the settings window, the 1 s tick thread |
+| `src-tauri/src/main.rs` | Start-up only: the module list and `main()` (plugins, tick thread, run loop) |
+| `src-tauri/src/app/` | The running app, one file per job: `dispatch.rs` (commands from CLI, tray, window), `commands.rs` (settings window commands), `window.rs`, `tray.rs`, `i18n.rs`, `settings_window.rs` |
 | `src-tauri/src/cli/` | `mod.rs` parses `sarab ...`; `terminal.rs` is sarab.com, the console twin that answers in the terminal |
 | `src-tauri/src/core/` | `settings.rs` on disk, `pause.rs` (`decide()`: signals in, state and reason per display out; pure, unit tested), `update.rs`, `support.rs` |
-| `src-tauri/src/engine/` | `wallpaper.rs` (core state: displays, wallpaper windows, pause states, status file, video sync), `audio.rs`, `feeds.rs` |
-| `src-tauri/src/library/` | `mod.rs` (`sarab.json` packages, zip import, `properties.json`), `presets.rs` and `presets.json`, `wallpaper_engine.rs` (import) |
-| `src-tauri/src/os/windows.rs` | Desktop embedding (Progman, WorkerW), pause probes, OS wallpaper API |
+| `src-tauri/src/engine/wallpaper/` | Core state in `mod.rs` (displays, `Core`); one file per job: `apply.rs`, `tick.rs`, `page.rs` (host to page calls), `sync.rs`, `cycle.rs`, `screensaver.rs`, `status.rs`, `capture.rs` and more |
+| `src-tauri/src/engine/` | Also `audio.rs` (loopback FFT) and `feeds.rs` (system info, now playing) |
+| `src-tauri/src/library/` | Package types in `mod.rs`; `scan.rs`, `add.rs`, `package.rs` (zip), `props.rs`, `edit.rs`, `convert.rs` (ffmpeg), `presets.rs`, `wallpaper_engine.rs` (import) |
+| `src-tauri/src/os/windows/` | One file per Windows API area: `desktop.rs` (Progman, WorkerW), `probes.rs` (pause signals), `picture.rs`, `audio.rs`, `toast.rs`, `terminal.rs` (PATH, sarab.com) and more |
 | `src-tauri/src/scripts/inject.js` | Injected into every wallpaper page: frame cap, freeze, video sync, the Wallpaper Engine page API |
 | `ui/` | The settings window. Plain HTML, CSS and JS, no framework, no bundler |
 | `scripts/check.ps1` | Every check, one per gate name |

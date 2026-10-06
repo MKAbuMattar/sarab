@@ -384,7 +384,7 @@ Add-Type -AssemblyName System.Windows.Forms
     Assert ($css -match 'html\.translucent') 'no translucent background rule'
     Assert ($css -match 'select\.native') 'native dropdown popups are not replaced'
     Assert ((Get-Content (Join-Path $root 'ui/index.html') -Raw) -match 'name="theme"') 'no theme setting'
-    Assert ((Get-Content (Join-Path $root 'src-tauri/src/main.rs') -Raw) -match 'Effect::Mica') 'Mica is not requested'
+    Assert (Get-ChildItem (Join-Path $root 'src-tauri/src') -Recurse -Filter *.rs | Select-String -SimpleMatch 'Effect::Mica' -List) 'Mica is not requested'
     Start-Sarab -Fresh
     Sarab ui
     $pidS = Sarab-Pid
