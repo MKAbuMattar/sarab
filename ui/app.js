@@ -199,6 +199,7 @@ function render() {
   for (const k of ['pause_fullscreen', 'per_display', 'pause_focus', 'pause_battery', 'pause_power_saver', 'pause_remote']) f[k].checked = s[k];
   f.per_display.disabled = !s.pause_fullscreen;
   f.fps.value = String(s.fps);
+  f.pause_cpu.value = String(s.pause_cpu || 0);
   f.audio_mute_others.checked = s.audio_mute_others;
   f.audio_desktop_only.checked = s.audio_desktop_only;
   f.unload_minutes.value = String(s.unload_minutes ?? 0);
@@ -509,6 +510,7 @@ function readSettings() {
     pause_power_saver: f.pause_power_saver.checked,
     pause_remote: f.pause_remote.checked,
     fps: Number(f.fps.value),
+    pause_cpu: Number(f.pause_cpu.value),
     audio_mute_others: f.audio_mute_others.checked,
     audio_desktop_only: f.audio_desktop_only.checked,
     unload_minutes: Number(f.unload_minutes.value),

@@ -23,6 +23,44 @@ pub struct Signals {
     pub desktop_focused: bool,
     /// Per display, in the same order as the displays: is it covered by a fullscreen or maximized window?
     pub covered: Vec<bool>,
+    /// Other apps (never Sarab itself) have kept the CPU over the set limit; see `CpuGate`.
+    pub cpu_busy: bool,
+}
+
+/// Turns CPU readings into a steady yes or no. Busy after 3 readings at or over the limit in a
+/// row; quiet again only after 5 readings at least 15 points under it. The gap and the counts
+/// stop the wallpaper from flapping between playing and resting around the limit.
+#[derive(Default)]
+pub struct CpuGate {
+    over: u8,
+    under: u8,
+    busy: bool,
+}
+
+impl CpuGate {
+    pub fn step(&mut self, percent: f64, limit: u8) -> bool {
+        if limit == 0 {
+            *self = CpuGate::default();
+            return false;
+        }
+        let limit = f64::from(limit);
+        if percent >= limit {
+            self.over = self.over.saturating_add(1);
+            self.under = 0;
+        } else if percent < limit - 15.0 {
+            self.under = self.under.saturating_add(1);
+            self.over = 0;
+        } else {
+            self.over = 0;
+            self.under = 0;
+        }
+        if !self.busy && self.over >= 3 {
+            self.busy = true;
+        } else if self.busy && self.under >= 5 {
+            self.busy = false;
+        }
+        self.busy
+    }
 }
 
 /// Why a display is in its state. Chosen by the same branch that chose the state, so the
@@ -42,6 +80,7 @@ pub enum Reason {
     Battery,
     PowerSaver,
     Focus,
+    Busy,
 }
 
 pub fn decide(s: &Signals, r: &Settings) -> Vec<(State, Reason)> {
@@ -74,6 +113,8 @@ pub fn decide(s: &Signals, r: &Settings) -> Vec<(State, Reason)> {
         Some(Reason::Battery)
     } else if s.power_saver && r.pause_power_saver {
         Some(Reason::PowerSaver)
+    } else if s.cpu_busy {
+        Some(Reason::Busy)
     } else if r.pause_focus && !s.desktop_focused {
         Some(Reason::Focus)
     } else {
@@ -106,6 +147,46 @@ mod tests {
             desktop_focused: true,
             ..Default::default()
         }
+    }
+
+    #[test]
+    fn cpu_busy_needs_time_and_a_gap() {
+        let mut g = CpuGate::default();
+        let run =
+            |g: &mut CpuGate, xs: &[f64]| xs.iter().map(|&x| g.step(x, 80)).collect::<Vec<_>>();
+        assert_eq!(
+            run(&mut g, &[95.0, 95.0]),
+            [false, false],
+            "two busy seconds are not enough"
+        );
+        assert_eq!(run(&mut g, &[95.0]), [true], "the third is");
+        assert_eq!(
+            run(&mut g, &[70.0, 70.0, 70.0, 70.0, 70.0, 70.0]),
+            [true; 6],
+            "inside the gap it stays busy"
+        );
+        assert_eq!(run(&mut g, &[50.0, 50.0, 50.0, 50.0]), [true; 4]);
+        assert_eq!(
+            run(&mut g, &[50.0]),
+            [false],
+            "the fifth quiet second frees it"
+        );
+        assert_eq!(
+            run(&mut g, &[95.0, 60.0, 95.0, 95.0]),
+            [false; 4],
+            "a dip resets the count"
+        );
+        assert!(!g.step(99.0, 0), "off");
+        let busy = Signals {
+            covered: vec![false],
+            desktop_focused: true,
+            cpu_busy: true,
+            ..Default::default()
+        };
+        assert_eq!(
+            decide(&busy, &Settings::default()),
+            vec![(Frozen, Reason::Busy)]
+        );
     }
 
     #[test]

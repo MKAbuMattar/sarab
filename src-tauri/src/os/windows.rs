@@ -432,6 +432,8 @@ pub fn signals(mons: &[Monitor]) -> Signals {
         foreground_app,
         desktop_focused,
         covered,
+        // Set by the tick, which keeps the readings between calls.
+        cpu_busy: false,
     }
 }
 
@@ -1107,6 +1109,27 @@ pub fn show_toast(
     ToastNotificationManager::CreateToastNotifierWithId(&HSTRING::from(app_id))?.Show(&toast)?;
     *SHOWN.lock().unwrap() = Some(toast);
     Ok(())
+}
+
+/// CPU time used by Sarab and every process it started (WebView2 included), in 100 ns units.
+pub fn own_cpu_time() -> u64 {
+    use windows::Win32::Foundation::FILETIME;
+    use windows::Win32::System::Threading::GetProcessTimes;
+    own_processes()
+        .into_iter()
+        .filter_map(|pid| unsafe {
+            let h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid).ok()?;
+            let (mut c, mut e, mut k, mut u) = (
+                FILETIME::default(),
+                FILETIME::default(),
+                FILETIME::default(),
+                FILETIME::default(),
+            );
+            let r = GetProcessTimes(h, &mut c, &mut e, &mut k, &mut u);
+            let _ = CloseHandle(h);
+            r.ok().map(|_| filetime(k) + filetime(u))
+        })
+        .sum()
 }
 
 /// Installed memory in bytes, 0 if Windows will not say.

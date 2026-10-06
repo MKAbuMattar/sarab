@@ -213,5 +213,8 @@
   "settings.keepFrameDesc": "Cada pantalla conserva el último momento mostrado como fondo de Windows.",
   "update.toastTitle": "Sarab {v} está disponible",
   "update.toastBody": "Instálalo ahora: Sarab se cierra, se actualiza y vuelve a abrirse.",
-  "update.trayItem": "Actualizar a {v}"
+  "update.trayItem": "Actualizar a {v}",
+  "settings.pauseCpu": "Pausar mientras otras apps mantienen la CPU por encima de",
+  "settings.pauseCpuDesc": "El trabajo de Sarab no cuenta, así que un fondo no puede pausarse a sí mismo.",
+  "reason.busy": "En reposo: otras apps mantienen ocupada la CPU"
 }

@@ -213,5 +213,8 @@
   "settings.keepFrameDesc": "Cada tela mantém o último momento exibido como papel de parede do Windows.",
   "update.toastTitle": "O Sarab {v} está disponível",
   "update.toastBody": "Instale agora: o Sarab fecha, atualiza e abre de novo.",
-  "update.trayItem": "Atualizar para {v}"
+  "update.trayItem": "Atualizar para {v}",
+  "settings.pauseCpu": "Pausar enquanto outros apps mantêm a CPU acima de",
+  "settings.pauseCpuDesc": "O trabalho do próprio Sarab nunca conta, então um papel de parede não pausa a si mesmo.",
+  "reason.busy": "Em pausa: outros apps mantêm a CPU ocupada"
 }

@@ -213,5 +213,8 @@
   "settings.keepFrameDesc": "Chaque écran garde le dernier instant affiché comme arrière-plan Windows.",
   "update.toastTitle": "Sarab {v} est disponible",
   "update.toastBody": "Installez-le maintenant : Sarab se ferme, se met à jour et se rouvre.",
-  "update.trayItem": "Mettre à jour vers {v}"
+  "update.trayItem": "Mettre à jour vers {v}",
+  "settings.pauseCpu": "Suspendre quand d’autres apps chargent le processeur au-delà de",
+  "settings.pauseCpuDesc": "Le travail de Sarab ne compte jamais : un fond d’écran ne peut pas se suspendre lui-même.",
+  "reason.busy": "En pause : d’autres apps occupent le processeur"
 }

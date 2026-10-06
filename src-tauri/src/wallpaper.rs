@@ -58,6 +58,9 @@ pub struct Core {
     /// Where the mouse hook sends input, and whether it runs.
     pub mouse_targets: os::Targets,
     pub mouse_on: Option<std::sync::Arc<std::sync::atomic::AtomicBool>>,
+    /// CPU counters at the last tick (idle, busy, Sarab's own) and the gate that steadies them.
+    pub cpu_prev: Option<(u64, u64, u64)>,
+    pub cpu_gate: pause::CpuGate,
     /// Runs while a playing wallpaper asks for the audio levels.
     pub audio: Option<crate::audio::Feed>,
     /// Labels of the webviews the audio thread sends to.
@@ -161,6 +164,8 @@ impl Core {
             sysinfo: None,
             now_playing: None,
             audio: None,
+            cpu_prev: None,
+            cpu_gate: Default::default(),
             mouse_targets: Default::default(),
             mouse_on: None,
             screensaver: None,
@@ -1293,6 +1298,33 @@ fn cycle_due(minutes: u32, since: std::time::Duration, playing: bool, resting: b
     minutes > 0 && playing && !resting && since.as_secs() >= u64::from(minutes) * 60
 }
 
+/// Are other apps keeping the CPU busy? Sarab's own processes are taken out of the reading,
+/// so a heavy wallpaper never pauses itself. Measured only while the setting is on.
+fn cpu_busy(core: &mut Core) -> bool {
+    let limit = core.settings.pause_cpu;
+    if limit == 0 {
+        core.cpu_prev = None;
+        return core.cpu_gate.step(0.0, 0);
+    }
+    let (idle, busy) = os::cpu_times();
+    let own = os::own_cpu_time();
+    let percent = match core.cpu_prev.replace((idle, busy, own)) {
+        Some((i0, b0, o0)) => {
+            let total = idle.saturating_sub(i0) + busy.saturating_sub(b0);
+            let others = busy
+                .saturating_sub(b0)
+                .saturating_sub(own.saturating_sub(o0));
+            if total == 0 {
+                0.0
+            } else {
+                others as f64 * 100.0 / total as f64
+            }
+        }
+        None => 0.0,
+    };
+    core.cpu_gate.step(percent, limit)
+}
+
 pub fn tick(app: &AppHandle, core: &mut Core) {
     sync_displays(app, core);
     if let Some(d) = core.desktop {
@@ -1309,6 +1341,7 @@ pub fn tick(app: &AppHandle, core: &mut Core) {
     let mons: Vec<os::Monitor> = core.displays.iter().map(|d| d.mon.clone()).collect();
     let mut s = os::signals(&mons);
     s.manual = core.manual;
+    s.cpu_busy = cpu_busy(core);
     let decisions = pause::decide(&s, &core.settings);
     let changed = s != core.signals
         || decisions
