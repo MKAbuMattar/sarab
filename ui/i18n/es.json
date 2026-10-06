@@ -107,7 +107,6 @@
   "update.never": "Aún no se ha comprobado.",
   "update.failed": "No se pudo buscar actualizaciones:",
   "update.tooltip": "Sarab: la versión {v} está disponible",
-  "update.toast": "Sarab {v} está disponible. Abre Sarab para actualizar.",
   "about.updates": "Actualizaciones",
   "about.autoUpdate": "Buscar actualizaciones automáticamente",
   "about.autoUpdateDesc": "Una vez al día. No se descarga nada hasta que elijas Actualizar ahora.",
@@ -211,5 +210,8 @@
   "library.tooNew": "Creado para Sarab {v} o posterior",
   "library.tooNewTitle": "¿Reproducir un fondo creado para una versión más nueva de Sarab?",
   "settings.keepFrame": "Conservar el último fotograma al cerrar Sarab",
-  "settings.keepFrameDesc": "Cada pantalla conserva el último momento mostrado como fondo de Windows."
+  "settings.keepFrameDesc": "Cada pantalla conserva el último momento mostrado como fondo de Windows.",
+  "update.toastTitle": "Sarab {v} está disponible",
+  "update.toastBody": "Instálalo ahora: Sarab se cierra, se actualiza y vuelve a abrirse.",
+  "update.trayItem": "Actualizar a {v}"
 }

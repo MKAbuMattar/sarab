@@ -1049,6 +1049,66 @@ pub fn forward_mouse(targets: Targets, running: std::sync::Arc<std::sync::atomic
     });
 }
 
+// ---- update notification ----
+
+fn xml_escape(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+}
+
+/// The update toast: a reminder, so it stays on screen until answered, with two buttons. A click
+/// on the toast itself sends "open"; the buttons send "install" and "later".
+pub fn update_toast_xml(title: &str, body: &str, install: &str, later: &str) -> String {
+    format!(
+        concat!(
+            r#"<toast scenario="reminder" launch="open" activationType="foreground">"#,
+            r#"<visual><binding template="ToastGeneric"><text>{}</text><text>{}</text></binding></visual>"#,
+            r#"<actions><action content="{}" arguments="install" activationType="foreground"/>"#,
+            r#"<action content="{}" arguments="later" activationType="foreground"/></actions></toast>"#
+        ),
+        xml_escape(title),
+        xml_escape(body),
+        xml_escape(install),
+        xml_escape(later)
+    )
+}
+
+/// Show `xml` as a toast from `app_id` and call `on_answer` with the arguments of whatever the
+/// user clicked. The toast is kept alive here, or Windows drops its click events.
+pub fn show_toast(
+    app_id: &str,
+    xml: &str,
+    on_answer: impl Fn(String) + Send + Sync + 'static,
+) -> windows::core::Result<()> {
+    use windows::core::Interface;
+    use windows::Data::Xml::Dom::XmlDocument;
+    use windows::Foundation::TypedEventHandler;
+    use windows::UI::Notifications::{
+        ToastActivatedEventArgs, ToastNotification, ToastNotificationManager,
+    };
+    static SHOWN: std::sync::Mutex<Option<ToastNotification>> = std::sync::Mutex::new(None);
+    let doc = XmlDocument::new()?;
+    doc.LoadXml(&HSTRING::from(xml))?;
+    let toast = ToastNotification::CreateToastNotification(&doc)?;
+    toast.Activated(&TypedEventHandler::new(
+        move |_, args: windows::core::Ref<windows::core::IInspectable>| {
+            let what = args
+                .as_ref()
+                .and_then(|a| a.cast::<ToastActivatedEventArgs>().ok())
+                .and_then(|a| a.Arguments().ok())
+                .map(|h| h.to_string())
+                .unwrap_or_default();
+            on_answer(what);
+            Ok(())
+        },
+    ))?;
+    ToastNotificationManager::CreateToastNotifierWithId(&HSTRING::from(app_id))?.Show(&toast)?;
+    *SHOWN.lock().unwrap() = Some(toast);
+    Ok(())
+}
+
 /// Installed memory in bytes, 0 if Windows will not say.
 pub fn total_ram() -> u64 {
     use windows::Win32::System::SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX};
@@ -1197,6 +1257,22 @@ mod tests {
     fn screensaver_running_reads_the_real_state() {
         // Tests run while someone (or CI) works, so no screensaver is on screen.
         assert!(!screensaver_running());
+    }
+
+    #[test]
+    fn update_toast_has_buttons_and_escapes() {
+        let x = update_toast_xml(
+            "Sarab 0.0.6 is available",
+            "Fixes & <more>",
+            "Update now",
+            "Later",
+        );
+        assert!(x.contains(r#"scenario="reminder""#), "stays until answered");
+        assert!(x.contains(r#"launch="open""#));
+        assert!(x.contains(r#"arguments="install""#) && x.contains(r#"arguments="later""#));
+        assert!(x.contains("Fixes &amp; &lt;more&gt;"));
+        let doc = windows::Data::Xml::Dom::XmlDocument::new().unwrap();
+        doc.LoadXml(&HSTRING::from(x)).expect("well-formed XML");
     }
 
     #[test]

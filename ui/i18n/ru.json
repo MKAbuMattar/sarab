@@ -107,7 +107,6 @@
   "update.never": "Ещё не проверялось.",
   "update.failed": "Не удалось проверить обновления:",
   "update.tooltip": "Sarab: доступна версия {v}",
-  "update.toast": "Доступна версия Sarab {v}. Откройте Sarab, чтобы обновить.",
   "about.updates": "Обновления",
   "about.autoUpdate": "Автоматически проверять обновления",
   "about.autoUpdateDesc": "Раз в день. Ничего не загружается, пока вы не нажмёте «Обновить сейчас».",
@@ -211,5 +210,8 @@
   "library.tooNew": "Создано для Sarab {v} или новее",
   "library.tooNewTitle": "Воспроизвести обои, созданные для более новой версии Sarab?",
   "settings.keepFrame": "Оставлять последний кадр при выходе из Sarab",
-  "settings.keepFrameDesc": "Каждый дисплей сохранит последний показанный кадр как фон Windows."
+  "settings.keepFrameDesc": "Каждый дисплей сохранит последний показанный кадр как фон Windows.",
+  "update.toastTitle": "Доступна версия Sarab {v}",
+  "update.toastBody": "Установите сейчас: Sarab закроется, обновится и снова откроется.",
+  "update.trayItem": "Обновить до {v}"
 }

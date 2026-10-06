@@ -14,6 +14,7 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ### Changed
 
+- Update notices are easier to act on. The Windows notification stays on screen until answered and has Update now and Later buttons; clicking it opens Sarab. The tray menu gains an Update to X item, and the window asks in its own dialog with the release notes. Sarab checks every 3 hours and whenever the window opens, instead of once a day.
 - Wallpapers rest while the Windows screensaver runs, as they do on the lock screen.
 
 ## [0.0.5] - 2026-10-05

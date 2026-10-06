@@ -107,7 +107,6 @@
   "update.never": "尚未检查。",
   "update.failed": "无法检查更新：",
   "update.tooltip": "Sarab：版本 {v} 已可用",
-  "update.toast": "Sarab {v} 已可用。打开 Sarab 进行更新。",
   "about.updates": "更新",
   "about.autoUpdate": "自动检查更新",
   "about.autoUpdateDesc": "每天一次。在你选择“立即更新”之前不会下载任何内容。",
@@ -211,5 +210,8 @@
   "library.tooNew": "为 Sarab {v} 或更高版本制作",
   "library.tooNewTitle": "要播放为更新版本 Sarab 制作的壁纸吗？",
   "settings.keepFrame": "退出 Sarab 时保留最后一帧",
-  "settings.keepFrameDesc": "每个显示器都会把最后显示的画面保留为 Windows 壁纸。"
+  "settings.keepFrameDesc": "每个显示器都会把最后显示的画面保留为 Windows 壁纸。",
+  "update.toastTitle": "Sarab {v} 现已推出",
+  "update.toastBody": "立即安装：Sarab 将关闭、更新并重新打开。",
+  "update.trayItem": "更新到 {v}"
 }

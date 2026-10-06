@@ -424,8 +424,25 @@ document.addEventListener('input', e => { if (e.target.type === 'range') fill(e.
 // Update banner: shown on every page while a newer version exists. "Later" hides it until the
 // window is opened again; the check itself repeats once a day.
 let updateLater = false;
+// The version whose dialog already showed in this window, so it asks once per release.
+let updateAsked = null;
+
+// An update was found: ask in Sarab's own dialog, with the release notes, instead of only a bar.
+async function askUpdate(u) {
+  updateAsked = u.available.version;
+  // Release notes are Markdown; the dialog shows plain text, so heading marks go.
+  const plain = (u.available.notes || '').replace(/^#+\s*/gm, '').trim();
+  const notes = plain ? `${t('update.toastBody', { v: u.available.version })}
+
+${plain}` : t('update.toastBody', { v: u.available.version });
+  const ok = await ask({ title: t('update.toastTitle', { v: u.available.version }), body: notes, ok: t('update.now'), cancel: t('update.later') });
+  if (ok) run(() => invoke('install_update'));
+  else { updateLater = true; render(); }
+}
+
 function renderUpdate() {
   const u = state.update;
+  if (u.available && u.progress == null && updateAsked !== u.available.version && !$('#ask').open) askUpdate(u);
   const bar = $('#update-bar');
   bar.hidden = !u.available || (updateLater && u.progress == null);
   if (u.available) {

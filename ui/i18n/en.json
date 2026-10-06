@@ -107,7 +107,6 @@
   "update.never": "Not checked yet.",
   "update.failed": "Could not check for updates:",
   "update.tooltip": "Sarab: version {v} is available",
-  "update.toast": "Sarab {v} is available. Open Sarab to update.",
   "about.updates": "Updates",
   "about.autoUpdate": "Check for updates automatically",
   "about.autoUpdateDesc": "Once a day. Nothing downloads until you choose Update now.",
@@ -211,5 +210,8 @@
   "library.tooNew": "Made for Sarab {v} or newer",
   "library.tooNewTitle": "Play a wallpaper made for a newer Sarab?",
   "settings.keepFrame": "Keep the last frame when Sarab quits",
-  "settings.keepFrameDesc": "Each display keeps the moment it showed as its Windows wallpaper."
+  "settings.keepFrameDesc": "Each display keeps the moment it showed as its Windows wallpaper.",
+  "update.toastTitle": "Sarab {v} is available",
+  "update.toastBody": "Install it now: Sarab closes, updates and opens again.",
+  "update.trayItem": "Update to {v}"
 }
