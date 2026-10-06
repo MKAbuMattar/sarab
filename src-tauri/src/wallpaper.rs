@@ -342,6 +342,46 @@ fn capture_thumbnail(app: &AppHandle, core: &Core, lbl: &str) {
     });
 }
 
+/// Where display `key` (such as \\.\DISPLAY1) keeps its last frame: letters and digits only.
+fn frame_path(key: &str) -> PathBuf {
+    cfg("frames").join(format!("{}.png", key_file(key)))
+}
+
+/// Quit, after leaving each display's last frame as its Windows wallpaper. Waits at most 4 s,
+/// so a stuck capture never keeps Sarab from quitting.
+pub fn keep_frames_then_exit(app: &AppHandle, core: &Core) {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    let shots: Vec<(WebviewWindow, os::Monitor, PathBuf)> = core
+        .displays
+        .iter()
+        .filter_map(|d| Some((window(app, d)?, d.mon.clone(), frame_path(&d.mon.key))))
+        .collect();
+    if shots.is_empty() {
+        app.exit(0);
+        return;
+    }
+    let _ = fs::create_dir_all(cfg("frames"));
+    let left = std::sync::Arc::new(AtomicUsize::new(shots.len()));
+    for (win, mon, path) in shots {
+        let (a, left, file) = (app.clone(), left.clone(), path.clone());
+        capture_png(&win, path, move |ok| {
+            if ok {
+                if let Err(e) = os::set_picture(&mon, &file.to_string_lossy()) {
+                    log(format!("keep last frame on {}: {e}", mon.key));
+                }
+            }
+            if left.fetch_sub(1, Ordering::SeqCst) == 1 {
+                a.exit(0);
+            }
+        });
+    }
+    let a = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_secs(4));
+        a.exit(0);
+    });
+}
+
 /// `sarab screenshot`: save what display `i` shows as a PNG at `path`.
 pub fn screenshot(app: &AppHandle, core: &Core, i: usize, path: PathBuf) -> Result<(), String> {
     let d = core.displays.get(i).ok_or("no such display")?;
@@ -1413,6 +1453,13 @@ pub fn remove(app: &AppHandle, core: &mut Core, id: &str) -> Result<(), String> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn keep_frame_path_is_safe() {
+        let p = frame_path(r"\\.\DISPLAY2");
+        assert_eq!(p.file_name().unwrap(), "DISPLAY2.png");
+        assert_eq!(p.parent().unwrap().file_name().unwrap(), "frames");
+    }
 
     #[test]
     fn screensaver_due_after_idle_unless_busy() {

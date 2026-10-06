@@ -100,6 +100,9 @@ fn run_command(app: &AppHandle, core: &mut Core, cmd: Command) -> Result<(), Str
             rescan(core);
         }
         Command::Ui => open_ui(app, &core.settings.theme, &core.settings.backdrop),
+        Command::Quit if core.settings.keep_frame_on_quit => {
+            wallpaper::keep_frames_then_exit(app, core)
+        }
         Command::Quit => app.exit(0),
         Command::Status => wallpaper::probe_pages(app, core),
         // Network work runs on the async runtime; the main thread only starts it.

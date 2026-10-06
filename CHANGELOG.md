@@ -6,6 +6,7 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ### Added
 
+- Keep the last frame when Sarab quits (Settings > Wallpapers, off by default): each display keeps the moment it showed as its Windows wallpaper.
 - `sarab screenshot <full path.png> [--display N]` saves what a display shows as a PNG.
 - Packages can carry their title and description in other languages (`titles` and `descriptions` in sarab.json); the window shows the one for its language, and search and sorting use it.
 - Customize has two more control types for packages: number (with min, max and step) and password (shown as dots).

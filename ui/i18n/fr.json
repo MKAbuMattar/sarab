@@ -209,5 +209,7 @@
   "settings.mouseInput": "Laisser les fonds web suivre la souris",
   "settings.mouseInputDesc": "Les mouvements et clics sur le bureau atteignent les fonds interactifs. Désactivé par défaut : la souris est surveillée partout.",
   "library.tooNew": "Conçu pour Sarab {v} ou version ultérieure",
-  "library.tooNewTitle": "Lire un fond d’écran conçu pour une version plus récente de Sarab ?"
+  "library.tooNewTitle": "Lire un fond d’écran conçu pour une version plus récente de Sarab ?",
+  "settings.keepFrame": "Garder la dernière image quand Sarab se ferme",
+  "settings.keepFrameDesc": "Chaque écran garde le dernier instant affiché comme arrière-plan Windows."
 }
