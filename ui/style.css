@@ -110,7 +110,7 @@ h2 { font-size: 14px; line-height: 20px; font-weight: 600; margin: 24px 0 8px; }
 .grow { flex: 1 1 280px; min-width: 0; }
 
 /* ---- controls ---- */
-button, select, input[type=text], textarea {
+button, select, input[type=text], input[type=number], input[type=password], textarea {
   font: inherit; color: var(--text); border-radius: 4px; min-height: 32px;
   border: 1px solid var(--control-stroke); border-bottom-color: var(--control-stroke-bottom);
   background: var(--control);
@@ -124,7 +124,7 @@ button.subtle { background: transparent; border-color: transparent; }
 button.subtle:hover { background: var(--subtle-hover); }
 button.danger .icon { color: var(--danger-text); }
 select { padding: 5px 30px 5px 11px; padding-inline: 11px 30px; }
-input[type=text], textarea { padding: 5px 11px; background: var(--control); }
+input[type=text], input[type=number], input[type=password], textarea { padding: 5px 11px; background: var(--control); }
 input[type=text]:focus, textarea:focus { outline: none; background: var(--control-input); border-bottom: 2px solid var(--accent); padding-bottom: 4px; }
 input[type=text]::placeholder { color: var(--text-3); }
 textarea { width: 100%; resize: vertical; }
