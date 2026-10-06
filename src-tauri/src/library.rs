@@ -36,6 +36,10 @@ impl Kind {
 pub struct Manifest {
     pub title: Option<String>,
     pub description: Option<String>,
+    /// The title and description in other languages, by language code ("ar", "fr"...).
+    /// `title` and `description` stay the fallback.
+    pub titles: std::collections::BTreeMap<String, String>,
+    pub descriptions: std::collections::BTreeMap<String, String>,
     pub author: Option<String>,
     pub license: Option<String>,
     pub r#type: Kind,

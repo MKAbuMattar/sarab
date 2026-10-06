@@ -117,7 +117,9 @@ function el(tag, attrs = {}, ...children) {
 const icon = glyph => el('i', { class: 'icon', 'aria-hidden': 'true' }, glyph);
 const btn = (cls, glyph, label, onclick) => el('button', { class: cls, type: 'button', onclick }, icon(glyph), el('span', {}, label));
 
-const title = id => state.library.find(w => w.id === id)?.info?.title ?? id;
+const lang = () => state?.settings?.language || 'en';
+const wpTitle = w => shownTitle(w, lang());
+const title = id => { const w = state.library.find(w => w.id === id); return w ? wpTitle(w) : id; };
 const kindOf = id => state.library.find(w => w.id === id)?.kind;
 const selectedDisplay = () => selected;
 
@@ -203,7 +205,7 @@ function render() {
   f.scaling.value = s.scaling || 'cover';
   f.screensaver_minutes.value = String(s.screensaver_minutes || 0);
   f.screensaver_wallpaper.replaceChildren(el('option', { value: '' }, t('screensaver.each')),
-    ...state.library.filter(w => w.kind !== 'picture').map(w => el('option', { value: w.id }, w.info.title || w.id)));
+    ...state.library.filter(w => w.kind !== 'picture').map(w => el('option', { value: w.id }, wpTitle(w))));
   f.screensaver_wallpaper.value = s.screensaver_wallpaper || '';
   f.screensaver_wallpaper.disabled = !s.screensaver_minutes;
   f.span.checked = s.span;
@@ -254,14 +256,14 @@ function renderLibrary() {
   $('#lib-sort').value = filters.sort || 'name';
   if (document.activeElement !== $('#lib-search')) $('#lib-search').value = filters.query || '';
 
-  const shown = filterLibrary(lib, { type: filters.type || 'all', category: cat.value, query: filters.query || '', sort: filters.sort || 'name', label: categoryName });
+  const shown = filterLibrary(lib, { type: filters.type || 'all', category: cat.value, query: filters.query || '', sort: filters.sort || 'name', label: categoryName, lang: lang() });
   $('#lib-empty').hidden = lib.length > 0;
   $('#lib-none').hidden = lib.length === 0 || shown.length > 0;
   $('.lib-bar').hidden = $('#lib-types').hidden = lib.length === 0;
   $('#library').replaceChildren(...shown.map(w => el('li', { class: 'tile' },
     el('div', { class: 'thumb' }, w.thumb_url ? el('img', { src: w.thumb_url, alt: '', loading: 'lazy' }) : icon(ICON[w.kind] ?? '')),
     el('div', { class: 'body' },
-      el('span', { class: 'name' }, w.info.title || w.id),
+      el('span', { class: 'name' }, wpTitle(w)),
       el('span', { class: 'caption' }, [t(`type.${w.kind}`), w.info.category && categoryName(w.info.category), w.preset && t('presets.builtIn')].filter(Boolean).join(' · ')),
       w.too_new ? el('span', { class: 'caption danger-text' }, t('library.tooNew', { v: w.info.app_version })) : '',
       el('div', { class: 'row' },
@@ -273,7 +275,7 @@ function renderLibrary() {
         iconBtn('', t('library.info'), () => openInfo(w)),
         w.preset ? '' : iconBtn('', t('library.edit'), () => openEdit(w)),
         w.preset ? '' : btn('subtle danger', '', t('library.delete'), async () => {
-          const ok = await ask({ title: t('library.deleteTitle', { title: w.info.title || w.id }), body: t('library.deleteBody'), ok: t('library.delete'), cancel: t('dialog.cancel'), danger: true });
+          const ok = await ask({ title: t('library.deleteTitle', { title: wpTitle(w) }), body: t('library.deleteBody'), ok: t('library.delete'), cancel: t('dialog.cancel'), danger: true });
           if (ok) run(() => invoke('remove', { id: w.id }));
         }))))));
   document.querySelectorAll('.lib-bar select').forEach(combo);
@@ -331,9 +333,9 @@ async function openInfo(w) {
     ['info.version', String(w.info.version || 1)],
     ['info.customize', det.has_props ? t('info.yes') : t('info.no')],
   ];
-  $('#info-title').textContent = w.info.title || w.id;
-  $('#info-desc').textContent = w.info.description || '';
-  $('#info-desc').hidden = !w.info.description;
+  $('#info-title').textContent = wpTitle(w);
+  $('#info-desc').textContent = shownDescription(w, lang());
+  $('#info-desc').hidden = !shownDescription(w, lang());
   $('#info-list').replaceChildren(...rows.flatMap(([k, v]) => [el('dt', {}, t(k)), el('dd', {}, v)]));
   $('#info-folder').onclick = () => run(() => invoke('reveal', { id: w.id }));
   $('#info-export').onclick = () => run(() => invoke('export_wallpaper', { id: w.id }));

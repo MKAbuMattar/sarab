@@ -2,7 +2,7 @@
 import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
 
-const { filterLibrary } = createRequire(import.meta.url)('../ui/filter.js');
+const { filterLibrary, shownTitle, shownDescription } = createRequire(import.meta.url)('../ui/filter.js');
 const w = (id, kind, title, extra = {}) => ({ id, kind, added: extra.added ?? 0, info: { title, ...extra.info } });
 const lib = [
   w('sea', 'video', 'Sea at dusk', { added: 30, info: { category: 'nature', tags: ['waves', 'calm'] } }),
@@ -26,4 +26,18 @@ const ar = { nature: 'طبيعة', space: 'فضاء', animals: 'حيوانات' 
 assert.deepEqual(ids(filterLibrary(lib, { query: 'طبيعة', label: k => ar[k] })), ['sea'], 'category by its shown name');
 assert.deepEqual(ids(filterLibrary(lib, { type: 'gif', category: 'nature' })), [], 'filters combine');
 assert.equal(lib[0].id, 'sea', 'the input list is left in its order');
+
+// Translated titles: shown in the window's language, found by search, used for sorting.
+const intl = [
+  w('a', 'video', 'Zebra', { info: { titles: { ar: 'أ حمار وحشي' } } }),
+  w('b', 'video', 'Apple', { info: { titles: { ar: 'ب تفاحة' }, descriptions: { ar: 'وصف' }, description: 'desc' } }),
+];
+assert.equal(shownTitle(intl[0], 'ar'), 'أ حمار وحشي');
+assert.equal(shownTitle(intl[0], 'fr'), 'Zebra', 'no French title: the default');
+assert.equal(shownTitle(intl[0], ''), 'Zebra');
+assert.equal(shownDescription(intl[1], 'ar'), 'وصف');
+assert.equal(shownDescription(intl[1], 'de'), 'desc');
+assert.deepEqual(ids(filterLibrary(intl, { query: 'تفاحة' })), ['b'], 'search finds a translated title');
+assert.deepEqual(ids(filterLibrary(intl, { lang: 'ar' })), ['a', 'b'], 'sorted by the Arabic titles');
+assert.deepEqual(ids(filterLibrary(intl, { lang: 'en' })), ['b', 'a'], 'sorted by the English titles');
 console.log('filters ok');
