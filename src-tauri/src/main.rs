@@ -111,6 +111,14 @@ fn run_command(app: &AppHandle, core: &mut Core, cmd: Command) -> Result<(), Str
             let a = app.clone();
             tauri::async_runtime::spawn(async move { update::check(&a).await });
         }
+        Command::Screenshot { path, display } => {
+            // The command reaches the running Sarab, whose working folder is not the caller's.
+            let path = std::path::PathBuf::from(path);
+            if !path.is_absolute() {
+                return Err("give screenshot a full path, for example C:/shots/desktop.png".into());
+            }
+            wallpaper::screenshot(app, core, display.unwrap_or(0), path)?;
+        }
         Command::InstallUpdate => {
             let a = app.clone();
             tauri::async_runtime::spawn(async move { update::install(&a).await });

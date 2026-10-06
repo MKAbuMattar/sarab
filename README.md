@@ -59,6 +59,7 @@ A second `sarab` process hands its arguments to the running one and exits.
 | `sarab import <zip>`                                         | Import a Sarab package                                            |
 | `sarab preset <id>` | Download a 4K preset (ids are in `src-tauri/src/presets.json`) |
 | `sarab check-update` / `install-update` | Check for a new version now, or install it |
+| `sarab screenshot C:/shots/desktop.png [--display N]` | Save what a display shows as a PNG (a full path) |
 | `sarab ui` / `status` / `quit` | Open the window, write `status.json`, exit |
 
 ## Wallpaper packages

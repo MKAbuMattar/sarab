@@ -254,11 +254,57 @@ pub fn make_thumbnails(lib: &[Wallpaper]) {
 }
 
 /// Save one frame of a playing web or URL wallpaper as its thumbnail, scaled to 480 px wide.
-fn capture_thumbnail(app: &AppHandle, core: &Core, lbl: &str) {
+/// Save what the webview `win` shows as a full-size PNG at `path`, then call `done` with
+/// whether it worked, on WebView2's thread. Used by thumbnails, `sarab screenshot` and the
+/// last frame kept on quit.
+pub fn capture_png(win: &WebviewWindow, path: PathBuf, done: impl FnOnce(bool) + Send + 'static) {
     use webview2_com::CapturePreviewCompletedHandler;
     use webview2_com::Microsoft::Web::WebView2::Win32::COREWEBVIEW2_CAPTURE_PREVIEW_IMAGE_FORMAT_PNG;
     use windows::Win32::System::Com::{STGM_CREATE, STGM_WRITE};
     use windows::Win32::UI::Shell::SHCreateStreamOnFileEx;
+    let done = std::sync::Arc::new(Mutex::new(Some(done)));
+    let fail = done.clone();
+    let started = win.with_webview(move |pw| unsafe {
+        let run = || -> windows::core::Result<()> {
+            let stream = SHCreateStreamOnFileEx(
+                &windows::core::HSTRING::from(path.as_os_str()),
+                (STGM_CREATE | STGM_WRITE).0,
+                0x80,
+                true,
+                None,
+            )?;
+            // WebView2 holds the stream while it writes; this copy closes the file when done.
+            let keep = stream.clone();
+            let d = done.clone();
+            let handler = CapturePreviewCompletedHandler::create(Box::new(move |r| {
+                drop(keep);
+                if let Some(f) = d.lock().unwrap().take() {
+                    f(r.is_ok());
+                }
+                Ok(())
+            }));
+            pw.controller().CoreWebView2()?.CapturePreview(
+                COREWEBVIEW2_CAPTURE_PREVIEW_IMAGE_FORMAT_PNG,
+                &stream,
+                &handler,
+            )
+        };
+        if let Err(e) = run() {
+            log(format!("capture: {e}"));
+            if let Some(f) = done.lock().unwrap().take() {
+                f(false);
+            }
+        }
+    });
+    if started.is_err() {
+        if let Some(f) = fail.lock().unwrap().take() {
+            f(false);
+        }
+    }
+}
+
+/// Save one frame of a playing web or URL wallpaper as its thumbnail, scaled to 480 px wide.
+fn capture_thumbnail(app: &AppHandle, core: &Core, lbl: &str) {
     let Some(d) = core
         .displays
         .iter()
@@ -276,48 +322,39 @@ fn capture_thumbnail(app: &AppHandle, core: &Core, lbl: &str) {
         return;
     };
     let full = std::env::temp_dir().join(format!("sarab-capture-{}.png", std::process::id()));
-    let a = app.clone();
-    let _ = win.with_webview(move |pw| unsafe {
-        let run = || -> windows::core::Result<()> {
-            let stream = SHCreateStreamOnFileEx(
-                &windows::core::HSTRING::from(full.as_os_str()),
-                (STGM_CREATE | STGM_WRITE).0,
-                0x80,
-                true,
-                None,
-            )?;
-            let done = full.clone();
-            // WebView2 holds the stream while it writes; this copy closes the file when done.
-            let keep = stream.clone();
-            let handler = CapturePreviewCompletedHandler::create(Box::new(move |r| {
-                drop(keep);
-                if r.is_ok() {
-                    let (dir, a) = (w.dir.clone(), a.clone());
-                    std::thread::spawn(move || {
-                        let r = os::shrink_png(&done, &dir.join(THUMBNAIL), 480)
-                            .and_then(|()| library::set_thumbnail(&dir, THUMBNAIL));
-                        let _ = fs::remove_file(&done);
-                        match r {
-                            Ok(()) => later(&a, |app, core| {
-                                crate::rescan(core);
-                                let _ = app.emit_to("main", "changed", ());
-                            }),
-                            Err(e) => log(format!("thumbnail capture: {e}")),
-                        }
-                    });
-                }
-                Ok(())
-            }));
-            pw.controller().CoreWebView2()?.CapturePreview(
-                COREWEBVIEW2_CAPTURE_PREVIEW_IMAGE_FORMAT_PNG,
-                &stream,
-                &handler,
-            )
-        };
-        if let Err(e) = run() {
-            log(format!("thumbnail capture: {e}"));
+    let (a, done) = (app.clone(), full.clone());
+    capture_png(&win, full, move |ok| {
+        if !ok {
+            return;
         }
+        std::thread::spawn(move || {
+            let r = os::shrink_png(&done, &w.dir.join(THUMBNAIL), 480)
+                .and_then(|()| library::set_thumbnail(&w.dir, THUMBNAIL));
+            let _ = fs::remove_file(&done);
+            match r {
+                Ok(()) => later(&a, |app, core| {
+                    crate::rescan(core);
+                    let _ = app.emit_to("main", "changed", ());
+                }),
+                Err(e) => log(format!("thumbnail capture: {e}")),
+            }
+        });
     });
+}
+
+/// `sarab screenshot`: save what display `i` shows as a PNG at `path`.
+pub fn screenshot(app: &AppHandle, core: &Core, i: usize, path: PathBuf) -> Result<(), String> {
+    let d = core.displays.get(i).ok_or("no such display")?;
+    let win = window(app, d).ok_or("that display shows no web, video or GIF wallpaper")?;
+    let shown = path.display().to_string();
+    capture_png(&win, path, move |ok| {
+        log(if ok {
+            format!("screenshot saved to {shown}")
+        } else {
+            format!("screenshot to {shown} failed")
+        });
+    });
+    Ok(())
 }
 
 /// `http://asset.localhost/C:/dir/index.html`: forward slashes keep relative links in web wallpapers working.
