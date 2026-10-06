@@ -117,7 +117,7 @@ fn run_command(app: &AppHandle, core: &mut Core, cmd: Command) -> Result<(), Str
             )?;
             rescan(core);
         }
-        Command::Ui => open_ui(app, &core.settings.theme, &core.settings.backdrop),
+        Command::Ui => open_ui(app, &core.settings),
         Command::Quit if core.settings.keep_frame_on_quit => {
             wallpaper::keep_frames_then_exit(app, core)
         }
@@ -205,8 +205,9 @@ fn page_theme(app: &AppHandle, setting: &str) -> &'static str {
 }
 
 /// Callers pass the settings because they may already hold the core lock.
-fn open_ui(app: &AppHandle, theme: &str, backdrop: &str) {
-    update::check_if_stale(app);
+fn open_ui(app: &AppHandle, s: &settings::Settings) {
+    let (theme, backdrop) = (s.theme.as_str(), s.backdrop.as_str());
+    update::check_if_stale(app, s.check_updates);
     if let Some(w) = app.get_webview_window("main") {
         let _ = w.unminimize();
         let _ = w.set_focus();
