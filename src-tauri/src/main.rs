@@ -9,8 +9,10 @@ mod pause;
 mod presets;
 mod settings;
 mod support;
+mod terminal;
 mod update;
 mod wallpaper;
+mod wallpaper_engine;
 
 use cli::Command;
 use serde_json::{json, Value};
@@ -667,6 +669,14 @@ fn tray(app: &AppHandle, lang: &str) -> tauri::Result<()> {
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
+    // Started as sarab.com, the console twin: answer in the terminal and never start the app.
+    let exe = std::env::current_exe().unwrap_or_default();
+    if exe
+        .extension()
+        .is_some_and(|x| x.eq_ignore_ascii_case("com"))
+    {
+        std::process::exit(terminal::run(&args));
+    }
     // The installer's calls: done here, before the window or the hand-off to a running Sarab.
     if let Some(add) = match args.first().map(String::as_str) {
         Some("--add-to-path") => Some(true),

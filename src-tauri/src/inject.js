@@ -45,6 +45,7 @@
       style.textContent = '*,*::before,*::after{animation-play-state:paused!important}';
       (document.head || document.documentElement).appendChild(style);
       window.__sarabHooks?.freeze?.();
+      window.wallpaperPropertyListener?.setPaused?.(true);
     },
     unfreeze() {
       if (!frozen) return;
@@ -53,6 +54,7 @@
       resumeMedia.forEach(m => m.play().catch(() => {}));
       resumeMedia.clear();
       window.__sarabHooks?.unfreeze?.();
+      window.wallpaperPropertyListener?.setPaused?.(false);
       schedule();
     },
     volume(v) {
@@ -99,4 +101,21 @@
       };
     },
   };
+})();
+
+// Wallpaper Engine pages listen through window.wallpaperPropertyListener and
+// wallpaperRegisterAudioListener. Sarab's own calls are passed on in that form. A Sarab page
+// defines its own sarabPropertyChanged and sarabAudio, which replace these.
+(() => {
+  let listen = null;
+  window.wallpaperRegisterAudioListener = f => { listen = typeof f === 'function' ? f : null; };
+  window.sarabAudio = levels => {
+    if (!listen) return;
+    // 128 mono levels become 64 per channel, left then right, as Wallpaper Engine sends them.
+    const half = [];
+    for (let i = 0; i < 64; i++) half.push((levels[2 * i] + levels[2 * i + 1]) / 2);
+    try { listen(half.concat(half)); } catch (e) { console.error(e); }
+  };
+  window.sarabPropertyChanged = (name, value, page) =>
+    window.wallpaperPropertyListener?.applyUserProperties?.({ [name]: { value: page ?? value } });
 })();

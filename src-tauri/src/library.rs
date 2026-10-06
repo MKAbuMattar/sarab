@@ -180,12 +180,32 @@ fn new_dir(lib: &Path, title: &str) -> io::Result<PathBuf> {
 
 /// Add a file, a folder, or a URL. Files and URLs are referenced where they are; folders are copied in.
 pub fn add(lib: &Path, existing: &[Wallpaper], target: &str) -> Result<Wallpaper, String> {
+    use crate::wallpaper_engine::{self as we, PROJECT};
+    // A Wallpaper Engine project.json stands for its folder.
+    let parent;
+    let target = match Path::new(target).file_name() {
+        Some(n) if n.eq_ignore_ascii_case(PROJECT) => {
+            parent = Path::new(target)
+                .parent()
+                .map(dunce_str)
+                .unwrap_or_default();
+            parent.as_str()
+        }
+        _ => target,
+    };
     let as_path = Path::new(target);
     if as_path.is_dir() {
-        if read(as_path).is_none() {
-            return Err(format!("{target} has no {INFO}"));
+        // A Wallpaper Engine folder is converted on the way in. The original is never changed:
+        // the new sarab.json goes into the library copy.
+        let converted = if read(as_path).is_none() && as_path.join(PROJECT).is_file() {
+            Some(we::convert(as_path)?)
+        } else {
+            None
+        };
+        if converted.is_none() && read(as_path).is_none() {
+            return Err(format!("{target} has no {INFO} or {PROJECT}"));
         }
-        if as_path.starts_with(lib) {
+        if converted.is_none() && as_path.starts_with(lib) {
             return read(as_path).ok_or_else(|| "unreadable".into());
         }
         // The copy is named after the source path, so adding the same folder again reuses it.
@@ -206,6 +226,19 @@ pub fn add(lib: &Path, existing: &[Wallpaper], target: &str) -> Result<Wallpaper
             return Ok(w);
         }
         copy_dir(as_path, &dir).map_err(|e| e.to_string())?;
+        if let Some(c) = converted {
+            let written = crate::settings::save(&dir.join(INFO), &c.info).and_then(|()| {
+                if c.props.is_empty() {
+                    Ok(())
+                } else {
+                    crate::settings::save(&dir.join(PROPS), &c.props)
+                }
+            });
+            if let Err(e) = written {
+                let _ = fs::remove_dir_all(&dir);
+                return Err(e.to_string());
+            }
+        }
         return read(&dir).ok_or_else(|| "copy failed".into());
     }
     let kind = kind_for(target).ok_or_else(|| format!("unsupported file type: {target}"))?;
@@ -941,6 +974,34 @@ mod tests {
             "the converted folder is not a wallpaper"
         );
         assert!(convert(&lib, &d.join("missing.avi")).is_err());
+    }
+
+    #[test]
+    fn add_wallpaper_engine_folder() {
+        let d = tmp("we-add");
+        let src = d.join("431960").join("2911");
+        fs::create_dir_all(&src).unwrap();
+        fs::write(
+            src.join("project.json"),
+            r#"{"title":"Rain","type":"web","file":"index.html","general":{"properties":{"speed":{"type":"slider","value":2,"min":0,"max":5,"text":"Speed"}}}}"#,
+        )
+        .unwrap();
+        fs::write(src.join("index.html"), "<p>rain</p>").unwrap();
+        let lib = d.join("lib");
+        let w = add(&lib, &[], src.join("project.json").to_str().unwrap()).unwrap();
+        assert_eq!(w.info.title.as_deref(), Some("Rain"));
+        assert_eq!(w.info.r#type, Kind::Web);
+        assert!(w.has_props && w.dir.join("index.html").is_file());
+        assert!(
+            !src.join(INFO).exists(),
+            "the original folder is left as it was"
+        );
+        let again = add(&lib, &scan(&lib), src.to_str().unwrap()).unwrap();
+        assert_eq!(again.id, w.id, "same folder is imported once");
+        assert!(
+            add(&lib, &[], d.to_str().unwrap()).is_err(),
+            "a folder with neither file"
+        );
     }
 
     #[test]

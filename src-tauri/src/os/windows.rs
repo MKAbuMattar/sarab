@@ -1303,6 +1303,15 @@ pub fn set_on_path(add: bool) -> Result<(), String> {
         let _ = RegCloseKey(key);
     }
     r?;
+    let twin = exe.with_extension("com");
+    if add {
+        // Rewritten on every install and update, so it always matches sarab.exe.
+        let bytes = std::fs::read(&exe).map_err(|e| e.to_string())?;
+        std::fs::write(&twin, console_twin(bytes)?)
+            .map_err(|e| format!("{}: {e}", twin.display()))?;
+    } else {
+        let _ = std::fs::remove_file(&twin);
+    }
     // Tell Explorer, so terminals opened from now on see the new PATH.
     unsafe {
         let _ = SendMessageTimeoutW(
@@ -1316,6 +1325,41 @@ pub fn set_on_path(add: bool) -> Result<(), String> {
         );
     }
     Ok(())
+}
+
+/// `exe` with its PE subsystem set to console (3) instead of windows (2), so a terminal waits for
+/// it and gives it the terminal's output. Nothing else in the file changes.
+pub fn console_twin(mut exe: Vec<u8>) -> Result<Vec<u8>, String> {
+    let at = subsystem_at(&exe).ok_or("not a Windows program")?;
+    exe[at..at + 2].copy_from_slice(&3u16.to_le_bytes());
+    Ok(exe)
+}
+
+/// Where the 2-byte subsystem field sits: 68 bytes into the optional header, in PE32 and PE32+.
+fn subsystem_at(exe: &[u8]) -> Option<usize> {
+    let pe = u32::from_le_bytes(exe.get(0x3C..0x40)?.try_into().ok()?) as usize;
+    (exe.get(pe..pe + 4)? == b"PE\0\0").then_some(())?;
+    let at = pe + 24 + 68;
+    exe.get(at..at + 2).map(|_| at)
+}
+
+/// Is `pid` a running Sarab (and not some other program that got the same number later)?
+pub fn is_sarab(pid: u32) -> bool {
+    use windows::Win32::System::Threading::{QueryFullProcessImageNameW, PROCESS_NAME_WIN32};
+    unsafe {
+        let Ok(h) = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) else {
+            return false;
+        };
+        let mut buf = [0u16; 1024];
+        let mut len = buf.len() as u32;
+        let ok =
+            QueryFullProcessImageNameW(h, PROCESS_NAME_WIN32, PWSTR(buf.as_mut_ptr()), &mut len)
+                .is_ok();
+        let _ = CloseHandle(h);
+        ok && String::from_utf16_lossy(&buf[..len as usize])
+            .to_ascii_lowercase()
+            .ends_with("sarab.exe")
+    }
 }
 
 /// Print `msg` in the terminal that started Sarab, if one did. A release build is a windowed
@@ -1561,6 +1605,28 @@ mod tests {
         // The installer calls both, outside an update.
         let hooks = include_str!("../../windows/hooks.nsh");
         assert!(hooks.contains("--add-to-path") && hooks.contains("--remove-from-path"));
+    }
+
+    #[test]
+    fn console_twin_only_flips_the_subsystem() {
+        // This test binary is a console program (3); mark it windowed (2), then flip it back.
+        let mut exe = std::fs::read(std::env::current_exe().unwrap()).unwrap();
+        let at = subsystem_at(&exe).unwrap();
+        assert_eq!(u16::from_le_bytes([exe[at], exe[at + 1]]), 3);
+        exe[at] = 2;
+        let twin = console_twin(exe.clone()).unwrap();
+        assert_eq!(u16::from_le_bytes([twin[at], twin[at + 1]]), 3);
+        let changed = exe.iter().zip(&twin).filter(|(a, b)| a != b).count();
+        assert_eq!(
+            (changed, exe.len()),
+            (1, twin.len()),
+            "one byte differs, nothing else"
+        );
+        assert!(console_twin(b"MZ not a program".to_vec()).is_err());
+        assert!(
+            is_sarab(std::process::id()) == false,
+            "this test is not sarab.exe"
+        );
     }
 
     #[test]

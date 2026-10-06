@@ -559,7 +559,9 @@ fn push_props(win: &WebviewWindow, w: &Wallpaper, key: &str) {
             }
             _ => v,
         };
-        call(win, "sarabPropertyChanged", &[Value::String(name), v]);
+        let mut args = vec![Value::String(name), v];
+        args.extend(crate::wallpaper_engine::page_value(&ctl, &args[1]));
+        call(win, "sarabPropertyChanged", &args);
     }
 }
 
@@ -883,11 +885,9 @@ pub fn set_prop(
         } else {
             v.clone()
         };
-        call(
-            &win,
-            "sarabPropertyChanged",
-            &[Value::String(key.into()), send],
-        );
+        let mut args = vec![Value::String(key.into()), send];
+        args.extend(crate::wallpaper_engine::page_value(ctl, &args[1]));
+        call(&win, "sarabPropertyChanged", &args);
     }
     Ok(v)
 }
@@ -1497,6 +1497,7 @@ pub fn write_status(core: &Core) {
                 "key": d.mon.key,
                 "rect": [d.mon.rect.left, d.mon.rect.top, d.mon.rect.right, d.mon.rect.bottom],
                 "wallpaper": d.wallpaper,
+                "title": d.wallpaper.as_deref().and_then(|id| core.find(id)).and_then(|w| w.info.title.clone()),
                 "kind": d.wallpaper.as_deref().and_then(|id| core.find(id)).map(|w| w.kind),
                 "state": d.state,
                 "reason": d.reason,
@@ -1509,6 +1510,7 @@ pub fn write_status(core: &Core) {
     let s = &core.signals;
     let v = json!({
         "pid": std::process::id(),
+        "version": env!("CARGO_PKG_VERSION"),
         "manual": core.manual,
         "volume": core.settings.volume,
         "fps": core.settings.fps,
