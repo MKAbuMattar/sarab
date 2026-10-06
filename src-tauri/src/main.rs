@@ -57,6 +57,24 @@ fn resolve(core: &mut Core, target: &str) -> Result<String, String> {
 fn run_command(app: &AppHandle, core: &mut Core, cmd: Command) -> Result<(), String> {
     log(format!("command {cmd:?}"));
     match cmd {
+        // ffmpeg can take minutes, so it runs off the core; the MP4 is set when it is ready.
+        Command::Set { target, display } if library::needs_convert(&target) => {
+            let lib = wallpaper::library_dir(&core.settings);
+            let a = app.clone();
+            log(format!("converting {target} to MP4"));
+            std::thread::spawn(move || {
+                match library::convert(&lib, std::path::Path::new(&target)) {
+                    Ok(mp4) => wallpaper::later(&a, move |app, core| {
+                        let target = mp4.to_string_lossy().into_owned();
+                        if let Err(e) = run_command(app, core, Command::Set { target, display }) {
+                            log(format!("set converted video: {e}"));
+                        }
+                        changed(app);
+                    }),
+                    Err(e) => log(format!("convert {target}: {e}")),
+                }
+            });
+        }
         Command::Set { target, display } => {
             let id = resolve(core, &target)?;
             for i in wallpaper::targets(core, display)? {

@@ -245,6 +245,88 @@ pub fn add(lib: &Path, existing: &[Wallpaper], target: &str) -> Result<Wallpaper
     read(&dir).ok_or_else(|| "write failed".into())
 }
 
+/// Formats WebView2 cannot play. Sarab turns them into MP4 with ffmpeg, when it is installed.
+pub fn needs_convert(target: &str) -> bool {
+    !target.contains("://")
+        && Path::new(target)
+            .extension()
+            .and_then(|e| e.to_str())
+            .is_some_and(|e| {
+                matches!(
+                    e.to_ascii_lowercase().as_str(),
+                    "avi" | "wmv" | "mpg" | "mpeg"
+                )
+            })
+}
+
+/// Turn `src` into an MP4 under the library's `converted` folder, in a folder named after the
+/// source path, so adding it again reuses the first result. Needs ffmpeg on PATH. Written to a
+/// .part file first, so a stopped run never leaves a broken video behind.
+pub fn convert(lib: &Path, src: &Path) -> Result<PathBuf, String> {
+    let abs = fs::canonicalize(src).map_err(|e| format!("{}: {e}", src.display()))?;
+    let stem = src
+        .file_stem()
+        .map(|s| s.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    let dir = lib.join("converted").join(format!(
+        "{:08x}",
+        fnv(dunce_str(&abs).to_lowercase().as_bytes())
+    ));
+    let out = dir.join(format!("{stem}.mp4"));
+    if out.is_file() {
+        return Ok(out);
+    }
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let part = dir.join("video.part");
+    let mut cmd = std::process::Command::new("ffmpeg");
+    cmd.args(["-y", "-v", "error", "-i"])
+        .arg(&abs)
+        // H.264 needs even sizes; faststart lets playback begin before the whole file is read.
+        .args([
+            "-vf",
+            "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+        ])
+        .args([
+            "-crf",
+            "20",
+            "-pix_fmt",
+            "yuv420p",
+            "-c:a",
+            "aac",
+            "-movflags",
+            "+faststart",
+            "-f",
+            "mp4",
+        ])
+        .arg(&part);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW: no console flashes up
+    }
+    let r = cmd.output().map_err(|e| match e.kind() {
+        io::ErrorKind::NotFound => {
+            "this video format needs ffmpeg: install it (winget install Gyan.FFmpeg) and try again"
+                .to_string()
+        }
+        _ => format!("ffmpeg: {e}"),
+    })?;
+    if !r.status.success() {
+        let _ = fs::remove_file(&part);
+        return Err(format!(
+            "ffmpeg could not convert {}: {}",
+            src.display(),
+            String::from_utf8_lossy(&r.stderr).trim()
+        ));
+    }
+    fs::rename(&part, &out).map_err(|e| e.to_string())?;
+    Ok(out)
+}
+
 /// `canonicalize` on Windows returns `\\?\C:\...`; strip it so paths stay readable and URL friendly.
 fn dunce_str(p: &Path) -> String {
     let s = p.to_string_lossy();
@@ -804,6 +886,60 @@ mod tests {
             coerce(&p["pick"], &Value::String("1".into())).unwrap(),
             serde_json::json!(1)
         );
+    }
+
+    #[test]
+    fn needs_convert_then_converts_once() {
+        assert!(
+            needs_convert("C:/clips/Rain.AVI") && needs_convert("a.wmv") && needs_convert("a.mpeg")
+        );
+        assert!(
+            !needs_convert("a.mp4")
+                && !needs_convert("a.webm")
+                && !needs_convert("https://x.com/a.avi")
+        );
+        let d = tmp("convert");
+        let avi = d.join("Rain.avi");
+        let made = std::process::Command::new("ffmpeg")
+            .args([
+                "-y",
+                "-v",
+                "error",
+                "-f",
+                "lavfi",
+                "-i",
+                "testsrc=size=65x49:rate=5",
+                "-t",
+                "1",
+                "-c:v",
+                "mpeg4",
+            ])
+            .arg(&avi)
+            .status();
+        if !made.is_ok_and(|s| s.success()) {
+            eprintln!("ffmpeg not installed: conversion not tested");
+            return;
+        }
+        let lib = d.join("lib");
+        let mp4 = convert(&lib, &avi).unwrap();
+        assert_eq!(
+            mp4.file_name().unwrap(),
+            "Rain.mp4",
+            "keeps the name, so the title reads well"
+        );
+        assert!(fs::metadata(&mp4).unwrap().len() > 0);
+        let when = fs::metadata(&mp4).unwrap().modified().unwrap();
+        assert_eq!(convert(&lib, &avi).unwrap(), mp4);
+        assert_eq!(
+            fs::metadata(&mp4).unwrap().modified().unwrap(),
+            when,
+            "second add reuses it"
+        );
+        assert!(
+            scan(&lib).is_empty(),
+            "the converted folder is not a wallpaper"
+        );
+        assert!(convert(&lib, &d.join("missing.avi")).is_err());
     }
 
     #[test]
