@@ -2,8 +2,8 @@
 //! are public-domain NASA footage, too large to ship, so Sarab downloads one only when the user
 //! asks and keeps it only if its size and SHA-256 match the values pinned here.
 
+use crate::engine::wallpaper::{later, library_dir, log, Shared};
 use crate::library::{self, Kind, Manifest};
-use crate::wallpaper::{later, library_dir, log, Shared};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -144,7 +144,7 @@ async fn fetch(app: &AppHandle, v: &Video, dir: &std::path::Path) -> Result<(), 
         clip: v.clip,
         ..Default::default()
     };
-    crate::settings::save(&dir.join(library::INFO), &info).map_err(|e| e.to_string())
+    crate::core::settings::save(&dir.join(library::INFO), &info).map_err(|e| e.to_string())
 }
 
 fn hex(bytes: &[u8]) -> String {

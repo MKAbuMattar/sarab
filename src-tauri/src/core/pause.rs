@@ -1,4 +1,4 @@
-use crate::settings::Settings;
+use crate::core::settings::Settings;
 use serde::Serialize;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize)]

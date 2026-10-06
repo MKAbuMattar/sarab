@@ -30,7 +30,7 @@ pub fn run(args: &[String]) -> i32 {
 }
 
 fn status(exe: &std::path::Path, json: bool) -> i32 {
-    let file = crate::settings::config_dir().join("status.json");
+    let file = crate::core::settings::config_dir().join("status.json");
     let read = || -> Option<Value> { serde_json::from_slice(&std::fs::read(&file).ok()?).ok() };
     let running = read()
         .and_then(|v| v["pid"].as_u64())

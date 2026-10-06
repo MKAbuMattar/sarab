@@ -1,6 +1,6 @@
 //! Help when something goes wrong: logs for a bug report, and settings back to their defaults.
 
-use crate::settings::Settings;
+use crate::core::settings::Settings;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 

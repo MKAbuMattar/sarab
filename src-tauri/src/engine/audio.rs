@@ -82,7 +82,7 @@ impl Feed {
             if let Err(e) = crate::os::windows::loopback(&w, &mut |samples: &[f32]| {
                 send(&spectrum(samples));
             }) {
-                crate::wallpaper::log(format!("audio feed: {e}"));
+                crate::engine::wallpaper::log(format!("audio feed: {e}"));
             }
             w.store(false, Ordering::Relaxed);
         });

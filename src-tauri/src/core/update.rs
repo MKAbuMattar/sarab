@@ -2,7 +2,7 @@
 //! allows it in Settings. Nothing is downloaded until the user chooses "Update now"; the updater
 //! plugin then verifies the installer's signature against the public key in tauri.conf.json.
 
-use crate::wallpaper::{log, Shared};
+use crate::engine::wallpaper::{log, Shared};
 use serde_json::{json, Value};
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -157,15 +157,16 @@ fn notify(app: &AppHandle, version: &str) {
         &t("update.later"),
     );
     let a = app.clone();
-    let shown = crate::os::windows::show_toast(crate::settings::APP_ID, &xml, move |answer| {
-        log(format!("update toast: {answer:?}"));
-        match answer.as_str() {
-            "install" => crate::handle_args(&a, &["install-update".to_string()]),
-            "later" => {}
-            // A click on the toast itself opens the window, where the update bar waits.
-            _ => crate::handle_args(&a, &["ui".to_string()]),
-        }
-    });
+    let shown =
+        crate::os::windows::show_toast(crate::core::settings::APP_ID, &xml, move |answer| {
+            log(format!("update toast: {answer:?}"));
+            match answer.as_str() {
+                "install" => crate::handle_args(&a, &["install-update".to_string()]),
+                "later" => {}
+                // A click on the toast itself opens the window, where the update bar waits.
+                _ => crate::handle_args(&a, &["ui".to_string()]),
+            }
+        });
     if let Err(e) = shown {
         log(format!("update notification: {e}"));
     }
@@ -241,7 +242,7 @@ mod tests {
             "an unknown channel falls back to stable"
         );
         // The beta feed must name the tag release.yml uploads it to.
-        let wf = include_str!("../../.github/workflows/release.yml");
+        let wf = include_str!("../../../.github/workflows/release.yml");
         assert!(wf.contains("gh release upload beta latest.json"));
     }
 }

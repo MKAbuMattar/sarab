@@ -1,6 +1,6 @@
 //! Windows backend: WorkerW embedding, pause probes, OS picture wallpaper.
 
-use crate::pause::Signals;
+use crate::core::pause::Signals;
 use windows::core::{w, BOOL, HSTRING, PCWSTR, PWSTR};
 use windows::Win32::Foundation::{CloseHandle, HWND, LPARAM, POINT, RECT, WPARAM};
 use windows::Win32::Graphics::Dwm::{

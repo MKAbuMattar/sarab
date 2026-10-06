@@ -1,18 +1,14 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod audio;
 mod cli;
-mod feeds;
+mod core;
+mod engine;
 mod library;
 mod os;
-mod pause;
-mod presets;
-mod settings;
-mod support;
-mod terminal;
-mod update;
-mod wallpaper;
-mod wallpaper_engine;
+
+use crate::core::{settings, support, update};
+use crate::engine::wallpaper;
+use crate::library::presets;
 
 use cli::Command;
 use serde_json::{json, Value};
@@ -675,7 +671,7 @@ fn main() {
         .extension()
         .is_some_and(|x| x.eq_ignore_ascii_case("com"))
     {
-        std::process::exit(terminal::run(&args));
+        std::process::exit(cli::terminal::run(&args));
     }
     // The installer's calls: done here, before the window or the hand-off to a running Sarab.
     if let Some(add) = match args.first().map(String::as_str) {

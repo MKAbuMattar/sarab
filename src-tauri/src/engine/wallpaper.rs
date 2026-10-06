@@ -1,10 +1,10 @@
 //! Core state: which wallpaper runs on which display, and in which pause state.
 //! Every function here runs on the main thread (see `on_main`), so the lock is never contended.
 
+use crate::core::pause::{self, Reason, Signals, State};
+use crate::core::settings::{self, Layout, Settings};
 use crate::library::{self, Kind, Target, Wallpaper};
 use crate::os::windows as os;
-use crate::pause::{self, Reason, Signals, State};
-use crate::settings::{self, Layout, Settings};
 use serde_json::{json, Map, Value};
 use std::{
     collections::BTreeMap,
@@ -15,7 +15,7 @@ use std::{
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 use windows::Win32::Foundation::RECT;
 
-pub const INJECT: &str = include_str!("inject.js");
+pub const INJECT: &str = include_str!("../scripts/inject.js");
 
 #[cfg(windows)]
 const APP_ORIGIN: &str = "http://tauri.localhost";
@@ -54,7 +54,7 @@ pub struct Core {
     pub sync_due: bool,
     pub ticks: u64,
     /// Started the first time a playing wallpaper asks for system information.
-    pub sysinfo: Option<crate::feeds::Sampler>,
+    pub sysinfo: Option<crate::engine::feeds::Sampler>,
     /// The screensaver's window labels and the input stamp it started at, while it shows.
     pub screensaver: Option<(Vec<String>, u32)>,
     /// Where the mouse hook sends input, and whether it runs.
@@ -64,11 +64,11 @@ pub struct Core {
     pub cpu_prev: Option<(u64, u64, u64)>,
     pub cpu_gate: pause::CpuGate,
     /// Runs while a playing wallpaper asks for the audio levels.
-    pub audio: Option<crate::audio::Feed>,
+    pub audio: Option<crate::engine::audio::Feed>,
     /// Labels of the webviews the audio thread sends to.
     pub audio_to: std::sync::Arc<Mutex<Vec<String>>>,
     /// Started the first time a playing wallpaper asks for the current track.
-    pub now_playing: Option<crate::feeds::NowPlaying>,
+    pub now_playing: Option<crate::engine::feeds::NowPlaying>,
     /// The volume the pages play at now, after the audio rules; the setting is the most it can be.
     pub volume_now: u8,
     /// When the wallpaper last changed, by the user or by cycling.
@@ -560,7 +560,7 @@ fn push_props(win: &WebviewWindow, w: &Wallpaper, key: &str) {
             _ => v,
         };
         let mut args = vec![Value::String(name), v];
-        args.extend(crate::wallpaper_engine::page_value(&ctl, &args[1]));
+        args.extend(crate::library::wallpaper_engine::page_value(&ctl, &args[1]));
         call(win, "sarabPropertyChanged", &args);
     }
 }
@@ -886,7 +886,7 @@ pub fn set_prop(
             v.clone()
         };
         let mut args = vec![Value::String(key.into()), send];
-        args.extend(crate::wallpaper_engine::page_value(ctl, &args[1]));
+        args.extend(crate::library::wallpaper_engine::page_value(ctl, &args[1]));
         call(&win, "sarabPropertyChanged", &args);
     }
     Ok(v)
@@ -1069,7 +1069,7 @@ fn push_sysinfo(app: &AppHandle, core: &mut Core) {
     }
     let info = core
         .sysinfo
-        .get_or_insert_with(crate::feeds::Sampler::new)
+        .get_or_insert_with(crate::engine::feeds::Sampler::new)
         .sample();
     let v = serde_json::to_value(&info).unwrap_or(Value::Null);
     for i in to {
@@ -1092,7 +1092,7 @@ fn push_now_playing(app: &AppHandle, core: &mut Core) {
     }
     let n = core
         .now_playing
-        .get_or_insert_with(crate::feeds::NowPlaying::start);
+        .get_or_insert_with(crate::engine::feeds::NowPlaying::start);
     n.wanted.store(true, Ordering::Relaxed);
     let latest = n.latest.lock().unwrap().clone();
     // Sent again every 10 ticks so a page that loaded since still learns the track.
@@ -1240,7 +1240,7 @@ fn run_audio_feed(app: &AppHandle, core: &mut Core) {
         (Some(f), true) if f.running() => {}
         (_, true) => {
             let (a, to) = (app.clone(), core.audio_to.clone());
-            core.audio = Some(crate::audio::Feed::start(move |s| {
+            core.audio = Some(crate::engine::audio::Feed::start(move |s| {
                 let levels: Vec<String> = s.iter().map(|v| format!("{v:.3}")).collect();
                 let js = format!(
                     "try{{typeof sarabAudio==='function'&&sarabAudio([{}])}}catch(e){{}}",

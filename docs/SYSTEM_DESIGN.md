@@ -63,13 +63,24 @@ sarab/
 │  ├─ capabilities/main.json        # commands allowed for the "main" (settings) window only
 │  └─ src/
 │     ├─ main.rs                    # setup: tray, single-instance, CLI dispatch, event loop
-│     ├─ cli.rs                     # argv → Command enum
-│     ├─ settings.rs                # Settings + Layout structs, atomic JSON load/save
-│     ├─ library.rs                 # scan, add, import Sarab zip, export, thumbnails
-│     ├─ wallpaper.rs               # apply/close per display, window lifecycle, JS bridge
-│     ├─ pause.rs                   # Signals → decisions (pure) + tests
-│     ├─ feeds.rs                   # audio FFT, sysinfo, now-playing → JS calls
-│     ├─ inject.js                  # rAF throttle, freeze/unfreeze, video sync (include_str!)
+│     ├─ cli/
+│     │  ├─ mod.rs                  # argv → Command enum
+│     │  └─ terminal.rs             # sarab.com, the console twin: answers in the terminal
+│     ├─ core/
+│     │  ├─ settings.rs             # Settings + Layout structs, atomic JSON load/save
+│     │  ├─ pause.rs                # Signals → decisions (pure) + tests
+│     │  ├─ update.rs               # update checks, notice, install
+│     │  └─ support.rs              # logs export, settings reset
+│     ├─ engine/
+│     │  ├─ wallpaper.rs            # apply/close per display, window lifecycle, JS bridge
+│     │  ├─ audio.rs                # loopback capture, FFT
+│     │  └─ feeds.rs                # sysinfo, now-playing → JS calls
+│     ├─ library/
+│     │  ├─ mod.rs                  # scan, add, import Sarab zip, export, thumbnails
+│     │  ├─ presets.rs, presets.json  # 4K presets, pinned by size and SHA-256
+│     │  └─ wallpaper_engine.rs     # project.json → sarab.json + properties.json
+│     ├─ scripts/
+│     │  └─ inject.js               # rAF throttle, freeze/unfreeze, video sync, WE page API (include_str!)
 │     └─ os/
 │        ├─ windows.rs              # WorkerW embed + probes + GSMTC
 │        ├─ macos.rs                # desktop-level window + probes

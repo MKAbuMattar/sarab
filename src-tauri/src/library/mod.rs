@@ -1,3 +1,6 @@
+pub mod presets;
+pub mod wallpaper_engine;
+
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::{
@@ -180,7 +183,7 @@ fn new_dir(lib: &Path, title: &str) -> io::Result<PathBuf> {
 
 /// Add a file, a folder, or a URL. Files and URLs are referenced where they are; folders are copied in.
 pub fn add(lib: &Path, existing: &[Wallpaper], target: &str) -> Result<Wallpaper, String> {
-    use crate::wallpaper_engine::{self as we, PROJECT};
+    use crate::library::wallpaper_engine::{self as we, PROJECT};
     // A Wallpaper Engine project.json stands for its folder.
     let parent;
     let target = match Path::new(target).file_name() {
@@ -227,11 +230,11 @@ pub fn add(lib: &Path, existing: &[Wallpaper], target: &str) -> Result<Wallpaper
         }
         copy_dir(as_path, &dir).map_err(|e| e.to_string())?;
         if let Some(c) = converted {
-            let written = crate::settings::save(&dir.join(INFO), &c.info).and_then(|()| {
+            let written = crate::core::settings::save(&dir.join(INFO), &c.info).and_then(|()| {
                 if c.props.is_empty() {
                     Ok(())
                 } else {
-                    crate::settings::save(&dir.join(PROPS), &c.props)
+                    crate::core::settings::save(&dir.join(PROPS), &c.props)
                 }
             });
             if let Err(e) = written {
@@ -275,7 +278,7 @@ pub fn add(lib: &Path, existing: &[Wallpaper], target: &str) -> Result<Wallpaper
         ..Default::default()
     };
     let dir = new_dir(lib, &title).map_err(|e| e.to_string())?;
-    crate::settings::save(&dir.join(INFO), &info).map_err(|e| e.to_string())?;
+    crate::core::settings::save(&dir.join(INFO), &info).map_err(|e| e.to_string())?;
     read(&dir).ok_or_else(|| "write failed".into())
 }
 
@@ -512,7 +515,7 @@ pub fn save_prop(saved_path: &Path, ctl: &Value, key: &str, value: &Value) -> io
         .and_then(|b| serde_json::from_slice(&b).ok())
         .unwrap_or_default();
     saved.insert(key.into(), value.clone());
-    crate::settings::save(saved_path, &saved)
+    crate::core::settings::save(saved_path, &saved)
 }
 
 /// Write `w` as a package zip in `dest` that `import_zip` reads back. A file that lives outside
@@ -652,7 +655,7 @@ pub fn set_thumbnail(dir: &Path, name: &str) -> Result<(), String> {
         serde_json::from_slice(&fs::read(dir.join(INFO)).map_err(|e| e.to_string())?)
             .map_err(|e| e.to_string())?;
     info.thumbnail = Some(name.to_string());
-    crate::settings::save(&dir.join(INFO), &info).map_err(|e| e.to_string())
+    crate::core::settings::save(&dir.join(INFO), &info).map_err(|e| e.to_string())
 }
 
 /// Forget the values saved for one display, so the wallpaper's own defaults apply again.
@@ -740,7 +743,7 @@ pub fn edit_info(dir: &Path, e: Edit) -> Result<Manifest, String> {
     info.category = category;
     info.tags = tags;
     info.version += 1;
-    crate::settings::save(&dir.join(INFO), &info).map_err(|e| e.to_string())?;
+    crate::core::settings::save(&dir.join(INFO), &info).map_err(|e| e.to_string())?;
     Ok(info)
 }
 

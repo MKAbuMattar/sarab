@@ -1,3 +1,5 @@
+pub mod terminal;
+
 #[derive(Debug, PartialEq)]
 pub enum Command {
     Set {

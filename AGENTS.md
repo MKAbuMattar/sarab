@@ -11,11 +11,12 @@ Sarab is a Windows animated-wallpaper app: Rust and Tauri v2 on the system WebVi
 | Path | What |
 |---|---|
 | `src-tauri/src/main.rs` | Tray, single instance, CLI dispatch, Tauri commands for the settings window, the 1 s tick thread |
-| `src-tauri/src/wallpaper.rs` | Core state: displays, wallpaper windows, pause states, status file, video sync |
-| `src-tauri/src/pause.rs` | `decide()`: signals in, state and reason per display out. Pure, unit tested |
-| `src-tauri/src/library.rs` | `sarab.json` packages, zip import, `properties.json` |
+| `src-tauri/src/cli/` | `mod.rs` parses `sarab ...`; `terminal.rs` is sarab.com, the console twin that answers in the terminal |
+| `src-tauri/src/core/` | `settings.rs` on disk, `pause.rs` (`decide()`: signals in, state and reason per display out; pure, unit tested), `update.rs`, `support.rs` |
+| `src-tauri/src/engine/` | `wallpaper.rs` (core state: displays, wallpaper windows, pause states, status file, video sync), `audio.rs`, `feeds.rs` |
+| `src-tauri/src/library/` | `mod.rs` (`sarab.json` packages, zip import, `properties.json`), `presets.rs` and `presets.json`, `wallpaper_engine.rs` (import) |
 | `src-tauri/src/os/windows.rs` | Desktop embedding (Progman, WorkerW), pause probes, OS wallpaper API |
-| `src-tauri/src/inject.js` | Injected into every wallpaper page: frame cap, freeze, video sync |
+| `src-tauri/src/scripts/inject.js` | Injected into every wallpaper page: frame cap, freeze, video sync, the Wallpaper Engine page API |
 | `ui/` | The settings window. Plain HTML, CSS and JS, no framework, no bundler |
 | `scripts/check.ps1` | Every check, one per gate name |
 | `docs/` | Specification, system design, plan |
@@ -55,7 +56,7 @@ A check passes only when it exits 0 and prints `<name> gate passed`. Read the ou
 4. **The `open` command takes fixed names only**, never a path or URL from the page.
 5. **Keep the package format stable.** Add fields to `sarab.json` and `properties.json`; never rename or remove one.
 6. **Every UI string goes in every `ui/i18n/*.json`.** English and Arabic must have the same keys; `static` fails otherwise. Arabic is right to left: use logical CSS properties (`inset-inline-start`, `margin-inline`), never `left` or `right`, except in the display map, which keeps physical order.
-7. **Bundled or downloadable content must be redistributable.** Presets are public domain (NASA) or carry a GPL-3.0 compatible license with its notice. Stock sites such as Pexels and Pixabay forbid redistribution in wallpaper apps, and Shadertoy's default license is non-commercial. Downloads are pinned by size and SHA-256 in `src-tauri/src/presets.json`.
+7. **Bundled or downloadable content must be redistributable.** Presets are public domain (NASA) or carry a GPL-3.0 compatible license with its notice. Stock sites such as Pexels and Pixabay forbid redistribution in wallpaper apps, and Shadertoy's default license is non-commercial. Downloads are pinned by size and SHA-256 in `src-tauri/src/library/presets.json`.
 8. **No other wallpaper app is named** anywhere in the repository, code, docs or comments. `brand` scans every file.
 9. **No email addresses.** The project has no mailbox; contact goes through GitHub (issues, private vulnerability reporting).
 10. **GitHub Actions are pinned by full commit SHA** with the version as a comment, for example `actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1`. Resolve a new pin with `gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`, and check the action's inputs at that commit.
