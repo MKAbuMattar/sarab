@@ -220,5 +220,8 @@
   "about.channel": "Update-Kanal",
   "about.channelDesc": "Beta erhält Testversionen vor allen anderen. Sie können noch Fehler haben.",
   "channel.stable": "Stabil",
-  "channel.beta": "Beta"
+  "channel.beta": "Beta",
+  "library.appTitle": "{title} als Hintergrund ausführen?",
+  "library.appBody": "Das ist ein Programm. Es läuft mit denselben Rechten wie jede App, die Sie öffnen. Verwenden Sie nur Programme, denen Sie vertrauen. Sarab beendet es, wenn der Hintergrund wechselt oder Sarab beendet wird.",
+  "library.run": "Ausführen"
 }

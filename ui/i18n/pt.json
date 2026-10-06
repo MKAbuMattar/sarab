@@ -220,5 +220,8 @@
   "about.channel": "Canal de atualização",
   "about.channelDesc": "Beta recebe versões de teste antes de todos. Elas podem ter falhas.",
   "channel.stable": "Estável",
-  "channel.beta": "Beta"
+  "channel.beta": "Beta",
+  "library.appTitle": "Executar {title} como papel de parede?",
+  "library.appBody": "Isto é um programa. Ele roda com as mesmas permissões de qualquer app que você abre, então use só programas confiáveis. O Sarab o fecha quando o papel de parede muda ou o Sarab sai.",
+  "library.run": "Executar"
 }

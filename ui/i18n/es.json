@@ -220,5 +220,8 @@
   "about.channel": "Canal de actualizaciones",
   "about.channelDesc": "Beta recibe versiones de prueba antes que nadie. Pueden tener fallos.",
   "channel.stable": "Estable",
-  "channel.beta": "Beta"
+  "channel.beta": "Beta",
+  "library.appTitle": "¿Ejecutar {title} como fondo?",
+  "library.appBody": "Es un programa. Se ejecuta con los mismos permisos que cualquier app que abras, así que usa solo programas de confianza. Sarab lo cierra al cambiar el fondo o al salir.",
+  "library.run": "Ejecutar"
 }

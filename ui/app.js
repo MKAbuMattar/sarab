@@ -273,6 +273,8 @@ function renderLibrary() {
         btn('accent', '', t('library.set'), async () => {
           // A package made for a newer Sarab may use what this one lacks: ask first.
           if (w.too_new && !await ask({ title: t('library.tooNewTitle'), body: t('library.tooNew', { v: w.info.app_version }), ok: t('library.set'), cancel: t('dialog.cancel') })) return;
+          // An app wallpaper is a program that runs with the user's rights: ask every time.
+          if (w.kind === 'app' && !await ask({ title: t('library.appTitle', { title: wpTitle(w) }), body: t('library.appBody'), ok: t('library.run'), cancel: t('dialog.cancel'), danger: true })) return;
           run(() => invoke('set_wallpaper', { target: w.id, display: selectedDisplay() }));
         }),
         iconBtn('', t('library.info'), () => openInfo(w)),

@@ -220,5 +220,8 @@
   "about.channel": "更新渠道",
   "about.channelDesc": "Beta 渠道会比其他人更早收到测试版本，可能不够完善。",
   "channel.stable": "稳定版",
-  "channel.beta": "测试版"
+  "channel.beta": "测试版",
+  "library.appTitle": "将 {title} 作为壁纸运行？",
+  "library.appBody": "这是一个程序，它和你打开的任何应用拥有相同的权限，请只使用你信任的程序。更换壁纸或退出 Sarab 时会关闭它。",
+  "library.run": "运行"
 }
