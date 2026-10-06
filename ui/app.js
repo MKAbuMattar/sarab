@@ -262,7 +262,7 @@ function renderLibrary() {
   $('#lib-none').hidden = lib.length === 0 || shown.length > 0;
   $('.lib-bar').hidden = $('#lib-types').hidden = lib.length === 0;
   $('#library').replaceChildren(...shown.map(w => el('li', { class: 'tile' },
-    el('div', { class: 'thumb' }, w.thumb_url ? el('img', { src: w.thumb_url, alt: '', loading: 'lazy' }) : icon(ICON[w.kind] ?? '')),
+    thumbFor(w),
     el('div', { class: 'body' },
       el('span', { class: 'name' }, wpTitle(w)),
       el('span', { class: 'caption' }, [t(`type.${w.kind}`), w.info.category && categoryName(w.info.category), w.preset && t('presets.builtIn')].filter(Boolean).join(' · ')),
@@ -280,6 +280,24 @@ function renderLibrary() {
           if (ok) run(() => invoke('remove', { id: w.id }));
         }))))));
   document.querySelectorAll('.lib-bar select').forEach(combo);
+}
+
+// The tile picture. A video or GIF plays, muted, only while the pointer rests on it, and never
+// when Windows asks for less motion.
+const lessMotion = matchMedia('(prefers-reduced-motion: reduce)');
+function thumbFor(w) {
+  const still = () => w.thumb_url ? el('img', { src: w.thumb_url, alt: '', loading: 'lazy' }) : icon(ICON[w.kind] ?? '');
+  const box = el('div', { class: 'thumb' }, still());
+  if (!w.preview_url) return box;
+  box.addEventListener('pointerenter', () => {
+    if (lessMotion.matches) return;
+    const media = w.kind === 'gif'
+      ? el('img', { src: w.preview_url, alt: '' })
+      : Object.assign(el('video', { src: w.preview_url }), { muted: true, autoplay: true, loop: true, playsInline: true });
+    box.replaceChildren(media);
+  });
+  box.addEventListener('pointerleave', () => box.replaceChildren(still()));
+  return box;
 }
 
 // An icon-only button still has a name for screen readers and a tooltip for the mouse.
