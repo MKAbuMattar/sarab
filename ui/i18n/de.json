@@ -207,5 +207,7 @@
   "settings.screensaverShows": "Anzeigen",
   "screensaver.each": "Das eigene Hintergrundbild jedes Bildschirms",
   "settings.mouseInput": "Web-Hintergrundbilder der Maus folgen lassen",
-  "settings.mouseInputDesc": "Bewegungen und Klicks auf dem Desktop erreichen interaktive Hintergrundbilder. Standardmäßig aus: Dabei wird die Maus überall beobachtet."
+  "settings.mouseInputDesc": "Bewegungen und Klicks auf dem Desktop erreichen interaktive Hintergrundbilder. Standardmäßig aus: Dabei wird die Maus überall beobachtet.",
+  "library.tooNew": "Für Sarab {v} oder neuer erstellt",
+  "library.tooNewTitle": "Hintergrund für eine neuere Sarab-Version abspielen?"
 }

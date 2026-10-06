@@ -52,6 +52,8 @@ pub struct Manifest {
     pub category: Option<String>,
     pub tags: Vec<String>,
     pub version: u32,
+    /// The Sarab version the package was made for. Older versions flag it and ask before playing.
+    pub app_version: Option<String>,
     /// Play only this range of a video, in seconds, and loop inside it.
     pub clip: Option<[f64; 2]>,
 }
@@ -69,6 +71,8 @@ pub struct Wallpaper {
     pub added: u64,
     /// The thumbnail image, when the package has one.
     pub thumb: Option<PathBuf>,
+    /// Made for a newer Sarab than this one.
+    pub too_new: bool,
 }
 
 pub enum Target {
@@ -114,6 +118,10 @@ pub fn read(dir: &Path) -> Option<Wallpaper> {
         has_props: dir.join(PROPS).is_file(),
         preset: false,
         added: secs(fs::metadata(dir).ok().and_then(|m| m.created().ok())),
+        too_new: info
+            .app_version
+            .as_deref()
+            .is_some_and(|v| newer(v, env!("CARGO_PKG_VERSION"))),
         thumb: info
             .thumbnail
             .as_deref()
@@ -402,6 +410,9 @@ pub fn export_zip(w: &Wallpaper, dest: &Path) -> Result<PathBuf, String> {
         .collect();
     let path = dest.join(format!("{}.zip", name.trim()));
     let mut info = w.info.clone();
+    // Record the version that made it, so an older Sarab can warn before playing it.
+    info.app_version
+        .get_or_insert_with(|| env!("CARGO_PKG_VERSION").to_string());
     let outside = match w.target() {
         Some(Target::File(f)) if w.info.external => {
             let file = f
@@ -523,6 +534,18 @@ pub fn reset_props(saved_path: &Path) -> io::Result<()> {
         Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(()),
         r => r,
     }
+}
+
+/// Is version `a` newer than `b`? Compares the numbers in order, so 0.0.10 is newer than 0.0.9.
+pub fn newer(a: &str, b: &str) -> bool {
+    let parts = |v: &str| -> Vec<u64> {
+        v.trim_start_matches('v')
+            .split(['.', '-', '+'])
+            .take(3)
+            .map(|p| p.parse().unwrap_or(0))
+            .collect()
+    };
+    parts(a) > parts(b)
 }
 
 /// The categories a wallpaper can be filed under. Keys into `category.*` UI strings.
@@ -880,6 +903,29 @@ mod tests {
             fs::read_to_string(back.dir.join("clip.mp4")).unwrap(),
             "video bytes"
         );
+    }
+
+    #[test]
+    fn too_new_packages_are_flagged() {
+        assert!(newer("0.0.10", "0.0.9"));
+        assert!(newer("v1.0.0", "0.9.9"));
+        assert!(!newer("0.0.5", "0.0.5"));
+        assert!(!newer("0.0.4", "0.0.5"));
+        let d = tmp("too-new");
+        fs::write(
+            d.join(INFO),
+            r#"{"type":"web","file":"index.html","app_version":"99.0.0"}"#,
+        )
+        .unwrap();
+        assert!(read(&d).unwrap().too_new);
+        fs::write(
+            d.join(INFO),
+            r#"{"type":"web","file":"index.html","app_version":"0.0.1"}"#,
+        )
+        .unwrap();
+        assert!(!read(&d).unwrap().too_new);
+        fs::write(d.join(INFO), r#"{"type":"web","file":"index.html"}"#).unwrap();
+        assert!(!read(&d).unwrap().too_new, "no version: assume it fits");
     }
 
     #[test]

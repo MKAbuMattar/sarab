@@ -4,6 +4,10 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ## [Unreleased]
 
+### Added
+
+- A package made for a newer Sarab says so on its tile and asks before it plays. Exported packages record the version that made them.
+
 ### Changed
 
 - Wallpapers rest while the Windows screensaver runs, as they do on the lock screen.
