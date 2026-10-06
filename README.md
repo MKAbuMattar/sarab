@@ -46,7 +46,9 @@ Sarab lives in the notification area as an iris icon. Left-click it to open the 
 
 ## Command line
 
-A second `sarab` process hands its arguments to the running one and exits.
+The installer adds Sarab's folder to your PATH, so `sarab` works in any terminal opened after
+installing. A second `sarab` process hands its arguments to the running one and exits; a mistyped
+command prints its error in the terminal, and everything else is written to the log.
 
 | Command                                                      | Does                                                              |
 | ------------------------------------------------------------ | ----------------------------------------------------------------- |
