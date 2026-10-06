@@ -76,7 +76,7 @@ Goal: something usable every day on Windows. Windows first because the reference
 - [ ] 4.2 Audio feed: Windows WASAPI loopback, Linux Pulse/PipeWire monitor. 128 bins at 30 Hz, only while an audio wallpaper plays.
 - [ ] 4.3 Now playing: Windows GSMTC, Linux MPRIS.
 - [ ] 4.5 Mouse forwarding (SYSTEM_DESIGN §9) on Windows, macOS, X11. Native on Wayland.
-- [ ] 4.6 CLI: `set`, `close`, `pause`, `resume`, `toggle`, `prop`, `volume`, `next`.
+- [x] 4.6 CLI: `set`, `close`, `pause`, `resume`, `toggle`, `prop`, `volume`, `next`.
 - [ ] 4.7 macOS audio via ScreenCaptureKit (optional, needs permission prompt).
 
 **Gate 4:** a Sarab audio visualizer package reacts to music on Windows and Linux. CLI test passes. Budgets from §7.1 still met with feeds off.

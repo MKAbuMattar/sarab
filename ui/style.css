@@ -1,11 +1,7 @@
-/* Windows 11 (WinUI 3 / Fluent) metrics and fills, with the Jordanian Identity Colors
-   (SPEC.md section 9) as the accent and status colors. Contrast ratios are noted per pair. */
 :root {
-  /* identity palette */
   --jo-iris: #2B2233; --jo-sand: #D9A36A; --jo-salt: #EAE6DB; --jo-amman: #D9C9B0; --jo-basalt: #3C3C3C;
   --jo-deadsea: #2F5D6B; --jo-keffiyeh: #8B1E2D; --jo-petra: #C76B6B; --jo-olive: #6B7A4F; --jo-camel: #B9875E;
 
-  /* light theme, WinUI default fills */
   --solid-base: #F3F3F3;
   --layer: rgba(255, 255, 255, 0.5);
   --layer-stroke: rgba(0, 0, 0, 0.0578);
@@ -23,10 +19,10 @@
   --text: rgba(0, 0, 0, 0.896);
   --text-2: rgba(0, 0, 0, 0.606);
   --text-3: rgba(0, 0, 0, 0.4458);
-  --accent: var(--jo-deadsea);        /* 6.53 on #F3F3F3 */
+  --accent: var(--jo-deadsea);
   --accent-hover: #3A6B7A;
-  --on-accent: #FFFFFF;               /* 7.24 on deadsea */
-  --danger-text: var(--jo-keffiyeh);  /* 8.15 on #F3F3F3 */
+  --on-accent: #FFFFFF;
+  --danger-text: var(--jo-keffiyeh);
   --infobar-error: #FDE7E9;
   --dialog: #FFFFFF;
   --dialog-footer: #F3F3F3;
@@ -34,7 +30,7 @@
   --tile-a: var(--jo-deadsea); --tile-b: var(--jo-iris);
   color-scheme: light;
 }
-/* The page is told its theme (see main.rs page_theme); prefers-color-scheme is shared across windows. */
+
 :root[data-theme=dark] {
   --solid-base: #202020;
   --layer: rgba(58, 58, 58, 0.3);
@@ -53,10 +49,10 @@
   --text: #FFFFFF;
   --text-2: rgba(255, 255, 255, 0.786);
   --text-3: rgba(255, 255, 255, 0.5442);
-  --accent: var(--jo-sand);         /* 7.29 on #202020 */
+  --accent: var(--jo-sand);
   --accent-hover: #E2B482;
-  --on-accent: #1A1A1A;             /* 7.79 on sand */
-  --danger-text: var(--jo-petra);   /* 4.46 on #202020: icons and short labels */
+  --on-accent: #1A1A1A;
+  --danger-text: var(--jo-petra);
   --infobar-error: #442726;
   --dialog: #2B2B2B;
   --dialog-footer: #202020;
@@ -67,8 +63,8 @@
 
 * { box-sizing: border-box; }
 html { height: 100%; background: var(--solid-base); }
-html.translucent { background: transparent; }  /* Acrylic or Mica is drawn behind the window by Windows */
-html:not([data-theme]) body { visibility: hidden; }  /* no flash of the wrong theme */
+html.translucent { background: transparent; }
+html:not([data-theme]) body { visibility: hidden; }
 body {
   margin: 0; height: 100%; color: var(--text);
   font: 14px/20px "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
@@ -79,7 +75,6 @@ body {
 [dir=rtl] .flip { transform: scaleX(-1); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
-/* ---- navigation pane ---- */
 nav { display: flex; flex-direction: column; padding: 4px 4px 8px; min-height: 0; }
 .brand { display: flex; align-items: center; gap: 12px; padding: 12px 14px 16px; }
 .brand img { width: 32px; height: 32px; border-radius: 6px; }
@@ -99,7 +94,6 @@ nav { display: flex; flex-direction: column; padding: 4px 4px 8px; min-height: 0
 }
 .nav-spacer { flex: 1; }
 
-/* ---- content layer ---- */
 main {
   min-height: 0; overflow: auto; padding: 28px 40px 40px;
   background: var(--layer); border-top: 1px solid var(--layer-stroke); border-inline-start: 1px solid var(--layer-stroke);
@@ -113,7 +107,6 @@ h2 { font-size: 14px; line-height: 20px; font-weight: 600; margin: 24px 0 8px; }
 .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .grow { flex: 1 1 280px; min-width: 0; }
 
-/* ---- controls ---- */
 button, select, input[type=text], input[type=number], input[type=password], textarea {
   font: inherit; color: var(--text); border-radius: 4px; min-height: 32px;
   border: 1px solid var(--control-stroke); border-bottom-color: var(--control-stroke-bottom);
@@ -132,7 +125,7 @@ input[type=text], input[type=number], input[type=password], textarea { padding: 
 input[type=text]:focus, textarea:focus { outline: none; background: var(--control-input); border-bottom: 2px solid var(--accent); padding-bottom: 4px; }
 input[type=text]::placeholder { color: var(--text-3); }
 textarea { width: 100%; resize: vertical; }
-/* Fluent Slider: 4px track, 20px thumb with an inner accent dot that grows on hover */
+
 input[type=range] { -webkit-appearance: none; appearance: none; width: 200px; height: 32px; background: transparent; margin: 0; }
 input[type=range]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(to right, var(--accent) var(--fill, 50%), var(--text-3) var(--fill, 50%)); }
 [dir=rtl] input[type=range]::-webkit-slider-runnable-track { background: linear-gradient(to left, var(--accent) var(--fill, 50%), var(--text-3) var(--fill, 50%)); }
@@ -144,7 +137,6 @@ input[type=range]::-webkit-slider-thumb {
 input[type=range]:hover::-webkit-slider-thumb { background: radial-gradient(circle, var(--accent) 0 7px, var(--dialog) 8px); }
 input[type=range]:active::-webkit-slider-thumb { background: radial-gradient(circle, var(--accent) 0 5px, var(--dialog) 6px); }
 
-/* overlay-style thin scrollbars */
 ::-webkit-scrollbar { width: 12px; height: 12px; }
 ::-webkit-scrollbar-thumb { background: var(--text-3); border-radius: 6px; border: 4px solid transparent; background-clip: padding-box; }
 ::-webkit-scrollbar-thumb:hover { border-width: 3px; }
@@ -152,7 +144,6 @@ input[type=range]:active::-webkit-slider-thumb { background: radial-gradient(cir
 :focus-visible { outline: 2px solid var(--text); outline-offset: 1px; box-shadow: 0 0 0 3px var(--solid-base); }
 input[type=text]:focus-visible, textarea:focus-visible { box-shadow: none; outline: none; }
 
-/* Fluent toggle switch */
 input.switch {
   appearance: none; position: relative; width: 40px; height: 20px; margin: 0; flex: none;
   border-radius: 10px; border: 1px solid var(--text-2); background: var(--control); cursor: default;
@@ -165,7 +156,6 @@ input.switch:checked { background: var(--accent); border-color: var(--accent); }
 input.switch:checked::before { inset-inline-start: 23px; background: var(--on-accent); }
 .switch-label { display: inline-flex; align-items: center; gap: 12px; color: var(--text-2); }
 
-/* ---- settings cards (Windows 11 Settings style) ---- */
 .card {
   display: grid; grid-template-columns: auto 1fr auto; align-items: center; column-gap: 16px;
   min-height: 68px; padding: 12px 16px; margin-bottom: 4px;
@@ -177,13 +167,12 @@ input.switch:checked::before { inset-inline-start: 23px; background: var(--on-ac
 .card.stack > textarea { grid-column: 2; }
 .card.sub { padding-inline-start: 52px; min-height: 52px; }
 
-/* ---- tiles ---- */
 .tiles { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
 .tile {
   background: var(--card); border: 1px solid var(--card-stroke); border-radius: 8px; overflow: hidden;
   display: flex; flex-direction: column; transition: background-color 83ms linear, border-color 83ms linear;
 }
-/* Fluent card hover: a slightly lighter fill and a visible edge, nothing moves. */
+
 .tile:hover { background: var(--card-hover); border-color: var(--card-stroke-hover); }
 .thumb {
   position: relative; overflow: hidden;
@@ -201,20 +190,19 @@ input.switch:checked::before { inset-inline-start: 23px; background: var(--on-ac
 .tile .actions { display: flex; align-items: center; gap: 4px; margin-top: auto; padding-top: 12px; }
 .tile .actions .spacer { flex: 1; }
 button.icon-only { width: 32px; padding: 0; justify-content: center; }
-/* Delete stays neutral like the other icons and turns red only when pointed at. */
+
 .tile button.danger .icon { color: inherit; }
 .tile button.danger:hover .icon { color: var(--danger-text); }
 .display-tile .thumb { aspect-ratio: auto; height: 96px; }
 .badge { display: inline-block; padding: 0 8px; border-radius: 10px; font-size: 12px; line-height: 20px; font-weight: 600; color: #FFFFFF; }
-.badge.Play { background: var(--jo-olive); }        /* 4.64 */
-.badge.Frozen, .badge.Covered { background: var(--jo-keffiyeh); }  /* 9.05 */
+.badge.Play { background: var(--jo-olive); }
+.badge.Frozen, .badge.Covered { background: var(--jo-keffiyeh); }
 .empty { color: var(--text-2); padding: 24px 0; }
 
-/* ---- desktop map: monitors drawn to scale, like Settings > System > Display ---- */
 .desk-card { background: var(--card); border: 1px solid var(--card-stroke); border-radius: 8px; padding: 12px 16px 16px; margin-bottom: 20px; }
 .desk-card h2 { margin: 4px 0; }
 .between { justify-content: space-between; }
-.monitors { position: relative; height: 170px; margin: 8px 0 12px; direction: ltr; }  /* physical left/right, not mirrored */
+.monitors { position: relative; height: 170px; margin: 8px 0 12px; direction: ltr; }
 .monitor {
   position: absolute; display: grid; place-items: center; padding: 0; overflow: hidden;
   border-radius: 6px; border: 1px solid var(--control-stroke); color: #FFFFFF;
@@ -230,15 +218,12 @@ button.icon-only { width: 32px; padding: 0; justify-content: center; }
 .detail .why { flex: 1 1 260px; }
 .add { margin-bottom: 4px; }
 
-/* ---- InfoBar ---- */
 .infobar { display: flex; gap: 12px; align-items: flex-start; padding: 12px 16px; margin: 12px 0; border-radius: 4px; background: var(--infobar-error); border: 1px solid var(--card-stroke); }
 .infobar .icon { color: var(--danger-text); margin-top: 2px; }
 .infobar.info { background: var(--card); align-items: center; }
 .infobar.info .icon { color: var(--accent); margin-top: 0; }
 .infobar[hidden] { display: none; }
 
-/* ---- ContentDialog ---- */
-/* Fluent MenuFlyout: an 8px-radius flyout with 4px padding and 32px rows. */
 .menu {
   position: fixed; z-index: 10; min-width: 180px; padding: 4px; display: grid; gap: 2px;
   background: var(--dialog); color: var(--text); border: 1px solid var(--card-stroke-hover);
@@ -260,7 +245,7 @@ dialog::backdrop { background: var(--smoke); }
 dialog .content { padding: 24px; display: grid; gap: 16px; max-height: 60vh; overflow: auto; }
 dialog h2 { margin: 0; font-size: 20px; line-height: 28px; }
 dialog label { display: grid; gap: 6px; }
-/* Library bar: search, category and sort, then type chips */
+
 .lib-bar { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; margin-top: 16px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 14px; }
 .chips button[aria-pressed=true] { background: var(--accent); color: var(--on-accent); border-color: transparent; }
@@ -270,17 +255,16 @@ dialog label { display: grid; gap: 6px; }
 .facts dt { color: var(--text-2); }
 .facts dd { margin: 0; overflow-wrap: anywhere; }
 dialog .footer { padding: 24px; background: var(--dialog-footer); border-top: 1px solid var(--card-stroke); display: flex; justify-content: flex-end; }
-/* ContentDialog: buttons share the footer width equally, primary first */
+
 #ask { width: min(448px, 92vw); }
 #ask .footer { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; }
 #ask-body { margin: 0; color: var(--text-2); white-space: pre-wrap; overflow-wrap: anywhere; }
-button.danger-fill { background: var(--jo-keffiyeh); color: #FFFFFF; border-color: transparent; }  /* 9.05:1 */
+button.danger-fill { background: var(--jo-keffiyeh); color: #FFFFFF; border-color: transparent; }
 button.danger-fill:hover { background: #9E2535; }
 @media (forced-colors: active) { button.danger-fill { background: ButtonFace; color: ButtonText; border-color: ButtonText; } }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 
-/* Windows contrast themes: system colors only, state shown by text, never by color alone */
 @media (forced-colors: active) {
   html, html.translucent { background: Canvas; }
   main, .card, .tile, .desk-card, dialog { background: Canvas; border-color: CanvasText; }
@@ -295,7 +279,6 @@ button.danger-fill:hover { background: #9E2535; }
 @media (max-width: 900px) { body { grid-template-columns: 220px 1fr; } main { padding: 24px; } }
 button.subtle[aria-pressed=true] { background: var(--subtle-hover); }
 
-/* Fluent ComboBox (see combo() in app.js) */
 select.native { display: none; }
 .combo { min-width: 140px; justify-content: space-between; }
 .combo .icon { font-size: 12px; color: var(--text-2); }
@@ -310,7 +293,6 @@ select.native { display: none; }
 .option[aria-selected=true]::before { content: ""; position: absolute; inset-inline-start: 0; top: 9px; width: 3px; height: 14px; border-radius: 2px; background: var(--accent); }
 @media (forced-colors: active) { .flyout { background: Canvas; border-color: CanvasText; } .option[aria-selected=true] { outline: 1px solid Highlight; } }
 
-/* About */
 .about-hero { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
 .about-hero img { border-radius: 12px; }
 .about-hero > div { display: grid; gap: 2px; }

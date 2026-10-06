@@ -384,7 +384,7 @@ Add-Type -AssemblyName System.Windows.Forms
     Assert ($css -match 'html\.translucent') 'no translucent background rule'
     Assert ($css -match 'select\.native') 'native dropdown popups are not replaced'
     Assert ((Get-Content (Join-Path $root 'ui/index.html') -Raw) -match 'name="theme"') 'no theme setting'
-    Assert ((Get-Content (Join-Path $root 'src-tauri/src/main.rs') -Raw) -match 'Effect::Mica') 'Mica is not requested'
+    Assert (Get-ChildItem (Join-Path $root 'src-tauri/src') -Recurse -Filter *.rs | Select-String -SimpleMatch 'Effect::Mica' -List) 'Mica is not requested'
     Start-Sarab -Fresh
     Sarab ui
     $pidS = Sarab-Pid
@@ -509,7 +509,7 @@ Add-Type -AssemblyName System.Windows.Forms
 
   'reasons' {
     # Every pause reason the core can send has words in both languages.
-    $src = Get-Content (Join-Path $root 'src-tauri/src/pause.rs') -Raw
+    $src = Get-Content (Join-Path $root 'src-tauri/src/core/pause.rs') -Raw
     $variants = ([regex]::Match($src, 'pub enum Reason \{([^}]*)\}').Groups[1].Value -split ',') | ForEach-Object { $_.Trim() } | Where-Object { $_ }
     Assert ($variants.Count -ge 10) "could not read the Reason enum ($($variants.Count))"
     $snake = $variants | ForEach-Object { ($_ -creplace '([a-z])([A-Z])', '$1_$2').ToLower() }
@@ -654,7 +654,7 @@ Add-Type -AssemblyName System.Windows.Forms
     $used = Select-String -Path (Join-Path $root 'ui/*.html'), (Join-Path $root 'ui/app.js') -Pattern "(data-t[pl]?=""|\bt\(')([a-zA-Z.]+)" -AllMatches | ForEach-Object { $_.Matches } | ForEach-Object { $_.Groups[2].Value } | Sort-Object -Unique
     $unknown = @($used | Where-Object { -not $en.ContainsKey($_) })
     Assert ($unknown.Count -eq 0) "UI uses keys with no string: $($unknown -join ', ')"
-    $src = Get-Content (Join-Path $root 'src-tauri/src/pause.rs') -Raw
+    $src = Get-Content (Join-Path $root 'src-tauri/src/core/pause.rs') -Raw
     $reasons = ([regex]::Match($src, 'pub enum Reason \{([^}]*)\}').Groups[1].Value -split ',') | ForEach-Object { $_.Trim() } | Where-Object { $_ } | ForEach-Object { ($_ -creplace '([a-z])([A-Z])', '$1_$2').ToLower() }
     $noWords = @($reasons | Where-Object { -not $en.ContainsKey("reason.$_") })
     Assert ($reasons.Count -ge 10 -and $noWords.Count -eq 0) "pause reasons without words: $($noWords -join ', ')"
@@ -675,7 +675,7 @@ Add-Type -AssemblyName System.Windows.Forms
   'preset' {
     # Real download from NASA, pinned checksum, then playback inside the clip range.
     $id = 'nasa-iss-earth-view-4k'
-    $cat = Get-Content (Join-Path $root 'src-tauri/src/presets.json') -Raw | ConvertFrom-Json
+    $cat = Get-Content (Join-Path $root 'src-tauri/src/data/presets.json') -Raw | ConvertFrom-Json
     $p = $cat | Where-Object id -eq $id
     Assert $p "no preset $id in the catalog"
     Start-Sarab -Fresh

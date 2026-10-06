@@ -41,7 +41,7 @@ jobs:
 
       - name: Clippy
         working-directory: src-tauri
-        run: cargo clippy --release --locked -- -D warnings
+        run: cargo clippy --release --locked --all-targets -- -D warnings
 
       - name: Unit tests
         working-directory: src-tauri

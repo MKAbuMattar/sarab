@@ -62,16 +62,28 @@ sarab/
 │  ├─ tauri.conf.json
 │  ├─ capabilities/main.json        # commands allowed for the "main" (settings) window only
 │  └─ src/
-│     ├─ main.rs                    # setup: tray, single-instance, CLI dispatch, event loop
-│     ├─ cli.rs                     # argv → Command enum
-│     ├─ settings.rs                # Settings + Layout structs, atomic JSON load/save
-│     ├─ library.rs                 # scan, add, import Sarab zip, export, thumbnails
-│     ├─ wallpaper.rs               # apply/close per display, window lifecycle, JS bridge
-│     ├─ pause.rs                   # Signals → decisions (pure) + tests
-│     ├─ feeds.rs                   # audio FFT, sysinfo, now-playing → JS calls
-│     ├─ inject.js                  # rAF throttle, freeze/unfreeze, video sync (include_str!)
+│     ├─ main.rs                    # start-up: module list and main()
+│     ├─ app/                       # dispatch.rs, window.rs, tray.rs, i18n.rs
+│     │  └─ commands/               # settings window commands: wallpapers, displays, preferences, updates, system
+│     ├─ cli/                       # mod.rs (argv → Command), terminal.rs (sarab.com)
+│     ├─ common/                    # paths.rs, log.rs, threads.rs (on_main, later)
+│     ├─ core/                      # settings.rs, pause.rs (pure + tests), update.rs, support.rs
+│     ├─ data/                      # presets.json (pinned by size and SHA-256)
+│     ├─ engine/
+│     │  ├─ wallpaper/              # core state (mod.rs) and:
+│     │  │  ├─ display/             #   apply, span, app wallpapers, urls, labels
+│     │  │  ├─ page/                #   bridge (host → page), props, playback, feeds, sync, mouse
+│     │  │  ├─ schedule/            #   tick, cycle, screensaver, unload, cpu
+│     │  │  └─ output/              #   status, capture
+│     │  ├─ audio.rs                # loopback capture, FFT
+│     │  └─ feeds.rs                # sysinfo, now-playing
+│     ├─ library/                   # types (mod.rs), presets.rs
+│     │  ├─ import/                 # scan, add, package (zip), convert (ffmpeg), wallpaper_engine
+│     │  └─ manage/                 # edit, details, folder, props
+│     ├─ scripts/
+│     │  └─ inject.js               # rAF throttle, freeze/unfreeze, video sync, WE page API (include_str!)
 │     └─ os/
-│        ├─ windows.rs              # WorkerW embed + probes + GSMTC
+│        ├─ windows/                # desktop/, system/, media/, shell/
 │        ├─ macos.rs                # desktop-level window + probes
 │        ├─ x11.rs                  # desktop-type window + probes
 │        └─ wayland.rs              # layer-shell + foreign-toplevel + probes

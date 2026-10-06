@@ -4,6 +4,15 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ## [Unreleased]
 
+### Added
+
+- `sarab status` prints in the terminal: Sarab's version, then one line per display with the wallpaper's title and whether it plays or why it rests. `--json` gives the raw status for scripts, and it says so when Sarab is not running. The installer adds `sarab.com` next to `sarab.exe` so the terminal waits for the answer.
+- Import Wallpaper Engine web, video and application wallpapers: `sarab set` or the Add box takes the folder or its `project.json`. Their settings become Customize controls (sliders, checkboxes, colors, lists, text), and pages that listen for properties, audio or pause work as they do there. Scene wallpapers need Wallpaper Engine's own renderer and are refused with a clear message.
+
+### Changed
+
+- The source is grouped into folders by role, one job per file, without comments.
+
 ## [0.0.6] - 2026-10-06
 
 ### Added
