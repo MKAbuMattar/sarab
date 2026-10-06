@@ -4,6 +4,10 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ## [Unreleased]
 
+### Changed
+
+- Wallpapers rest while the Windows screensaver runs, as they do on the lock screen.
+
 ## [0.0.5] - 2026-10-05
 
 ### Added
