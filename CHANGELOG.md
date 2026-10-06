@@ -12,6 +12,10 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 - Packages can carry their title and description in other languages (`titles` and `descriptions` in sarab.json); the window shows the one for its language, and search and sorting use it.
 - Customize has two more control types for packages: number (with min, max and step) and password (shown as dots).
 - A package made for a newer Sarab says so on its tile and asks before it plays. Exported packages record the version that made them.
+- Pause while other apps keep the CPU over 70, 80 or 90 percent (Settings > Pausing, off by default). Sarab's own work never counts, so a heavy wallpaper cannot pause itself, and short spikes do not flip it.
+- AVI, WMV and MPEG videos play: `sarab set <file>` converts them to MP4 with ffmpeg when it is installed, once, and keeps the result in the library.
+- Beta update channel (About > Updates): test builds arrive before everyone else. Stable stays the default.
+- App wallpapers: a program (.exe) can run behind the icons. The window asks every time before running one, cycling never picks one, and Sarab ends the program, and anything it started, when the wallpaper changes or Sarab quits.
 
 ### Changed
 
