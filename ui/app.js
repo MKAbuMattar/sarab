@@ -4,7 +4,7 @@ const $ = s => document.querySelector(s);
 
 let strings = {};
 let state = null;
-let selected = null;  // display index, or null for all displays
+let selected = null;
 
 const t = (key, vars = {}) => (strings[key] ?? key).replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
 const ICON = { web: '', webaudio: '', url: '', video: '', gif: '', picture: '', app: '' };
@@ -19,8 +19,6 @@ async function loadLanguage(lang) {
   document.querySelectorAll('select').forEach(s => s._combo?.sync());
 }
 
-// Fluent ComboBox over a hidden native <select>. WebView2 draws the native popup white in dark
-// mode, so the select only holds the value and this draws the button and the list.
 function combo(sel) {
   if (sel._combo) return sel._combo.sync();
   sel.classList.add('native');
@@ -37,7 +35,7 @@ function combo(sel) {
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); choose(sel.selectedIndex + (e.key === 'ArrowDown' ? 1 : -1)); }
   });
   button.addEventListener('click', () => {
-    const host = sel.closest('dialog') ?? document.body;  // a modal dialog sits in the top layer
+    const host = sel.closest('dialog') ?? document.body;
     const list = el('div', { class: 'flyout', role: 'listbox' });
     const items = [...sel.options].map((o, i) => {
       const it = el('div', { class: 'option', role: 'option', tabindex: '-1', 'aria-selected': String(i === sel.selectedIndex) }, o.textContent);
@@ -71,8 +69,6 @@ function combo(sel) {
   return sel._combo;
 }
 
-// Windows 11 ContentDialog in place of the browser's confirm() and alert(), which say
-// "tauri.localhost says" and ignore the app's theme and language. Resolves true for OK.
 function ask({ title, body, ok, cancel = null, danger = false }) {
   const d = $('#ask'), okBtn = $('#ask-ok'), cancelBtn = $('#ask-cancel');
   $('#ask-title').textContent = title;
@@ -81,9 +77,8 @@ function ask({ title, body, ok, cancel = null, danger = false }) {
   okBtn.className = danger ? 'danger-fill' : 'accent';
   cancelBtn.hidden = !cancel;
   cancelBtn.textContent = cancel ?? '';
-  d.returnValue = 'cancel';  // Escape keeps this, so it counts as Cancel
+  d.returnValue = 'cancel';
   d.showModal();
-  // A destructive action starts on Cancel, so Enter alone never deletes.
   (danger && cancel ? cancelBtn : okBtn).focus();
   return new Promise(resolve => d.addEventListener('close', () => resolve(d.returnValue === 'ok'), { once: true }));
 }
@@ -123,7 +118,6 @@ const title = id => { const w = state.library.find(w => w.id === id); return w ?
 const kindOf = id => state.library.find(w => w.id === id)?.kind;
 const selectedDisplay = () => selected;
 
-// Lay the monitors out like Settings > System > Display: real arrangement, scaled to fit.
 function renderMonitors() {
   const box = $('#monitors');
   const ds = state.displays;
@@ -154,7 +148,6 @@ function renderMonitors() {
   }));
 }
 
-// What the selected display is doing and why, with the actions that apply to it.
 function renderDetail() {
   const box = $('#detail');
   const idx = selected ?? (state.displays.length === 1 ? 0 : null);
@@ -234,14 +227,12 @@ function render() {
   document.querySelectorAll('select').forEach(combo);
 }
 
-// Library filters, remembered between visits.
 const filters = (() => { try { return JSON.parse(localStorage.getItem('filters')) || {}; } catch { return {}; } })();
 const saveFilters = () => { try { localStorage.setItem('filters', JSON.stringify(filters)); } catch {} };
 const categoryName = c => t(`category.${c}`);
 
 function renderLibrary() {
   const lib = state.library;
-  // Type chips: All, then only the types the library has.
   const kinds = [...new Set(lib.map(w => w.kind))];
   if (filters.type && filters.type !== 'all' && !kinds.includes(filters.type)) filters.type = 'all';
   const chip = (value, label) => el('button', {
@@ -269,12 +260,9 @@ function renderLibrary() {
       el('span', { class: 'name', title: wpTitle(w) }, wpTitle(w)),
       el('span', { class: 'caption line' }, [t(`type.${w.kind}`), w.info.category && categoryName(w.info.category), w.preset && t('presets.builtIn')].filter(Boolean).join(' · ')),
       w.too_new ? el('span', { class: 'caption danger-text' }, t('library.tooNew', { v: w.info.app_version })) : '',
-      // One row that never wraps: the main action, then icon buttons with tooltips.
       el('div', { class: 'actions' },
         btn('accent', '', t('library.set'), async () => {
-          // A package made for a newer Sarab may use what this one lacks: ask first.
           if (w.too_new && !await ask({ title: t('library.tooNewTitle'), body: t('library.tooNew', { v: w.info.app_version }), ok: t('library.set'), cancel: t('dialog.cancel') })) return;
-          // An app wallpaper is a program that runs with the user's rights: ask every time.
           if (w.kind === 'app' && !await ask({ title: t('library.appTitle', { title: wpTitle(w) }), body: t('library.appBody'), ok: t('library.run'), cancel: t('dialog.cancel'), danger: true })) return;
           run(() => invoke('set_wallpaper', { target: w.id, display: selectedDisplay() }));
         }),
@@ -288,8 +276,6 @@ function renderLibrary() {
   document.querySelectorAll('.lib-bar select').forEach(combo);
 }
 
-// The tile picture. A video or GIF plays, muted, only while the pointer rests on it, and never
-// when Windows asks for less motion.
 const lessMotion = matchMedia('(prefers-reduced-motion: reduce)');
 function thumbFor(w) {
   const still = () => w.thumb_url ? el('img', { src: w.thumb_url, alt: '', loading: 'lazy' }) : icon(ICON[w.kind] ?? '');
@@ -301,7 +287,6 @@ function thumbFor(w) {
     const media = gif
       ? el('img', { class: 'preview', src: w.preview_url, alt: '' })
       : Object.assign(el('video', { class: 'preview', src: w.preview_url }), { muted: true, autoplay: true, loop: true, playsInline: true });
-    // Shown over the still only once it has a frame, so hovering never flashes black.
     media.addEventListener(gif ? 'load' : 'playing', () => media.classList.add('on'), { once: true });
     box.append(media);
   });
@@ -309,9 +294,6 @@ function thumbFor(w) {
   return box;
 }
 
-// Right-click menu. The window is an app, not a web page, so the browser's menu (Back, Refresh,
-// Print) never shows. Text fields keep theirs for cut, copy and paste. A card gets a Windows 11
-// menu built from its own buttons, so the menu always offers exactly what the card does.
 function closeMenu() {
   const m = $('#menu');
   if (m.hidden) return;
@@ -327,14 +309,10 @@ function openMenu(x, y, buttons, keyboard) {
     onclick: () => { closeMenu(); b.click(); },
   }, icon(b.querySelector('.icon')?.textContent ?? ''), el('span', {}, b.getAttribute('aria-label') || b.querySelector('span')?.textContent || ''))));
   m.hidden = false;
-  // Keep it on screen, flipping to the other side of the pointer near an edge.
   const r = m.getBoundingClientRect();
-  // It opens toward the reading direction (left in Arabic) and flips back near an edge.
   const left = document.documentElement.dir === 'rtl' ? (x - r.width < 4 ? x : x - r.width) : (x + r.width > innerWidth ? x - r.width : x);
   m.style.left = `${Math.max(4, left)}px`;
   m.style.top = `${Math.max(4, y + r.height > innerHeight ? y - r.height : y)}px`;
-  // From the keyboard the first item is selected, as in Windows; from the mouse none is.
-  // preventScroll: a scroll closes the menu, so focusing it must never scroll the page.
   (keyboard ? m.querySelector('button') : m).focus({ preventScroll: true });
 }
 document.addEventListener('contextmenu', e => {
@@ -344,7 +322,6 @@ document.addEventListener('contextmenu', e => {
   const buttons = tile ? [...tile.querySelectorAll('.actions button, .row button')] : [];
   if (!buttons.length) return closeMenu();
   menuReturn = document.activeElement;
-  // The menu key and Shift+F10 report no pointer position: open under the card's title.
   const keyboard = !e.clientX && !e.clientY;
   const at = keyboard ? (r => [r.left, r.bottom])(tile.querySelector('.body').getBoundingClientRect()) : [e.clientX, e.clientY];
   openMenu(...at, buttons, keyboard);
@@ -364,8 +341,6 @@ $('#menu').addEventListener('keydown', e => {
   else if (e.key === 'Escape' || e.key === 'Tab') { e.preventDefault(); closeMenu(); }
 });
 
-// The browser menu's shortcuts would reload, print, save or go back in the window. An app has none
-// of that. Copy, paste, select all and undo stay.
 document.addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
   const browser = ['F5', 'F7', 'BrowserBack', 'BrowserForward', 'BrowserRefresh'].includes(e.key)
@@ -374,7 +349,6 @@ document.addEventListener('keydown', e => {
   if (browser) e.preventDefault();
 }, true);
 
-// An icon-only button still has a name for screen readers and a tooltip for the mouse.
 const iconBtn = (glyph, label, onclick, cls = '') =>
   el('button', { class: `subtle icon-only ${cls}`, type: 'button', 'aria-label': label, title: label, onclick }, icon(glyph));
 
@@ -491,7 +465,6 @@ function control(display, key, c) {
       return el('label', {}, label, input);
     }
     case 'password': {
-      // Shown as dots; the page receives the text as typed.
       const input = el('input', { type: 'password', value: c.value ?? '', autocomplete: 'off' });
       input.addEventListener('change', () => send(input.value));
       return el('label', {}, label, input);
@@ -501,7 +474,6 @@ function control(display, key, c) {
     case 'label':
       return el('p', { class: 'caption' }, c.value || label);
     default: {
-      // textbox, and folderDropdown as a plain file name until the folder picker lands.
       const input = el('input', { type: 'text', value: c.value ?? '' });
       input.addEventListener('change', () => send(input.value));
       return el('label', {}, label, input);
@@ -509,20 +481,14 @@ function control(display, key, c) {
   }
 }
 
-// The Fluent slider paints its filled part from --fill.
 function fill(r) { r.style.setProperty('--fill', `${((r.value - r.min) / (r.max - r.min || 1)) * 100}%`); }
 document.addEventListener('input', e => { if (e.target.type === 'range') fill(e.target); });
 
-// Update banner: shown on every page while a newer version exists. "Later" hides it until the
-// window is opened again; the check itself repeats once a day.
 let updateLater = false;
-// The version whose dialog already showed in this window, so it asks once per release.
 let updateAsked = null;
 
-// An update was found: ask in Sarab's own dialog, with the release notes, instead of only a bar.
 async function askUpdate(u) {
   updateAsked = u.available.version;
-  // Release notes are Markdown; the dialog shows plain text, so heading marks go.
   const plain = (u.available.notes || '').replace(/^#+\s*/gm, '').trim();
   const notes = plain ? `${t('update.toastBody', { v: u.available.version })}
 
@@ -553,7 +519,6 @@ function renderUpdate() {
     : u.checked ? t('update.latest', { v: state.version }) : t('update.never');
 }
 
-// NASA 4K videos: downloaded only when asked, and verified against a pinned checksum.
 function renderPresets() {
   const mb = n => Math.round(n / 1e6);
   $('#presets').replaceChildren(...state.presets.map(p => el('li', { class: 'tile' },

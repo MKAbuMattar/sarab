@@ -1,11 +1,5 @@
-//! App wallpapers: a program whose window sits behind the icons.
-
 use super::*;
 
-/// Run a program as display `i`'s wallpaper. Its window appears when the program is ready, so a
-/// thread waits for it (up to 20 s) and then moves it behind the icons.
-// ponytail: app wallpapers keep running while others rest; suspending the process would cover
-// Frozen and Covered too.
 pub(in crate::engine::wallpaper) fn start_app(
     app: &AppHandle,
     core: &mut Core,
@@ -38,7 +32,6 @@ pub(in crate::engine::wallpaper) fn start_app(
 }
 
 pub(in crate::engine::wallpaper) fn attach_app(core: &mut Core, i: usize, pid: u32, hwnd: isize) {
-    // The display may have changed wallpaper while the program started.
     if core
         .displays
         .get(i)

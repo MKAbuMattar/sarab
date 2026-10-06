@@ -1,10 +1,7 @@
-//! Help when something goes wrong: logs for a bug report, and settings back to their defaults.
-
 use crate::core::settings::Settings;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 
-/// Files in the config folder that explain a problem. Wallpapers and their settings stay out.
 const LOG_FILES: [&str; 5] = [
     "sarab.log",
     "settings.json",
@@ -13,8 +10,6 @@ const LOG_FILES: [&str; 5] = [
     "restore.json",
 ];
 
-/// Where exported files go: the user's Downloads folder.
-// ponytail: %USERPROFILE%\Downloads; read the Downloads known folder if users move it and ask.
 pub fn downloads() -> PathBuf {
     std::env::var_os("USERPROFILE")
         .map(|p| PathBuf::from(p).join("Downloads"))
@@ -22,7 +17,6 @@ pub fn downloads() -> PathBuf {
         .unwrap_or_else(std::env::temp_dir)
 }
 
-/// Zip the files that explain a problem into `dest`. Returns the zip's path.
 pub fn export_logs(config: &Path, dest: &Path) -> io::Result<PathBuf> {
     let secs = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -40,8 +34,6 @@ pub fn export_logs(config: &Path, dest: &Path) -> io::Result<PathBuf> {
     Ok(path)
 }
 
-/// Settings back to their defaults, except where the library lives and the record that Start
-/// with Windows was set up once, so a reset neither loses wallpapers nor turns autostart back on.
 pub fn reset(old: &Settings) -> Settings {
     Settings {
         library_dir: old.library_dir.clone(),

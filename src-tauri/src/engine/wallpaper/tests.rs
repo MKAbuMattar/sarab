@@ -27,7 +27,6 @@ fn span_covers_all_displays() {
         right,
         bottom,
     };
-    // A 1080p display, and a taller one to its left and lower down.
     let both = span_rect(&[r(0, 0, 1920, 1080), r(-1080, 200, 0, 2120)]);
     assert_eq!(both, r(-1080, 0, 1920, 2120));
     assert_eq!(span_rect(&[r(0, 0, 10, 10)]), r(0, 0, 10, 10));
@@ -92,7 +91,6 @@ fn should_unload_only_when_unseen() {
     assert!(should_unload(Reason::Remote, m(5), 5));
     assert!(!should_unload(Reason::Covered, m(4), 5), "too soon");
     assert!(!should_unload(Reason::Covered, m(60), 0), "off");
-    // Paused but still on screen: unloading would show the Windows wallpaper.
     for why in [
         Reason::Battery,
         Reason::PowerSaver,
@@ -121,7 +119,6 @@ fn pick_next_order_random_category() {
         Some("a")
     );
     assert_eq!(pick_next(&[], None, true, 5), None);
-    // Random never repeats the current one and reaches every other one.
     for cur in ["a", "b", "c"] {
         let seen: std::collections::BTreeSet<String> = (0..20)
             .filter_map(|seed| pick_next(&ids, Some(cur), true, seed))
@@ -135,7 +132,6 @@ fn pick_next_order_random_category() {
         Some("a"),
         "only one to show"
     );
-    // The category filter happens before picking, in next(); a filtered list behaves the same.
     let nature: Vec<String> = vec!["b".into()];
     assert_eq!(
         pick_next(&nature, Some("a"), false, 0).as_deref(),
@@ -146,7 +142,6 @@ fn pick_next_order_random_category() {
 #[test]
 fn sync_groups_pick_shared_videos() {
     let d = |id: Option<&str>, ok: bool| (id.map(String::from), ok);
-    // Displays 0 and 2 share a video; 1 plays something else alone; 3 shares but is resting.
     let groups = sync_groups(
         vec![
             d(Some("a"), true),
@@ -211,14 +206,12 @@ fn youtube_links() {
         youtube_ids("https://www.youtube.com/watch?v=aqz-KE-bpKQ&list=PL123"),
         Some((Some("aqz-KE-bpKQ".into()), Some("PL123".into())))
     );
-    // Not YouTube, or YouTube without a video: left alone.
     assert_eq!(youtube_ids("https://www.youtube.com/@blender"), None);
     assert_eq!(
         youtube_ids("https://notyoutube.com/watch?v=aqz-KE-bpKQ"),
         None
     );
     assert_eq!(youtube_ids("https://example.com/youtu.be/x"), None);
-    // An id cannot carry anything but id characters into the page URL.
     assert_eq!(youtube_ids("https://youtu.be/abc\"><script>"), v("abc"));
     assert_eq!(
         rewrite_url("https://youtu.be/aqz-KE-bpKQ"),

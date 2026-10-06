@@ -1,5 +1,3 @@
-//! sarab.log, with a size cap.
-
 use super::cfg;
 use crate::core::settings;
 use std::fs;

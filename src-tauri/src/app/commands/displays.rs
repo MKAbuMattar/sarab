@@ -1,5 +1,3 @@
-//! Display commands: close, pause and play, and Customize values.
-
 use super::*;
 
 #[tauri::command]

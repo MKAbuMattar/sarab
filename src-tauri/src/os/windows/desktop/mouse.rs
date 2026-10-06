@@ -1,12 +1,7 @@
-//! Mouse input forwarded to interactive wallpapers.
-
 use super::*;
 
-/// Where wallpapers sit and which window takes their input: (screen rect, input window).
 pub type Targets = std::sync::Arc<std::sync::Mutex<Vec<(RECT, isize)>>>;
 
-/// The point in a wallpaper's own coordinates, when the cursor is over the bare desktop and
-/// inside one of the wallpapers. Over any app window nothing is forwarded.
 pub(in crate::os::windows) fn forward_target(
     x: i32,
     y: i32,
@@ -22,7 +17,6 @@ pub(in crate::os::windows) fn forward_target(
         .map(|(r, h)| (*h, x - r.left, y - r.top))
 }
 
-/// The child window WebView2 draws into and reads input from.
 pub fn input_window(top: HWND) -> Option<isize> {
     unsafe extern "system" fn cb(h: HWND, out: LPARAM) -> BOOL {
         if class_of(h) == "Chrome_RenderWidgetHostHWND" {
@@ -38,7 +32,6 @@ pub fn input_window(top: HWND) -> Option<isize> {
     (found != 0).then_some(found)
 }
 
-/// A window's rect on screen.
 pub fn window_rect(h: HWND) -> Option<RECT> {
     let mut r = RECT::default();
     unsafe { GetWindowRect(h, &mut r) }.ok()?;
@@ -63,7 +56,7 @@ pub(in crate::os::windows) unsafe extern "system" fn mouse_hook(
             if let Some(t) = FORWARD.get() {
                 let found = forward_target(info.pt.x, info.pt.y, over_desktop, &t.lock().unwrap());
                 if let Some((h, x, y)) = found {
-                    let keys = if msg == WM_LBUTTONDOWN { 1 } else { 0 }; // MK_LBUTTON
+                    let keys = if msg == WM_LBUTTONDOWN { 1 } else { 0 };
                     let pos = ((y as u32 & 0xFFFF) << 16) | (x as u32 & 0xFFFF);
                     unsafe {
                         let _ =
@@ -76,10 +69,8 @@ pub(in crate::os::windows) unsafe extern "system" fn mouse_hook(
     unsafe { CallNextHookEx(None, code, wp, lp) }
 }
 
-/// Run the mouse hook on its own thread until `running` turns false. Only one runs at a time.
 pub fn forward_mouse(targets: Targets, running: std::sync::Arc<std::sync::atomic::AtomicBool>) {
     use std::sync::atomic::Ordering;
-    // The core keeps one target list for the life of the app; the hook reads it from here.
     let _ = FORWARD.set(targets);
     std::thread::spawn(move || unsafe {
         let Ok(hook) = SetWindowsHookExW(WH_MOUSE_LL, Some(mouse_hook), None, 0) else {
@@ -87,7 +78,6 @@ pub fn forward_mouse(targets: Targets, running: std::sync::Arc<std::sync::atomic
         };
         let mut msg = MSG::default();
         while running.load(Ordering::Relaxed) {
-            // The hook only runs while this thread pumps messages.
             while PeekMessageW(&mut msg, None, 0, 0, PM_REMOVE).as_bool() {
                 let _ = TranslateMessage(&msg);
                 DispatchMessageW(&msg);

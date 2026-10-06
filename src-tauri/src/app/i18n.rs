@@ -1,8 +1,5 @@
-//! Window and tray text in the user's language.
-
 use super::*;
 
-/// A UI string for text Rust shows itself (tray menu, notifications), from the same files as the window.
 pub(crate) fn ui_text(lang: &str, key: &str) -> String {
     let file = match lang {
         "ar" => include_str!("../../../ui/i18n/ar.json"),

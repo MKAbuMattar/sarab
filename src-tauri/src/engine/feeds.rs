@@ -1,27 +1,19 @@
-//! Data web wallpapers can ask for in sarab.json ("api": ["system"]). Nothing here runs unless a
-//! playing wallpaper asked, so a wallpaper that does not use it costs nothing.
-
 use crate::os::windows as os;
 use serde::Serialize;
 use std::time::Instant;
 
-/// What `sarabSystemInfo(info)` receives, once a second.
 #[derive(Serialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub struct SystemInfo {
     pub name_cpu: String,
     pub name_gpu: String,
-    /// Percent of all cores, 0 to 100.
     pub current_cpu: f64,
-    /// Megabytes.
     pub current_ram_avail: u64,
     pub total_ram: u64,
-    /// Bytes per second.
     pub current_net_down: u64,
     pub current_net_up: u64,
 }
 
-/// Turns counters since boot into rates between two samples.
 pub struct Sampler {
     names: (String, String),
     cpu: (u64, u64),
@@ -64,8 +56,6 @@ impl Sampler {
     }
 }
 
-/// What `sarabNowPlaying(track)` receives when the track changes. Thumbnail is the cover as a
-/// base64 data URL, or empty.
 #[derive(Serialize, Debug, Clone, PartialEq, Default)]
 #[serde(rename_all = "PascalCase")]
 pub struct Track {
@@ -94,13 +84,11 @@ fn base64(bytes: &[u8]) -> String {
     out
 }
 
-/// The current track, from Windows media controls.
 pub fn read_track() -> Option<Track> {
     let (title, artist, album_title, album_artist, art) = os::now_playing()?;
     let thumbnail = if art.is_empty() {
         String::new()
     } else {
-        // Media apps hand over PNG or JPEG; the browser sniffs either from a data URL.
         let kind = if art.starts_with(b"\x89PNG") {
             "png"
         } else {
@@ -117,8 +105,6 @@ pub fn read_track() -> Option<Track> {
     })
 }
 
-/// Polls media controls every 2 s on its own thread, only while `wanted` is set. The tick reads
-/// `latest` and sends it when it changed.
 pub struct NowPlaying {
     pub wanted: std::sync::Arc<std::sync::atomic::AtomicBool>,
     pub latest: std::sync::Arc<std::sync::Mutex<Option<Track>>>,
@@ -161,14 +147,12 @@ mod tests {
         for k in ["Title", "Artist", "AlbumTitle", "AlbumArtist", "Thumbnail"] {
             assert!(json.get(k).is_some(), "{k}");
         }
-        // Reading the real session must not panic, whatever is or is not playing.
         let _ = read_track();
     }
 
     #[test]
     fn sysinfo_reads_real_numbers() {
         let mut s = Sampler::new();
-        // Keep a core busy so the CPU figure has something to show.
         let t = Instant::now();
         let mut x = 0u64;
         while t.elapsed().as_millis() < 300 {

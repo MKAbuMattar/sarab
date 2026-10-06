@@ -1,5 +1,3 @@
-//! Putting wallpapers on displays: windows, span, app wallpapers, where pages load from.
-
 pub(in crate::engine::wallpaper) use super::*;
 
 mod apply;

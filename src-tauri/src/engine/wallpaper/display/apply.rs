@@ -1,5 +1,3 @@
-//! Put a wallpaper on a display, take it off, and delete one from the library.
-
 use super::*;
 
 pub(in crate::engine::wallpaper) fn close_window(app: &AppHandle, core: &mut Core, i: usize) {
@@ -13,7 +11,6 @@ pub(in crate::engine::wallpaper) fn close_window(app: &AppHandle, core: &mut Cor
     d.app = None;
 }
 
-/// Close display `i`'s webview but keep its wallpaper and layout, to load it again later.
 pub fn unload(app: &AppHandle, core: &mut Core, i: usize) {
     close_window(app, core, i);
 }
@@ -37,7 +34,6 @@ pub fn apply(app: &AppHandle, core: &mut Core, i: usize, id: &str) -> Result<(),
     let key = core.displays[i].mon.key.clone();
     core.displays[i].error = None;
     let result = if spanned(core, i) && w.info.r#type != Kind::Picture {
-        // Drawn by display 0's window; this display only records what it shows.
         Ok(())
     } else if w.info.r#type == Kind::Picture {
         let Some(Target::File(f)) = w.target() else {
@@ -68,7 +64,6 @@ pub fn apply(app: &AppHandle, core: &mut Core, i: usize, id: &str) -> Result<(),
     result
 }
 
-/// Where display `i`'s wallpaper window goes: its display, or all of them when spanned.
 pub(in crate::engine::wallpaper) fn wallpaper_rect(core: &Core, i: usize) -> RECT {
     if core.settings.span {
         span_rect(&core.displays.iter().map(|d| d.mon.rect).collect::<Vec<_>>())
@@ -100,7 +95,6 @@ pub(in crate::engine::wallpaper) fn create_window(
         .shadow(false)
         .resizable(false)
         .initialization_script(INJECT)
-        // Local wallpapers stay on their own origin. URL wallpapers may redirect (embeds, logins).
         .on_navigation(move |u| any_origin || u.origin() == origin)
         .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
         .on_page_load(|win, payload| {
@@ -119,7 +113,6 @@ pub(in crate::engine::wallpaper) fn create_window(
         os::show(hwnd, true);
         Ok(())
     });
-    // A window that failed to embed would float over the desktop; drop it.
     if attached.is_err() {
         close_window(app, core, i);
     }
@@ -138,7 +131,6 @@ pub fn close(app: &AppHandle, core: &mut Core, i: usize) {
     write_status(core);
 }
 
-/// Display selection from the CLI or UI: one display, or all of them.
 pub fn targets(core: &Core, display: Option<usize>) -> Result<Vec<usize>, String> {
     match display {
         Some(n) if n < core.displays.len() => Ok(vec![n]),
@@ -150,7 +142,6 @@ pub fn targets(core: &Core, display: Option<usize>) -> Result<Vec<usize>, String
 pub fn remove(app: &AppHandle, core: &mut Core, id: &str) -> Result<(), String> {
     let w = core.find(id).cloned().ok_or("not found")?;
     let lib = library_dir(&core.settings);
-    // Never delete outside the library folder, whatever the id says.
     let dir = fs::canonicalize(&w.dir).map_err(|e| e.to_string())?;
     let root = fs::canonicalize(&lib).map_err(|e| e.to_string())?;
     if !dir.starts_with(&root) || dir == root {
@@ -161,7 +152,6 @@ pub fn remove(app: &AppHandle, core: &mut Core, id: &str) -> Result<(), String> 
             close(app, core, i);
         }
     }
-    // To the Recycle Bin, so a wrong click can be undone from Explorer.
     os::recycle(&dir)?;
     let _ = fs::remove_dir_all(cfg("props").join(id));
     core.lib = scan_all(&core.settings);

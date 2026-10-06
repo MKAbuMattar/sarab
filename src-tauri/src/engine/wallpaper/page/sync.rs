@@ -1,12 +1,5 @@
-//! Keep displays that play the same video on the same frame.
-
 use super::*;
 
-/// The same video on several displays plays in step: the leftmost playing display leads, the
-/// others follow. Displays are independent webviews, so without this they start at different
-/// moments and drift further apart every time one is paused and resumed.
-/// Displays to keep in step: those playing the same video or YouTube link, two or more to a
-/// group, leftmost first. Each entry is a display's wallpaper id and whether it can be synced now.
 pub(in crate::engine::wallpaper) fn sync_groups(
     displays: impl Iterator<Item = (Option<String>, bool)>,
 ) -> Vec<Vec<usize>> {

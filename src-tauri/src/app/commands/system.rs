@@ -1,5 +1,3 @@
-//! The window's state, and opening folders and links.
-
 use super::*;
 
 #[tauri::command]
@@ -12,7 +10,6 @@ pub(crate) async fn state(app: AppHandle) -> Value {
             "theme": page_theme(app, &core.settings.theme),
             "translucent": effects_for(&core.settings.backdrop).is_some(),
             "settings": core.settings,
-            // Thumbnails reach the window through the asset protocol, opened file by file.
             "library": core.lib.iter().map(|w| {
                 let mut v = json!(w);
                 if let Some(t) = &w.thumb {
@@ -20,7 +17,6 @@ pub(crate) async fn state(app: AppHandle) -> Value {
                         v["thumb_url"] = json!(wallpaper::asset_url(t));
                     }
                 }
-                // Videos and GIFs play on their tile while the pointer rests on it.
                 if let (Some(library::Target::File(f)), library::Kind::Video | library::Kind::Gif) =
                     (w.target(), w.info.r#type)
                 {
@@ -45,8 +41,6 @@ pub(crate) async fn state(app: AppHandle) -> Value {
     })
 }
 
-/// Opens one of Sarab's folders in Explorer, or its website or issue tracker in the browser.
-/// Takes a fixed name, never a path or URL, so the page cannot open anything else.
 #[tauri::command]
 pub(crate) async fn open(app: AppHandle, which: String) -> Result<(), String> {
     let target = match which.as_str() {
@@ -64,7 +58,6 @@ pub(crate) async fn open(app: AppHandle, which: String) -> Result<(), String> {
         "issues" => ISSUES.into(),
         _ => return Err(format!("unknown target {which}")),
     };
-    // explorer.exe opens folders itself and hands URLs to the default browser.
     std::process::Command::new("explorer.exe")
         .arg(target)
         .spawn()

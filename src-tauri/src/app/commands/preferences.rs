@@ -1,5 +1,3 @@
-//! Settings commands: save, reset, start with Windows, export logs.
-
 use super::*;
 
 #[tauri::command]
@@ -16,7 +14,6 @@ pub(crate) async fn reset_settings(app: AppHandle) -> Result<(), String> {
     })
 }
 
-/// Zip the log and settings files into Downloads and show the zip in Explorer.
 #[tauri::command]
 pub(crate) async fn export_logs() -> Result<String, String> {
     let zip = support::export_logs(&settings::config_dir(), &support::downloads())
@@ -33,7 +30,6 @@ pub(crate) async fn autostart(app: AppHandle, enable: bool) -> Result<(), String
     if enable { al.enable() } else { al.disable() }.map_err(|e| e.to_string())
 }
 
-/// Store new settings and apply what changed to the window and the wallpapers.
 pub(crate) fn apply_settings(
     app: &AppHandle,
     core: &mut Core,
@@ -56,7 +52,6 @@ pub(crate) fn apply_settings(
     if lib_changed {
         rescan(core);
     }
-    // Span on or off: display 0's window changes size and the others gain or lose theirs.
     if span_changed {
         let first = core.displays.first().and_then(|d| d.wallpaper.clone());
         for i in 0..core.displays.len() {
@@ -66,7 +61,6 @@ pub(crate) fn apply_settings(
             }
         }
     }
-    // The fit is part of the player URL, so running videos and GIFs load again with it.
     if fit_changed && !span_changed {
         for i in 0..core.displays.len() {
             let id = core.displays[i].wallpaper.clone();

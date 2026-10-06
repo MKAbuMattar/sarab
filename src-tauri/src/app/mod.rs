@@ -1,5 +1,3 @@
-//! The running app: commands, the settings window, the tray, and what ties them to the core.
-
 use crate::core::{settings, support, update};
 use crate::engine::wallpaper;
 use crate::library::presets;

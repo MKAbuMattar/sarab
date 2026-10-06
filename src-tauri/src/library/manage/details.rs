@@ -1,18 +1,12 @@
-//! What the Info view shows: size, files, dates.
-
 use super::*;
 
-/// Facts for the info dialog that the manifest does not hold.
 #[derive(Serialize, Debug, Default)]
 pub struct Details {
-    /// Bytes in the package folder, plus the file it points to when that lives elsewhere.
     pub size: u64,
     pub files: u32,
     pub created: u64,
-    /// When sarab.json was last written.
     pub modified: u64,
     pub folder: String,
-    /// The file or web address it plays.
     pub source: String,
     pub has_props: bool,
 }
@@ -20,7 +14,6 @@ pub struct Details {
 pub fn details(w: &Wallpaper) -> Details {
     fn walk(dir: &Path, d: &mut Details) {
         for e in fs::read_dir(dir).into_iter().flatten().flatten() {
-            // symlink_metadata: a link in a package is counted, never followed out of the folder.
             let Ok(m) = fs::symlink_metadata(e.path()) else {
                 continue;
             };

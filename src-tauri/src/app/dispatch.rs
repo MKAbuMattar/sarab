@@ -1,5 +1,3 @@
-//! Run a command against the core: from the CLI, the tray, the window and a second `sarab` process.
-
 use super::*;
 
 pub(crate) fn with_core<T: Send + 'static>(
@@ -22,7 +20,6 @@ pub(crate) fn rescan(core: &mut Core) {
     wallpaper::make_thumbnails(&core.lib);
 }
 
-/// Resolve a CLI/UI target: a library id, or a path/URL that gets added to the library first.
 pub(crate) fn resolve(core: &mut Core, target: &str) -> Result<String, String> {
     if core.find(target).is_some() {
         return Ok(target.to_string());
@@ -35,7 +32,6 @@ pub(crate) fn resolve(core: &mut Core, target: &str) -> Result<String, String> {
 pub(crate) fn run_command(app: &AppHandle, core: &mut Core, cmd: Command) -> Result<(), String> {
     log(format!("command {cmd:?}"));
     match cmd {
-        // ffmpeg can take minutes, so it runs off the core; the MP4 is set when it is ready.
         Command::Set { target, display } if library::needs_convert(&target) => {
             let lib = wallpaper::library_dir(&core.settings);
             let a = app.clone();
@@ -58,7 +54,6 @@ pub(crate) fn run_command(app: &AppHandle, core: &mut Core, cmd: Command) -> Res
             for i in wallpaper::targets(core, display)? {
                 wallpaper::apply(app, core, i, &id)?;
             }
-            // A wallpaper the user picked gets a full interval before cycling moves on.
             core.changed_at = std::time::Instant::now();
         }
         Command::Close { display } => {
@@ -101,7 +96,6 @@ pub(crate) fn run_command(app: &AppHandle, core: &mut Core, cmd: Command) -> Res
         }
         Command::Quit => app.exit(0),
         Command::Status => wallpaper::probe_pages(app, core),
-        // Network work runs on the async runtime; the main thread only starts it.
         Command::Preset(id) => {
             let a = app.clone();
             tauri::async_runtime::spawn(async move { presets::download(&a, &id).await });
@@ -111,7 +105,6 @@ pub(crate) fn run_command(app: &AppHandle, core: &mut Core, cmd: Command) -> Res
             tauri::async_runtime::spawn(async move { update::check(&a).await });
         }
         Command::Screenshot { path, display } => {
-            // The command reaches the running Sarab, whose working folder is not the caller's.
             let path = std::path::PathBuf::from(path);
             if !path.is_absolute() {
                 return Err("give screenshot a full path, for example C:/shots/desktop.png".into());
@@ -137,8 +130,6 @@ pub(crate) fn handle_args(app: &AppHandle, args: &[String]) {
                 log(format!("error: {e}"));
             }
         }
-        // A plain launch (desktop or Start menu shortcut, or clicking Sarab while it runs) opens the
-        // window. The login launch passes --autostart and stays in the tray.
         Ok(None) if !args.iter().any(|a| a == AUTOSTART_FLAG) => {
             let _ = with_core(app, |app, core| run_command(app, core, Command::Ui));
         }

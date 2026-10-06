@@ -1,5 +1,3 @@
-//! The Windows picture wallpaper, per display (IDesktopWallpaper).
-
 use super::*;
 
 pub(in crate::os::windows) fn wallpaper_api() -> windows::core::Result<IDesktopWallpaper> {
@@ -9,7 +7,6 @@ pub(in crate::os::windows) fn wallpaper_api() -> windows::core::Result<IDesktopW
     }
 }
 
-/// IDesktopWallpaper monitor ids for the given monitor rects.
 pub(in crate::os::windows) fn monitor_id(
     api: &IDesktopWallpaper,
     m: &Monitor,

@@ -1,8 +1,5 @@
-//! System information for web wallpapers: memory, network, CPU and GPU names.
-
 use super::*;
 
-/// Available and total memory in bytes.
 pub fn memory() -> (u64, u64) {
     use windows::Win32::System::SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX};
     let mut m = MEMORYSTATUSEX {
@@ -12,8 +9,6 @@ pub fn memory() -> (u64, u64) {
     unsafe { GlobalMemoryStatusEx(&mut m) }.map_or((0, 0), |_| (m.ullAvailPhys, m.ullTotalPhys))
 }
 
-/// Bytes received and sent since boot by physical network adapters that are up. Filter and
-/// virtual interfaces are skipped, since they count the same traffic again.
 pub fn net_octets() -> (u64, u64) {
     use windows::Win32::NetworkManagement::IpHelper::{FreeMibTable, GetIfTable2, MIB_IF_TABLE2};
     use windows::Win32::NetworkManagement::Ndis::IfOperStatusUp;
@@ -37,7 +32,6 @@ pub fn net_octets() -> (u64, u64) {
     (down, up)
 }
 
-/// The CPU's marketing name, from the registry.
 pub fn cpu_name() -> String {
     use windows::Win32::System::Registry::{RegGetValueW, HKEY_LOCAL_MACHINE, RRF_RT_REG_SZ};
     let mut buf = [0u16; 128];
@@ -62,7 +56,6 @@ pub fn cpu_name() -> String {
     String::from_utf16_lossy(&buf[..n]).trim().to_string()
 }
 
-/// The primary display adapter's name.
 pub fn gpu_name() -> String {
     use windows::Win32::Graphics::Gdi::{
         EnumDisplayDevicesW, DISPLAY_DEVICEW, DISPLAY_DEVICE_PRIMARY_DEVICE,
@@ -88,7 +81,6 @@ pub fn gpu_name() -> String {
     }
 }
 
-/// Installed memory in bytes, 0 if Windows will not say.
 pub fn total_ram() -> u64 {
     use windows::Win32::System::SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX};
     let mut m = MEMORYSTATUSEX {

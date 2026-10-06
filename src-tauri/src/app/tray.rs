@@ -1,8 +1,5 @@
-//! The tray icon and its menu.
-
 use super::*;
 
-/// The tray menu; with an update waiting, its first item installs it.
 pub(crate) fn tray_menu(
     app: &AppHandle,
     lang: &str,

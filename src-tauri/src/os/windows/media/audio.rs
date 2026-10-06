@@ -1,9 +1,5 @@
-//! Sound: whether other apps play, and loopback capture for audio-reactive wallpapers.
-
 use super::*;
 
-/// Is another app making sound right now? Only sessions that are active and above a whisper
-/// count, so a paused player or a silent stream does not mute the wallpaper.
 pub fn other_audio_playing() -> bool {
     use windows::core::Interface;
     use windows::Win32::Media::Audio::Endpoints::IAudioMeterInformation;
@@ -24,7 +20,6 @@ pub fn other_audio_playing() -> bool {
                     continue;
                 }
                 let pid = s.cast::<IAudioSessionControl2>()?.GetProcessId()?;
-                // pid 0 is the system sounds session.
                 if pid == 0 || own.contains(&pid) {
                     continue;
                 }
@@ -38,8 +33,6 @@ pub fn other_audio_playing() -> bool {
     run().unwrap_or(false)
 }
 
-/// Capture what the default output plays (WASAPI loopback) while `wanted`, as mono float
-/// samples, and hand the last 1024 to `each` about every 33 ms. Silence is sent as zeros once.
 pub fn loopback(
     wanted: &std::sync::atomic::AtomicBool,
     each: &mut dyn FnMut(&[f32]),
@@ -62,7 +55,6 @@ pub fn loopback(
             (*fmt).wBitsPerSample,
             (*fmt).wFormatTag,
         );
-        // The shared-mode mix format is 32-bit float on every Windows version Sarab supports.
         let float = bits == 32 && (tag == 3 || tag == 0xFFFE);
         let init = client.Initialize(
             AUDCLNT_SHAREMODE_SHARED,

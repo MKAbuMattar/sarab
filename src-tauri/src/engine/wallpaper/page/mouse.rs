@@ -1,9 +1,5 @@
-//! Mouse input for interactive wallpapers.
-
 use super::*;
 
-/// Keep the mouse hook running exactly while the setting is on and a web or URL wallpaper
-/// shows, and tell it where those wallpapers are.
 pub(in crate::engine::wallpaper) fn run_mouse_input(app: &AppHandle, core: &mut Core) {
     use std::sync::atomic::{AtomicBool, Ordering};
     let targets: Vec<(windows::Win32::Foundation::RECT, isize)> = if core.settings.mouse_input {

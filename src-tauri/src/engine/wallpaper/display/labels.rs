@@ -1,5 +1,3 @@
-//! Wallpaper window labels, and finding a display's window.
-
 use super::*;
 
 pub(in crate::engine::wallpaper) fn new_label(i: usize) -> String {

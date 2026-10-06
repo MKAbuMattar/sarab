@@ -1,10 +1,7 @@
-//! Sarab .zip packages: import with zip-slip and size checks, and export.
-
 use super::*;
 
 pub const MAX_UNPACKED: u64 = 2 << 30;
 
-/// Import a Sarab package zip (sarab.json at its root). Rejects entries that escape the folder and archives over the size cap.
 pub fn import_zip(lib: &Path, zip_path: &Path, max_bytes: u64) -> Result<Wallpaper, String> {
     let file = fs::File::open(zip_path).map_err(|e| e.to_string())?;
     let mut zip = zip::ZipArchive::new(file).map_err(|e| e.to_string())?;
@@ -41,7 +38,6 @@ pub fn import_zip(lib: &Path, zip_path: &Path, max_bytes: u64) -> Result<Wallpap
             if let Some(p) = out.parent() {
                 fs::create_dir_all(p).map_err(|e| e.to_string())?;
             }
-            // take() bounds the write even if the header lied about the size.
             let mut w = fs::File::create(&out).map_err(|e| e.to_string())?;
             io::copy(&mut io::Read::take(&mut f, max_bytes), &mut w).map_err(|e| e.to_string())?;
         }
@@ -57,9 +53,6 @@ pub fn import_zip(lib: &Path, zip_path: &Path, max_bytes: u64) -> Result<Wallpap
     })
 }
 
-/// Write `w` as a package zip in `dest` that `import_zip` reads back. A file that lives outside
-/// the package (a video added from elsewhere) goes into the zip, and the manifest then points
-/// at that copy, so the package works on another PC. Returns the zip's path.
 pub fn export_zip(w: &Wallpaper, dest: &Path) -> Result<PathBuf, String> {
     use std::io::Write;
     let name: String = w
@@ -79,7 +72,6 @@ pub fn export_zip(w: &Wallpaper, dest: &Path) -> Result<PathBuf, String> {
         .collect();
     let path = dest.join(format!("{}.zip", name.trim()));
     let mut info = w.info.clone();
-    // Record the version that made it, so an older Sarab can warn before playing it.
     info.app_version
         .get_or_insert_with(|| env!("CARGO_PKG_VERSION").to_string());
     let outside = match w.target() {
@@ -121,7 +113,6 @@ pub fn export_zip(w: &Wallpaper, dest: &Path) -> Result<PathBuf, String> {
         for rel in files.iter().filter(|r| r.as_os_str() != INFO) {
             zip.start_file(rel.to_string_lossy().replace('\\', "/"), opts)
                 .map_err(err)?;
-            // Streamed, so a 4K video never sits in memory whole.
             io::copy(
                 &mut fs::File::open(w.dir.join(rel)).map_err(|e| e.to_string())?,
                 &mut zip,

@@ -1,8 +1,5 @@
-//! Where a wallpaper loads from: asset URLs, the video player page, YouTube links.
-
 use super::*;
 
-/// `http://asset.localhost/C:/dir/index.html`: forward slashes keep relative links in web wallpapers working.
 pub fn asset_url(p: &Path) -> String {
     let s = p.to_string_lossy().replace('\\', "/");
     let mut out = String::from("http://asset.localhost/");
@@ -36,8 +33,6 @@ pub(in crate::engine::wallpaper) fn player_url(
     format!("{APP_ORIGIN}/player.html?kind={kind}&fit={fit}{range}&src={q}")
 }
 
-/// The video and playlist ids in a YouTube link: watch, youtu.be, shorts, live, embed and
-/// playlist forms, on www, m and music. None for anything else.
 pub(in crate::engine::wallpaper) fn youtube_ids(
     u: &str,
 ) -> Option<(Option<String>, Option<String>)> {
@@ -74,8 +69,6 @@ pub(in crate::engine::wallpaper) fn youtube_ids(
     (video.is_some() || list.is_some()).then_some((video, list))
 }
 
-/// Shadertoy pages are heavy; the embed form shows only the shader. YouTube refuses to play
-/// when loaded directly (Error 153), so its links open Sarab's own page, which frames the player.
 pub(in crate::engine::wallpaper) fn rewrite_url(u: &str) -> String {
     if let Some(id) = u.split("shadertoy.com/view/").nth(1) {
         return format!(
@@ -92,7 +85,6 @@ pub(in crate::engine::wallpaper) fn rewrite_url(u: &str) -> String {
     u.to_string()
 }
 
-/// Build the URL for a wallpaper and open the asset scope for exactly the files it needs.
 pub(in crate::engine::wallpaper) fn url_for(
     app: &AppHandle,
     w: &Wallpaper,

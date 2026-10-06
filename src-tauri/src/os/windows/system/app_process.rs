@@ -1,13 +1,8 @@
-//! App wallpapers: a program in a job object, and its window.
-
 use super::*;
 
-/// A program running as a wallpaper. It lives in a job object that ends it, and anything it
-/// started, when this is dropped, and also when Sarab exits or crashes.
 pub struct AppProcess {
     job: isize,
     pub pid: u32,
-    /// Its window, once it has one and sits behind the icons.
     pub hwnd: Option<isize>,
 }
 
@@ -48,8 +43,6 @@ pub fn launch_app(exe: &std::path::Path, args: &[&str]) -> Result<AppProcess, St
         .current_dir(exe.parent().unwrap_or(std::path::Path::new(".")))
         .spawn()
         .map_err(|e| format!("{}: {e}", exe.display()))?;
-    // ponytail: the program runs a moment before it joins the job, so a process it starts in
-    // that moment escapes; start it suspended and resume it after joining if that ever matters.
     if let Err(e) = unsafe { AssignProcessToJobObject(job, HANDLE(child.as_raw_handle())) } {
         let _ = child.kill();
         return Err(e.to_string());
@@ -58,7 +51,6 @@ pub fn launch_app(exe: &std::path::Path, args: &[&str]) -> Result<AppProcess, St
     Ok(p)
 }
 
-/// The visible, unowned top-level window of process `pid`, once it has one.
 pub fn main_window(pid: u32) -> Option<HWND> {
     unsafe extern "system" fn cb(hwnd: HWND, l: LPARAM) -> BOOL {
         let f = &mut *(l.0 as *mut (u32, Option<HWND>));

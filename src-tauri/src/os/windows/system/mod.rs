@@ -1,5 +1,3 @@
-//! What the system reports: pause signals, processes and CPU time, memory and hardware, app wallpapers.
-
 pub(in crate::os::windows) use super::*;
 
 mod probes;

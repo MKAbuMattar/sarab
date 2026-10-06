@@ -1,6 +1,3 @@
-//! Core state: which wallpaper runs on which display, and in which pause state.
-//! Every function here runs on the main thread (see `on_main`), so the lock is never contended.
-
 use crate::core::pause::{self, Reason, Signals, State};
 use crate::core::settings::{self, Layout, Settings};
 use crate::library::{self, Kind, Target, Wallpaper};
@@ -44,16 +41,10 @@ pub struct Display {
     pub reason: Reason,
     pub loaded: bool,
     pub error: Option<String>,
-    /// Filled by `sarab status`: what the page itself reports.
     pub page: Value,
-    /// Label of this display's wallpaper window. Unique per window: `destroy()` frees a label
-    /// asynchronously, so reusing one for the replacement window fails.
     pub label: Option<String>,
-    /// Since when nobody can see this display's wallpaper (covered, locked, remote).
     pub unseen_since: Option<std::time::Instant>,
-    /// Its webview was closed to free memory; it loads again when it would play.
     pub unloaded: bool,
-    /// The program an app wallpaper runs; dropping it ends the program.
     pub app: Option<os::AppProcess>,
 }
 
@@ -64,37 +55,25 @@ pub struct Core {
     pub displays: Vec<Display>,
     pub manual: Option<bool>,
     pub desktop: Option<os::Desktop>,
-    /// Display key -> the OS wallpaper before Sarab changed it, so close can put it back.
     pub restore: BTreeMap<String, String>,
     pub signals: Signals,
-    /// Run video sync on the next tick (a display just resumed or loaded).
     pub sync_due: bool,
     pub ticks: u64,
-    /// Started the first time a playing wallpaper asks for system information.
     pub sysinfo: Option<crate::engine::feeds::Sampler>,
-    /// The screensaver's window labels and the input stamp it started at, while it shows.
     pub screensaver: Option<(Vec<String>, u32)>,
-    /// Where the mouse hook sends input, and whether it runs.
     pub mouse_targets: os::Targets,
     pub mouse_on: Option<std::sync::Arc<std::sync::atomic::AtomicBool>>,
-    /// CPU counters at the last tick (idle, busy, Sarab's own) and the gate that steadies them.
     pub cpu_prev: Option<(u64, u64, u64)>,
     pub cpu_gate: pause::CpuGate,
-    /// Runs while a playing wallpaper asks for the audio levels.
     pub audio: Option<crate::engine::audio::Feed>,
-    /// Labels of the webviews the audio thread sends to.
     pub audio_to: std::sync::Arc<Mutex<Vec<String>>>,
-    /// Started the first time a playing wallpaper asks for the current track.
     pub now_playing: Option<crate::engine::feeds::NowPlaying>,
-    /// The volume the pages play at now, after the audio rules; the setting is the most it can be.
     pub volume_now: u8,
-    /// When the wallpaper last changed, by the user or by cycling.
     pub changed_at: std::time::Instant,
 }
 
 pub type Shared = Mutex<Core>;
 
-/// Folder of the web scenes that ship with Sarab, set once at startup from the resource dir.
 pub static PRESET_DIR: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
 
 impl Core {

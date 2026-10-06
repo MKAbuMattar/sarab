@@ -12,11 +12,8 @@ fn r(left: i32, top: i32, right: i32, bottom: i32) -> RECT {
 #[test]
 fn tiled_windows_cover_a_display() {
     let work = r(0, 0, 1920, 1040);
-    // One maximized window (its frame sits a few pixels outside the work area).
     assert!(covered(&work, &[r(-7, -7, 1927, 1047)]));
-    // Two windows snapped left and right.
     assert!(covered(&work, &[r(0, 0, 960, 1040), r(960, 0, 1920, 1040)]));
-    // Four quarters.
     let q = [
         r(0, 0, 960, 520),
         r(960, 0, 1920, 520),
@@ -24,11 +21,8 @@ fn tiled_windows_cover_a_display() {
         r(960, 520, 1920, 1040),
     ];
     assert!(covered(&work, &q));
-    // Half the screen is still desktop.
     assert!(!covered(&work, &[r(0, 0, 960, 1040)]));
-    // A window on the other display does not count.
     assert!(!covered(&work, &[r(1920, 0, 3840, 1040)]));
-    // A strip of desktop left between two windows is seen.
     assert!(!covered(
         &work,
         &[r(0, 0, 800, 1040), r(1100, 0, 1920, 1040)]
@@ -41,7 +35,6 @@ fn shell_thumbnail_writes_png() {
     let d = std::env::temp_dir().join(format!("sarab-test-thumb-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&d);
     std::fs::create_dir_all(&d).unwrap();
-    // A 64 by 32 24-bit BMP, written by hand so the test needs no fixture.
     let (w, h) = (64u32, 32u32);
     let row = (w * 3).div_ceil(4) * 4;
     let mut bmp = vec![];
@@ -68,7 +61,6 @@ fn shell_thumbnail_writes_png() {
     let small = d.join("small.png");
     shrink_png(&out, &small, 16).unwrap();
     let p = std::fs::read(&small).unwrap();
-    // IHDR width, big-endian, at byte 16.
     assert_eq!(u32::from_be_bytes(p[16..20].try_into().unwrap()), 16);
     assert!(shell_thumbnail(&d.join("missing.mp4"), &out, 48).is_err());
 }
@@ -107,7 +99,6 @@ fn forward_only_over_desktop() {
 
 #[test]
 fn screensaver_running_reads_the_real_state() {
-    // Tests run while someone (or CI) works, so no screensaver is on screen.
     assert!(!screensaver_running());
 }
 
@@ -142,7 +133,7 @@ fn app_wallpaper_ends_with_its_job() {
         let mut code = 0;
         let _ = GetExitCodeProcess(h, &mut code);
         let _ = CloseHandle(h);
-        code == 259 // STILL_ACTIVE
+        code == 259
     };
     assert!(alive(), "running");
     drop(p);
@@ -182,14 +173,12 @@ fn on_path_adds_once_and_removes_only_ours() {
         r"C:\x;C:\Sarab2",
         "a longer name is not ours"
     );
-    // The installer calls both, outside an update.
     let hooks = include_str!("../../../windows/hooks.nsh");
     assert!(hooks.contains("--add-to-path") && hooks.contains("--remove-from-path"));
 }
 
 #[test]
 fn console_twin_only_flips_the_subsystem() {
-    // This test binary is a console program (3); mark it windowed (2), then flip it back.
     let mut exe = std::fs::read(std::env::current_exe().unwrap()).unwrap();
     let at = subsystem_at(&exe).unwrap();
     assert_eq!(u16::from_le_bytes([exe[at], exe[at + 1]]), 3);
@@ -208,11 +197,9 @@ fn console_twin_only_flips_the_subsystem() {
 
 #[test]
 fn recycle_moves_to_bin() {
-    // Leaves one small folder named sarab-test-recycle-<pid> in the Recycle Bin.
     let d = std::env::temp_dir().join(format!("sarab-test-recycle-{}", std::process::id()));
     std::fs::create_dir_all(d.join("inner")).unwrap();
     std::fs::write(d.join("inner").join("a.txt"), "x").unwrap();
-    // remove() passes a canonicalized \\?\ path; the Delete button failed on exactly that.
     let canon = std::fs::canonicalize(&d).unwrap();
     assert!(canon.to_string_lossy().starts_with(r"\\?\"));
     recycle(&canon).unwrap();

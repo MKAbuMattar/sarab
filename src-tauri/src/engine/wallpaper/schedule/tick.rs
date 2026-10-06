@@ -1,5 +1,3 @@
-//! The one-second tick that runs everything above in order.
-
 use super::*;
 
 pub fn tick(app: &AppHandle, core: &mut Core) {
@@ -32,7 +30,6 @@ pub fn tick(app: &AppHandle, core: &mut Core) {
             .zip(&core.displays)
             .any(|((st, why), d)| *st != d.state || *why != d.reason);
     core.signals = s;
-    // While the screensaver shows, the desktop wallpapers under it cannot be seen.
     let decisions = if core.screensaver.is_some() {
         vec![(State::Covered, Reason::Covered); decisions.len()]
     } else {
@@ -52,8 +49,6 @@ pub fn tick(app: &AppHandle, core: &mut Core) {
     push_now_playing(app, core);
     run_audio_feed(app, core);
     run_mouse_input(app, core);
-    // The session scan only runs when it can matter: a rule is on and the wallpaper has sound,
-    // or the screensaver is about to decide whether a video is playing.
     let ss_soon = core.settings.screensaver_minutes > 0
         && core.screensaver.is_none()
         && u64::from(os::last_input().0) >= u64::from(core.settings.screensaver_minutes) * 60_000;
@@ -79,11 +74,9 @@ pub fn tick(app: &AppHandle, core: &mut Core) {
         if let Err(e) = next(app, core) {
             log(format!("cycle: {e}"));
         }
-        // Wait a full interval before trying again, even after a failure.
         core.changed_at = std::time::Instant::now();
         let _ = app.emit_to("main", "changed", ());
     }
-    // Every tick: a follower corrects its speed once a second, so it holds within a frame.
     core.sync_due = false;
     sync_video(app, core);
     if changed {

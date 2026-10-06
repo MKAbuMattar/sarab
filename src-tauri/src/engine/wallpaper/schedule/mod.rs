@@ -1,5 +1,3 @@
-//! What runs on the clock: the tick, cycling, the screensaver, unloading, CPU rest.
-
 pub(in crate::engine::wallpaper) use super::*;
 
 mod tick;

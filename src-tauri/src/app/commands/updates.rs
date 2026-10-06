@@ -1,5 +1,3 @@
-//! Update commands: check and install.
-
 use super::*;
 
 #[tauri::command]

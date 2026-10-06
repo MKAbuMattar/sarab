@@ -1,5 +1,3 @@
-//! Read the library folder and each package's sarab.json.
-
 use super::*;
 
 pub fn scan(lib: &Path) -> Vec<Wallpaper> {
@@ -35,7 +33,6 @@ pub fn read(dir: &Path) -> Option<Wallpaper> {
     })
 }
 
-/// Is version `a` newer than `b`? Compares the numbers in order, so 0.0.10 is newer than 0.0.9.
 pub fn newer(a: &str, b: &str) -> bool {
     let parts = |v: &str| -> Vec<u64> {
         v.trim_start_matches('v')

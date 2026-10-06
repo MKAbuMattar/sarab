@@ -1,5 +1,3 @@
-//! Commands for the settings window. The capability grants them to the "main" window only.
-
 use super::*;
 
 mod displays;

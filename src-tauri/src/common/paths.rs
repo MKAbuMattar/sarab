@@ -1,5 +1,3 @@
-//! Where Sarab keeps things: config files, the library, saved Customize values.
-
 use crate::core::settings::{self, Settings};
 use crate::engine::wallpaper::PRESET_DIR;
 use crate::library::{self, Wallpaper};
@@ -15,7 +13,6 @@ pub fn library_dir(s: &Settings) -> PathBuf {
         .unwrap_or_else(|| settings::data_dir().join("Library"))
 }
 
-/// The user's library followed by the bundled presets.
 pub fn scan_all(settings: &Settings) -> Vec<Wallpaper> {
     let mut lib = library::scan(&library_dir(settings));
     if let Some(dir) = PRESET_DIR.get() {

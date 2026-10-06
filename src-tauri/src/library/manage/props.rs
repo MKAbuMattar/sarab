@@ -1,8 +1,5 @@
-//! properties.json: a wallpaper's controls and the values saved per display.
-
 use super::*;
 
-/// Controls from the wallpaper's properties.json with this display's saved values laid over them.
 pub fn props(w: &Wallpaper, saved_path: &Path) -> Map<String, Value> {
     let mut base: Map<String, Value> = fs::read(w.props_path())
         .ok()
@@ -20,7 +17,6 @@ pub fn props(w: &Wallpaper, saved_path: &Path) -> Map<String, Value> {
     base
 }
 
-/// Parse a raw value (from the CLI or UI) by the control's type. Returns the JS value to send.
 pub fn coerce(ctl: &Value, raw: &Value) -> Result<Value, String> {
     let ty = ctl.get("type").and_then(Value::as_str).unwrap_or("");
     let s = match raw {
@@ -28,7 +24,6 @@ pub fn coerce(ctl: &Value, raw: &Value) -> Result<Value, String> {
         v => v.to_string(),
     };
     Ok(match ty {
-        // A number field is a slider without the slider: the same range rules.
         "slider" | "number" => {
             let n: f64 = s
                 .trim()
@@ -59,7 +54,6 @@ pub fn coerce(ctl: &Value, raw: &Value) -> Result<Value, String> {
     })
 }
 
-/// Save one value into the per-display file. Buttons are events, never saved.
 pub fn save_prop(saved_path: &Path, ctl: &Value, key: &str, value: &Value) -> io::Result<()> {
     if ctl.get("type").and_then(Value::as_str) == Some("button") {
         return Ok(());
@@ -72,7 +66,6 @@ pub fn save_prop(saved_path: &Path, ctl: &Value, key: &str, value: &Value) -> io
     crate::core::settings::save(saved_path, &saved)
 }
 
-/// Forget the values saved for one display, so the wallpaper's own defaults apply again.
 pub fn reset_props(saved_path: &Path) -> io::Result<()> {
     match fs::remove_file(saved_path) {
         Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(()),

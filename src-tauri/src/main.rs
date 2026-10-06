@@ -20,7 +20,6 @@ use app::*;
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    // Started as sarab.com, the console twin: answer in the terminal and never start the app.
     let exe = std::env::current_exe().unwrap_or_default();
     if exe
         .extension()
@@ -28,7 +27,6 @@ fn main() {
     {
         std::process::exit(cli::terminal::run(&args));
     }
-    // The installer's calls: done here, before the window or the hand-off to a running Sarab.
     if let Some(add) = match args.first().map(String::as_str) {
         Some("--add-to-path") => Some(true),
         Some("--remove-from-path") => Some(false),
@@ -39,17 +37,14 @@ fn main() {
         }
         return;
     }
-    // A mistyped command is answered in the terminal, instead of only in the log of the running copy.
     if let Err(e) = cli::parse(&args) {
         os::windows::tell_terminal(&format!("sarab: {e}"));
         std::process::exit(2);
     }
     let app = tauri::Builder::default()
-        // Must be the first plugin: a second `sarab ...` process hands its args to us and exits.
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
             let rest: Vec<String> = argv.into_iter().skip(1).collect();
             let app = app.clone();
-            // Not inline: this callback runs inside a window message, where building windows can re-enter.
             std::thread::spawn(move || handle_args(&app, &rest));
         }))
         .plugin(tauri_plugin_autostart::init(
@@ -91,7 +86,6 @@ fn main() {
             if win.label() != "main" {
                 return;
             }
-            // "Use system setting" follows Windows switching between light and dark while open.
             if let WindowEvent::ThemeChanged(_) = ev {
                 changed(win.app_handle());
             }
@@ -125,7 +119,6 @@ fn main() {
             }
         })
         .setup(move |app| {
-            // reqwest is built without a default TLS provider (the updater's choice); install it once for the whole app.
             let _ = rustls::crypto::ring::default_provider().install_default();
             let h = app.handle().clone();
             let _ = wallpaper::APP.set(h.clone());
@@ -148,7 +141,6 @@ fn main() {
             update::spawn(h.clone());
             let tick_app = h.clone();
             std::thread::spawn(move || loop {
-                // ponytail: 1 s poll for every probe; move lock/power/session to OS notifications if wakeups show up in profiles.
                 std::thread::sleep(std::time::Duration::from_millis(1000));
                 let a = tick_app.clone();
                 if tick_app
@@ -162,8 +154,6 @@ fn main() {
                     break;
                 }
             });
-            // Start with Windows is on by default: turned on once, at the first normal launch.
-            // After that the user's choice stands; a login launch never changes it.
             if !args.iter().any(|a| a == AUTOSTART_FLAG) {
                 let st = h.state::<Shared>();
                 let mut core = st.lock().unwrap();
@@ -184,7 +174,6 @@ fn main() {
         .expect("failed to start Sarab");
 
     app.run(|app, ev| match ev {
-        // Wallpaper windows come and go; the app lives in the tray until Quit.
         RunEvent::ExitRequested {
             api, code: None, ..
         } => api.prevent_exit(),

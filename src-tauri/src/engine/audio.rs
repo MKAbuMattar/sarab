@@ -1,14 +1,9 @@
-//! The audio feed for web wallpapers that ask for it ("api": ["audio"]): what the PC plays,
-//! captured by WASAPI loopback and sent as 128 frequency bins about 30 times a second.
-
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 pub const BINS: usize = 128;
-/// Samples per spectrum: about 21 ms at 48 kHz.
 const N: usize = 1024;
 
-/// In-place radix-2 FFT over real and imaginary parts; `re.len()` must be a power of two.
 fn fft(re: &mut [f32], im: &mut [f32]) {
     let n = re.len();
     let mut j = 0;
@@ -42,14 +37,11 @@ fn fft(re: &mut [f32], im: &mut [f32]) {
     }
 }
 
-/// 128 levels from 0 to 1 for the last `N` mono samples. Bins cover the lower quarter of the
-/// FFT (0 to 12 kHz at 48 kHz), two FFT bins each, where music has its energy.
 pub fn spectrum(samples: &[f32]) -> [f32; BINS] {
     let mut re = [0f32; N];
     let mut im = [0f32; N];
     let take = samples.len().min(N);
     for (i, s) in samples[samples.len() - take..].iter().enumerate() {
-        // Hann window, so a tone between bins does not smear across the whole spectrum.
         let w = 0.5 - 0.5 * (2.0 * std::f32::consts::PI * i as f32 / (N - 1) as f32).cos();
         re[i] = s * w;
     }
@@ -62,19 +54,16 @@ pub fn spectrum(samples: &[f32]) -> [f32; BINS] {
                 (re[i] * re[i] + im[i] * im[i]).sqrt()
             })
             .fold(0f32, f32::max);
-        // A full-scale tone reaches about N/4 after the window; a log scale fits music better.
         *o = ((1.0 + m).ln() / (1.0 + N as f32 / 4.0).ln()).clamp(0.0, 1.0);
     }
     out
 }
 
-/// Captures on its own thread while `wanted`.
 pub struct Feed {
     pub wanted: Arc<AtomicBool>,
 }
 
 impl Feed {
-    /// Start capturing. `send` runs on the capture thread with each new spectrum.
     pub fn start(send: impl Fn(&[f32; BINS]) + Send + 'static) -> Feed {
         let wanted = Arc::new(AtomicBool::new(true));
         let w = wanted.clone();
@@ -117,7 +106,6 @@ mod tests {
                 .unwrap()
                 .0
         };
-        // 3 kHz is FFT bin 64 of 1024 at 48 kHz, so output bin 32.
         let s = spectrum(&tone(3000.0));
         assert_eq!(peak(&s), 32);
         assert!(s[32] > 0.8, "a loud tone is near the top: {}", s[32]);

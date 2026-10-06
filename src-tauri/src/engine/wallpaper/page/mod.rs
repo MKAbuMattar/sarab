@@ -1,5 +1,3 @@
-//! Talking to a playing page: calls, Customize values, volume and frame rate, feeds, video sync, mouse.
-
 pub(in crate::engine::wallpaper) use super::*;
 
 mod bridge;

@@ -1,5 +1,3 @@
-//! The update notification, with buttons.
-
 use super::*;
 
 pub(in crate::os::windows) fn xml_escape(s: &str) -> String {
@@ -9,8 +7,6 @@ pub(in crate::os::windows) fn xml_escape(s: &str) -> String {
         .replace('"', "&quot;")
 }
 
-/// The update toast: a reminder, so it stays on screen until answered, with two buttons. A click
-/// on the toast itself sends "open"; the buttons send "install" and "later".
 pub fn update_toast_xml(title: &str, body: &str, install: &str, later: &str) -> String {
     format!(
         concat!(
@@ -26,8 +22,6 @@ pub fn update_toast_xml(title: &str, body: &str, install: &str, later: &str) -> 
     )
 }
 
-/// Show `xml` as a toast from `app_id` and call `on_answer` with the arguments of whatever the
-/// user clicked. The toast is kept alive here, or Windows drops its click events.
 pub fn show_toast(
     app_id: &str,
     xml: &str,

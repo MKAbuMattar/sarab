@@ -63,30 +63,27 @@ sarab/
 │  ├─ capabilities/main.json        # commands allowed for the "main" (settings) window only
 │  └─ src/
 │     ├─ main.rs                    # start-up: module list and main()
-│     ├─ app/                       # the running app, one file per job
-│     │  ├─ dispatch.rs             # commands from CLI, tray, window → core
-│     │  ├─ commands.rs             # settings window commands (main window only)
-│     │  ├─ window.rs  tray.rs  i18n.rs  settings_window.rs
-│     ├─ cli/
-│     │  ├─ mod.rs                  # argv → Command enum
-│     │  └─ terminal.rs             # sarab.com, the console twin: answers in the terminal
-│     ├─ core/
-│     │  ├─ settings.rs             # Settings + Layout structs, atomic JSON load/save
-│     │  ├─ pause.rs                # Signals → decisions (pure) + tests
-│     │  ├─ update.rs               # update checks, notice, install
-│     │  └─ support.rs              # logs export, settings reset
+│     ├─ app/                       # dispatch.rs, window.rs, tray.rs, i18n.rs
+│     │  └─ commands/               # settings window commands: wallpapers, displays, preferences, updates, system
+│     ├─ cli/                       # mod.rs (argv → Command), terminal.rs (sarab.com)
+│     ├─ common/                    # paths.rs, log.rs, threads.rs (on_main, later)
+│     ├─ core/                      # settings.rs, pause.rs (pure + tests), update.rs, support.rs
+│     ├─ data/                      # presets.json (pinned by size and SHA-256)
 │     ├─ engine/
-│     │  ├─ wallpaper/              # core state (mod.rs) + one file per job:
-│     │  │                          #   apply, tick, page (JS bridge), sync, cycle, screensaver,
-│     │  │                          #   status, capture, props, playback, unload, span, app, …
+│     │  ├─ wallpaper/              # core state (mod.rs) and:
+│     │  │  ├─ display/             #   apply, span, app wallpapers, urls, labels
+│     │  │  ├─ page/                #   bridge (host → page), props, playback, feeds, sync, mouse
+│     │  │  ├─ schedule/            #   tick, cycle, screensaver, unload, cpu
+│     │  │  └─ output/              #   status, capture
 │     │  ├─ audio.rs                # loopback capture, FFT
-│     │  └─ feeds.rs                # sysinfo, now-playing → JS calls
-│     ├─ library/                   # types (mod.rs); scan, add, package (zip), props, edit,
-│     │                             # convert (ffmpeg), details, folder, presets, wallpaper_engine
+│     │  └─ feeds.rs                # sysinfo, now-playing
+│     ├─ library/                   # types (mod.rs), presets.rs
+│     │  ├─ import/                 # scan, add, package (zip), convert (ffmpeg), wallpaper_engine
+│     │  └─ manage/                 # edit, details, folder, props
 │     ├─ scripts/
 │     │  └─ inject.js               # rAF throttle, freeze/unfreeze, video sync, WE page API (include_str!)
 │     └─ os/
-│        ├─ windows/                # one file per API area: desktop, probes, picture, audio, toast, …
+│        ├─ windows/                # desktop/, system/, media/, shell/
 │        ├─ macos.rs                # desktop-level window + probes
 │        ├─ x11.rs                  # desktop-type window + probes
 │        └─ wayland.rs              # layer-shell + foreign-toplevel + probes

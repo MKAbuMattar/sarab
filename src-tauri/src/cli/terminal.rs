@@ -1,9 +1,3 @@
-//! sarab.com, the console twin of sarab.exe. The installer writes it next to sarab.exe (see
-//! `os::windows::set_on_path`). Terminals pick .com before .exe, and wait for a console program,
-//! so `sarab status` prints its answer before the prompt comes back. This side never starts the
-//! app itself: it answers `status` from status.json and hands every other command to sarab.exe,
-//! which passes it to the running Sarab.
-
 use crate::cli::{self, Command};
 use crate::os::windows as os;
 use serde_json::Value;
@@ -39,7 +33,6 @@ fn status(exe: &std::path::Path, json: bool) -> i32 {
         eprintln!("Sarab is not running. Start it with: sarab");
         return 1;
     }
-    // Ask the running copy to refresh, so page reports are current, then wait briefly for it.
     let before = std::fs::metadata(&file).and_then(|m| m.modified()).ok();
     if std::process::Command::new(exe)
         .arg("status")
@@ -65,7 +58,6 @@ fn status(exe: &std::path::Path, json: bool) -> i32 {
     0
 }
 
-/// The status, one line for Sarab and one per display, for people rather than scripts.
 pub fn status_text(v: &Value, text: impl Fn(&str) -> String) -> String {
     let manual = match v["manual"].as_bool() {
         Some(true) => ", paused by you",

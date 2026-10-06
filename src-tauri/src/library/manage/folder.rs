@@ -1,10 +1,5 @@
-//! Move the whole library to another folder or drive.
-
 use super::*;
 
-/// Move every package from the library at `from` into `to`. Refuses a folder inside the
-/// library (or the library inside it) and never overwrites: a name taken in `to` stops the move
-/// before anything is touched. A rename is used where it can be, a copy across drives.
 pub fn move_library(from: &Path, to: &Path) -> Result<usize, String> {
     let canon = |p: &Path| fs::canonicalize(p).unwrap_or_else(|_| p.to_path_buf());
     fs::create_dir_all(to).map_err(|e| e.to_string())?;

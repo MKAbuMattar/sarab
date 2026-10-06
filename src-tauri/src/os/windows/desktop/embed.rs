@@ -1,5 +1,3 @@
-//! Wallpaper windows behind the desktop icons (Progman and WorkerW, classic and 24H2).
-
 use super::*;
 
 #[derive(Clone, Copy, Default, PartialEq, Debug)]
@@ -7,7 +5,6 @@ pub struct Desktop {
     pub progman: isize,
     pub workerw: isize,
     pub defview: isize,
-    /// Win11 24H2+: Progman has WS_EX_NOREDIRECTIONBITMAP and hosts DefView and WorkerW as children.
     pub raised: bool,
 }
 
@@ -24,7 +21,6 @@ pub fn find_desktop() -> Option<Desktop> {
         let progman = FindWindowW(w!("Progman"), PCWSTR::null()).ok()?;
         let raised =
             (GetWindowLongPtrW(progman, GWL_EXSTYLE) as u32 & WS_EX_NOREDIRECTIONBITMAP.0) != 0;
-        // 0x052C asks Progman to spawn the WorkerW behind the icons. Harmless if it already exists.
         SendMessageTimeoutW(
             progman,
             0x052C,
@@ -45,7 +41,6 @@ pub fn find_desktop() -> Option<Desktop> {
                 unsafe { FindWindowExW(Some(top), None, w!("SHELLDLL_DefView"), PCWSTR::null()) }
             {
                 f.defview = raw(dv);
-                // Classic layout: the WorkerW we want is the top-level sibling after the one holding DefView.
                 f.workerw =
                     unsafe { FindWindowExW(None, Some(top), w!("WorkerW"), PCWSTR::null()) }
                         .map(raw)
@@ -76,21 +71,18 @@ pub fn desktop_alive(d: &Desktop) -> bool {
     unsafe { IsWindow(Some(h(d.progman))).as_bool() && IsWindow(Some(h(d.workerw))).as_bool() }
 }
 
-/// Parent `hwnd` under the desktop icons and size it to `r` (screen coordinates, physical pixels).
 pub fn attach(d: &Desktop, hwnd: HWND, r: RECT) -> windows::core::Result<()> {
     unsafe {
         let style = GetWindowLongPtrW(hwnd, GWL_STYLE) as u32;
         let style = (style | WS_CHILD.0) & !(WS_POPUP.0 | WS_CAPTION.0 | WS_THICKFRAME.0);
         SetWindowLongPtrW(hwnd, GWL_STYLE, style as isize);
         let ex = GetWindowLongPtrW(hwnd, GWL_EXSTYLE) as u32;
-        // Tool window: no taskbar button, no alt-tab.
         SetWindowLongPtrW(
             hwnd,
             GWL_EXSTYLE,
             ((ex | WS_EX_TOOLWINDOW.0) & !WS_EX_APPWINDOW.0) as isize,
         );
         let parent = if d.raised {
-            // Raised desktop (24H2+): Microsoft's guidance is a layered child z-ordered between DefView and WorkerW.
             let ex = GetWindowLongPtrW(hwnd, GWL_EXSTYLE) as u32;
             SetWindowLongPtrW(hwnd, GWL_EXSTYLE, (ex | WS_EX_LAYERED.0) as isize);
             SetLayeredWindowAttributes(
@@ -124,7 +116,6 @@ pub fn attach(d: &Desktop, hwnd: HWND, r: RECT) -> windows::core::Result<()> {
             flags,
         )?;
         if d.raised {
-            // WorkerW must stay the bottom child or it paints over us.
             SetWindowPos(
                 h(d.workerw),
                 Some(HWND_BOTTOM),
@@ -139,7 +130,6 @@ pub fn attach(d: &Desktop, hwnd: HWND, r: RECT) -> windows::core::Result<()> {
     }
 }
 
-/// Children of Progman, top to bottom.
 pub(in crate::os::windows) fn children(parent: HWND) -> Vec<isize> {
     let mut out = vec![];
     let mut c = unsafe { GetWindow(parent, GW_CHILD) };
@@ -153,9 +143,6 @@ pub(in crate::os::windows) fn children(parent: HWND) -> Vec<isize> {
     out
 }
 
-/// Raised desktop: keep every wallpaper between DefView (icons) and WorkerW (the plain
-/// Windows wallpaper). If Explorer ever re-stacks Progman's children, WorkerW would paint
-/// over us and the user would see the Windows wallpaper. Returns true when it had to repair.
 pub fn ensure_order(d: &Desktop, wins: &[HWND]) -> bool {
     if !d.raised {
         return false;
@@ -208,8 +195,6 @@ pub fn show(hwnd: HWND, visible: bool) {
     }
 }
 
-/// Repaint the desktop so no stale wallpaper frame stays behind. Skipped on the raised desktop,
-/// where it would destroy the WorkerW.
 pub fn refresh_desktop(d: Option<&Desktop>) {
     if d.is_some_and(|d| d.raised) {
         return;

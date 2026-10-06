@@ -1,9 +1,5 @@
-//! Rest while other apps keep the CPU busy.
-
 use super::*;
 
-/// Are other apps keeping the CPU busy? Sarab's own processes are taken out of the reading,
-/// so a heavy wallpaper never pauses itself. Measured only while the setting is on.
 pub(in crate::engine::wallpaper) fn cpu_busy(core: &mut Core) -> bool {
     let limit = core.settings.pause_cpu;
     if limit == 0 {

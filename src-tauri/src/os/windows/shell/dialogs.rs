@@ -1,9 +1,5 @@
-//! The Windows folder picker.
-
 use super::*;
 
-/// The Windows folder picker. None when cancelled. Runs its own message loop, so call it from
-/// a thread that may block.
 pub fn pick_folder(
     owner: Option<HWND>,
     start: Option<&std::path::Path>,

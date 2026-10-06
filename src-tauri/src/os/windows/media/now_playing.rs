@@ -1,10 +1,5 @@
-//! What is playing, from Windows media controls.
-
 use super::*;
 
-/// The track Windows media controls report now (Spotify, a browser tab, the Media Player app),
-/// as title, artist, album, album artist and cover art bytes. None when nothing plays.
-/// Blocks on WinRT calls, so call it off the main thread.
 pub fn now_playing() -> Option<(String, String, String, String, Vec<u8>)> {
     use windows::Media::Control::GlobalSystemMediaTransportControlsSessionManager as Manager;
     use windows::Storage::Streams::DataReader;

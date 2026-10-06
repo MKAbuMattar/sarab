@@ -1,5 +1,3 @@
-//! Sound and media: other apps playing, loopback capture, what is playing.
-
 pub(in crate::os::windows) use super::*;
 
 mod audio;

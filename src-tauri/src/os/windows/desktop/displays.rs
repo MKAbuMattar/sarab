@@ -1,5 +1,3 @@
-//! The displays Windows reports, in desktop coordinates.
-
 use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -9,7 +7,6 @@ pub struct Monitor {
     pub work: RECT,
 }
 
-/// Displays sorted left to right, then top to bottom, so `--display 0` is the leftmost.
 pub fn monitors() -> Vec<Monitor> {
     unsafe extern "system" fn cb(h: HMONITOR, _: HDC, _: *mut RECT, out: LPARAM) -> BOOL {
         let mut mi = MONITORINFOEXW::default();

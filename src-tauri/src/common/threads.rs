@@ -1,9 +1,6 @@
-//! Run on the main thread, or after the current core lock is released.
-
 use crate::engine::wallpaper::{Core, Shared};
 use tauri::{AppHandle, Manager};
 
-/// Run `f` on the main thread and wait for its result. Safe to call from the main thread too.
 pub fn on_main<T: Send + 'static>(
     app: &AppHandle,
     f: impl FnOnce(&AppHandle) -> T + Send + 'static,
@@ -17,8 +14,6 @@ pub fn on_main<T: Send + 'static>(
     rx.recv().expect("main thread task dropped")
 }
 
-/// Queue `f` behind whatever the main thread is doing now. WebView2 callbacks can fire inside
-/// nested message loops while the core lock is held; going through the event loop avoids re-entry.
 pub fn later(app: &AppHandle, f: impl FnOnce(&AppHandle, &mut Core) + Send + 'static) {
     let a = app.clone();
     std::thread::spawn(move || {

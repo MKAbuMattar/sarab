@@ -1,5 +1,3 @@
-//! Windows shell features: thumbnails, the folder picker, notifications, the Recycle Bin, the terminal.
-
 pub(in crate::os::windows) use super::*;
 
 mod images;

@@ -1,8 +1,5 @@
-//! One wallpaper stretched across every display.
-
 use super::*;
 
-/// The rectangle that holds every display, in screen coordinates.
 pub(in crate::engine::wallpaper) fn span_rect(rects: &[RECT]) -> RECT {
     rects
         .iter()
@@ -14,8 +11,6 @@ pub(in crate::engine::wallpaper) fn span_rect(rects: &[RECT]) -> RECT {
         })
 }
 
-/// A spanned wallpaper plays while any display can play it, and otherwise rests for the
-/// reason the first display gives.
 pub(in crate::engine::wallpaper) fn span_state(decisions: &[(State, Reason)]) -> (State, Reason) {
     decisions
         .iter()
@@ -25,7 +20,6 @@ pub(in crate::engine::wallpaper) fn span_state(decisions: &[(State, Reason)]) ->
         .unwrap_or((State::Play, Reason::None))
 }
 
-/// Is display `i` drawn by the spanning window on display 0 rather than its own?
 pub(in crate::engine::wallpaper) fn spanned(core: &Core, i: usize) -> bool {
     core.settings.span && i > 0
 }

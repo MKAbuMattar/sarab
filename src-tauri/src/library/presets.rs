@@ -1,7 +1,3 @@
-//! Built-in wallpapers. Web scenes ship inside the installer (read-only resources). The 4K videos
-//! are public-domain NASA footage, too large to ship, so Sarab downloads one only when the user
-//! asks and keeps it only if its size and SHA-256 match the values pinned here.
-
 use crate::engine::wallpaper::{later, library_dir, log, Shared};
 use crate::library::{self, Kind, Manifest};
 use serde::{Deserialize, Serialize};
@@ -34,14 +30,12 @@ pub fn catalog() -> Vec<Video> {
     serde_json::from_str(include_str!("../data/presets.json")).expect("presets.json is valid")
 }
 
-/// Download progress per preset id, 0 to 100.
 pub type Downloads = Mutex<BTreeMap<String, u8>>;
 
 fn changed(app: &AppHandle) {
     let _ = app.emit_to("main", "changed", ());
 }
 
-/// The catalog with each entry's state, for the settings window.
 pub fn to_json(app: &AppHandle, lib: &[library::Wallpaper]) -> Value {
     let downloads = app.state::<Downloads>().lock().unwrap().clone();
     let list: Vec<Value> = catalog()
@@ -112,7 +106,6 @@ async fn fetch(app: &AppHandle, v: &Video, dir: &std::path::Path) -> Result<(), 
     let mut shown: u8 = 0;
     while let Some(chunk) = resp.chunk().await.map_err(|e| e.to_string())? {
         got += chunk.len() as u64;
-        // The pinned size is the most a server may send; anything more is not the expected file.
         if got > v.size {
             return Err("the server sent more data than the pinned file size".into());
         }
@@ -151,7 +144,6 @@ fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-/// A download is kept only when both its size and its SHA-256 match the pinned values.
 fn verify(v: &Video, got: u64, digest: &str) -> Result<(), String> {
     if got != v.size || !digest.eq_ignore_ascii_case(&v.sha256) {
         return Err(format!(
@@ -167,7 +159,6 @@ mod tests {
 
     #[test]
     fn sha256_known_answer() {
-        // FIPS 180-2 test vector, so a sha2 upgrade that changes output fails here, not in a user's download.
         assert_eq!(
             hex(&Sha256::digest(b"abc")),
             "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"

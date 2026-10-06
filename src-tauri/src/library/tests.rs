@@ -81,9 +81,7 @@ fn package_zip_round_trip() {
     let scanned = scan(&lib);
     assert_eq!(scanned.len(), 1);
     assert_eq!(scanned[0].info, w.info);
-    // Unknown types are rejected rather than guessed.
     assert!(serde_json::from_str::<Manifest>(r#"{"type":"unity"}"#).is_err());
-    // A folder without sarab.json is not a package.
     let other = d.join("other.zip");
     make_zip(&other, &[("index.html", "x")]);
     assert!(import_zip(&lib, &other, MAX_UNPACKED)
@@ -99,7 +97,6 @@ fn property_merge_and_coerce() {
     let w = read(&d).unwrap();
     let saved = d.join("saved.json");
     let p = props(&w, &saved);
-    // File order is kept (serde_json preserve_order), so the UI shows controls as authored.
     assert_eq!(
         p.keys().collect::<Vec<_>>(),
         vec!["zeta", "alpha", "pick", "go"]
@@ -257,7 +254,6 @@ fn move_library_moves_every_package() {
         "only packages move"
     );
 
-    // Into itself, and onto a taken name, are refused without moving anything.
     assert!(move_library(&to, &to.join("inner")).is_err());
     fs::create_dir_all(from.join("one")).unwrap();
     fs::write(
@@ -273,7 +269,6 @@ fn move_library_moves_every_package() {
 fn export_round_trip() {
     let lib = tmp("export-lib");
     let out = tmp("export-out");
-    // A web package with a subfolder and properties.
     let pkg = lib.join("scene");
     fs::create_dir_all(pkg.join("img")).unwrap();
     fs::write(pkg.join(INFO), r#"{"title":"Scene: night/day","type":"web","file":"index.html","category":"city","tags":["night"]}"#).unwrap();
@@ -295,7 +290,6 @@ fn export_round_trip() {
         "png"
     );
 
-    // A video added from elsewhere travels inside the zip.
     let video = out.join("clip.mp4");
     fs::write(&video, "video bytes").unwrap();
     let ext = add(&lib, &[], video.to_str().unwrap()).unwrap();
@@ -376,7 +370,7 @@ fn reset_props_restores_defaults() {
     assert_eq!(props(&w, &saved)["speed"]["value"], serde_json::json!(4.0));
     reset_props(&saved).unwrap();
     assert_eq!(props(&w, &saved)["speed"]["value"], serde_json::json!(1));
-    reset_props(&saved).unwrap(); // nothing saved: still fine
+    reset_props(&saved).unwrap();
 }
 
 #[test]

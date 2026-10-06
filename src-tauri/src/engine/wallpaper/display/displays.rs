@@ -1,8 +1,5 @@
-//! Follow displays as they are plugged in, removed or rearranged.
-
 use super::*;
 
-/// Reconcile displays with the OS: new monitors, removed monitors, Explorer restarts.
 pub fn sync_displays(app: &AppHandle, core: &mut Core) {
     let mons = os::monitors();
     let desk_ok = core.desktop.is_some_and(|d| os::desktop_alive(&d));

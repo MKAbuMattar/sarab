@@ -1,8 +1,5 @@
-//! Edit a wallpaper's title, description, author, category, tags and thumbnail.
-
 use super::*;
 
-/// Record `name` (a file in the package) as its thumbnail in sarab.json.
 pub fn set_thumbnail(dir: &Path, name: &str) -> Result<(), String> {
     let mut info: Manifest =
         serde_json::from_slice(&fs::read(dir.join(INFO)).map_err(|e| e.to_string())?)
@@ -11,7 +8,6 @@ pub fn set_thumbnail(dir: &Path, name: &str) -> Result<(), String> {
     crate::core::settings::save(&dir.join(INFO), &info).map_err(|e| e.to_string())
 }
 
-/// What the edit dialog sends.
 #[derive(Deserialize, Debug, Default)]
 #[serde(default)]
 pub struct Edit {
@@ -27,8 +23,6 @@ pub(in crate::library) fn optional(s: &str) -> Option<String> {
     (!s.is_empty()).then(|| s.to_string())
 }
 
-/// Check an edit and write it to the wallpaper's sarab.json. Limits follow the editors other
-/// wallpaper apps ship: a title of 1 to 100 characters, up to 5 tags of up to 20 each.
 pub fn edit_info(dir: &Path, e: Edit) -> Result<Manifest, String> {
     let mut info: Manifest =
         serde_json::from_slice(&fs::read(dir.join(INFO)).map_err(|e| e.to_string())?)

@@ -1,5 +1,3 @@
-//! Changing what is in the library: edit, details, moving the folder, properties.json.
-
 pub(in crate::library) use super::*;
 
 mod edit;

@@ -1,9 +1,5 @@
-//! Sarab's own screensaver after the PC sits idle.
-
 use super::*;
 
-/// Time for the screensaver: it is on, the user has been away long enough, and nothing that
-/// keeps a screen awake on purpose is going on (a full-screen app, or sound from another app).
 pub(in crate::engine::wallpaper) fn screensaver_due(
     minutes: u32,
     idle_ms: u32,
@@ -12,7 +8,6 @@ pub(in crate::engine::wallpaper) fn screensaver_due(
     minutes > 0 && !busy && u64::from(idle_ms) >= u64::from(minutes) * 60_000
 }
 
-/// Open the screensaver: one topmost borderless window per display, outside the desktop.
 pub(in crate::engine::wallpaper) fn start_screensaver(
     app: &AppHandle,
     core: &mut Core,
@@ -74,7 +69,6 @@ pub(in crate::engine::wallpaper) fn stop_screensaver(app: &AppHandle, core: &mut
     }
 }
 
-/// Start the screensaver when due; end it on any input.
 pub(in crate::engine::wallpaper) fn run_screensaver(
     app: &AppHandle,
     core: &mut Core,

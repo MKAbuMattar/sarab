@@ -1,5 +1,3 @@
-//! A wallpaper's Customize values, saved per display.
-
 use super::*;
 
 pub fn set_prop(
@@ -39,7 +37,6 @@ pub fn set_prop(
     Ok(v)
 }
 
-/// Back to the wallpaper's own defaults on display `i`, and tell the page.
 pub fn reset_props(app: &AppHandle, core: &mut Core, i: usize) -> Result<(), String> {
     let id = core.displays[i]
         .wallpaper

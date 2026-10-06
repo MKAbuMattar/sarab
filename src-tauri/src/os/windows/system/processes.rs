@@ -1,9 +1,5 @@
-//! Sarab's own process tree, CPU times, and whether a pid is Sarab.
-
 use super::*;
 
-/// Processes that belong to Sarab: this one and every process it started, at any depth
-/// (WebView2's browser, renderers and its audio service).
 pub(in crate::os::windows) fn own_processes() -> std::collections::HashSet<u32> {
     use windows::Win32::System::Diagnostics::ToolHelp::{
         CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W,
@@ -26,8 +22,6 @@ pub(in crate::os::windows) fn own_processes() -> std::collections::HashSet<u32> 
     }
     let me = unsafe { GetCurrentProcessId() };
     let mut own = std::collections::HashSet::from([me]);
-    // A few passes reach grandchildren; a PID reused after its parent exited never links to us
-    // because the chain stops at a PID that is not ours.
     for _ in 0..4 {
         for (&pid, &ppid) in &parent {
             if own.contains(&ppid) {
@@ -42,7 +36,6 @@ pub(in crate::os::windows) fn filetime(f: windows::Win32::Foundation::FILETIME) 
     (u64::from(f.dwHighDateTime) << 32) | u64::from(f.dwLowDateTime)
 }
 
-/// Idle and busy CPU time since boot, in 100 ns units, summed over every core.
 pub fn cpu_times() -> (u64, u64) {
     use windows::Win32::Foundation::FILETIME;
     use windows::Win32::System::Threading::GetSystemTimes;
@@ -54,12 +47,10 @@ pub fn cpu_times() -> (u64, u64) {
     if unsafe { GetSystemTimes(Some(&mut idle), Some(&mut kernel), Some(&mut user)) }.is_err() {
         return (0, 0);
     }
-    // Kernel time includes idle time.
     let idle = filetime(idle);
     (idle, filetime(kernel) + filetime(user) - idle)
 }
 
-/// CPU time used by Sarab and every process it started (WebView2 included), in 100 ns units.
 pub fn own_cpu_time() -> u64 {
     use windows::Win32::Foundation::FILETIME;
     use windows::Win32::System::Threading::GetProcessTimes;
@@ -80,7 +71,6 @@ pub fn own_cpu_time() -> u64 {
         .sum()
 }
 
-/// Is `pid` a running Sarab (and not some other program that got the same number later)?
 pub fn is_sarab(pid: u32) -> bool {
     use windows::Win32::System::Threading::{QueryFullProcessImageNameW, PROCESS_NAME_WIN32};
     unsafe {

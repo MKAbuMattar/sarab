@@ -1,5 +1,3 @@
-//! PNG thumbnails through WIC and the shell.
-
 use super::*;
 
 pub(in crate::os::windows) fn wic() -> windows::core::Result<IWICImagingFactory> {
@@ -8,7 +6,6 @@ pub(in crate::os::windows) fn wic() -> windows::core::Result<IWICImagingFactory>
     unsafe { CoCreateInstance(&CLSID_WICImagingFactory, None, CLSCTX_INPROC_SERVER) }
 }
 
-/// Write `source` as a PNG no wider than `max` pixels, keeping its shape.
 pub(in crate::os::windows) fn save_png(
     f: &IWICImagingFactory,
     source: &IWICBitmapSource,
@@ -54,7 +51,6 @@ pub(in crate::os::windows) fn save_png(
     }
 }
 
-/// The Explorer thumbnail of `src` (a video, GIF or picture) saved as a PNG at `dest`.
 pub fn shell_thumbnail(
     src: &std::path::Path,
     dest: &std::path::Path,
@@ -74,7 +70,6 @@ pub fn shell_thumbnail(
                 SHCreateItemFromParsingName(&HSTRING::from(src.as_os_str()), None)?;
             let hbm = item.GetImage(SIZE { cx: size, cy: size }, SIIGBF_BIGGERSIZEOK)?;
             let f = wic()?;
-            // Thumbnails are opaque; some providers leave the alpha byte at 0.
             let bmp = f.CreateBitmapFromHBITMAP(hbm, HPALETTE::default(), WICBitmapIgnoreAlpha);
             let _ = DeleteObject(hbm.into());
             save_png(&f, &bmp?.cast()?, dest, size as u32)
@@ -83,7 +78,6 @@ pub fn shell_thumbnail(
     run().map_err(|e| format!("thumbnail of {}: {e}", src.display()))
 }
 
-/// Re-save the PNG at `src` as `dest`, no wider than `max` pixels.
 pub fn shrink_png(src: &std::path::Path, dest: &std::path::Path, max: u32) -> Result<(), String> {
     use windows::core::Interface;
     use windows::Win32::Foundation::GENERIC_READ;

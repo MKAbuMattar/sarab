@@ -1,8 +1,5 @@
-//! Videos WebView2 cannot play, turned into MP4 with ffmpeg.
-
 use super::*;
 
-/// Formats WebView2 cannot play. Sarab turns them into MP4 with ffmpeg, when it is installed.
 pub fn needs_convert(target: &str) -> bool {
     !target.contains("://")
         && Path::new(target)
@@ -16,9 +13,6 @@ pub fn needs_convert(target: &str) -> bool {
             })
 }
 
-/// Turn `src` into an MP4 under the library's `converted` folder, in a folder named after the
-/// source path, so adding it again reuses the first result. Needs ffmpeg on PATH. Written to a
-/// .part file first, so a stopped run never leaves a broken video behind.
 pub fn convert(lib: &Path, src: &Path) -> Result<PathBuf, String> {
     let abs = fs::canonicalize(src).map_err(|e| format!("{}: {e}", src.display()))?;
     let stem = src
@@ -38,7 +32,6 @@ pub fn convert(lib: &Path, src: &Path) -> Result<PathBuf, String> {
     let mut cmd = std::process::Command::new("ffmpeg");
     cmd.args(["-y", "-v", "error", "-i"])
         .arg(&abs)
-        // H.264 needs even sizes; faststart lets playback begin before the whole file is read.
         .args([
             "-vf",
             "scale=trunc(iw/2)*2:trunc(ih/2)*2",
@@ -63,7 +56,7 @@ pub fn convert(lib: &Path, src: &Path) -> Result<PathBuf, String> {
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
-        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW: no console flashes up
+        cmd.creation_flags(0x0800_0000);
     }
     let r = cmd.output().map_err(|e| match e.kind() {
         io::ErrorKind::NotFound => {

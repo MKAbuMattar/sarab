@@ -1,6 +1,3 @@
-// Library filter and sort. Kept apart from app.js so scripts/check_filters.mjs can test it.
-// `label(key)` turns a category key into the shown name, so a search in Arabic finds it too.
-// `lang` picks a package's translated title when it has one.
 function shownTitle(w, lang) {
   return (lang && w.info.titles?.[lang]) || w.info.title || w.id;
 }

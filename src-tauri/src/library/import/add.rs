@@ -1,5 +1,3 @@
-//! Add a file, folder or web address to the library.
-
 use super::*;
 
 pub fn kind_for(target: &str) -> Option<Kind> {
@@ -45,10 +43,8 @@ pub(in crate::library) fn new_dir(lib: &Path, title: &str) -> io::Result<PathBuf
     Ok(dir)
 }
 
-/// Add a file, a folder, or a URL. Files and URLs are referenced where they are; folders are copied in.
 pub fn add(lib: &Path, existing: &[Wallpaper], target: &str) -> Result<Wallpaper, String> {
     use crate::library::import::wallpaper_engine::{self as we, PROJECT};
-    // A Wallpaper Engine project.json stands for its folder.
     let parent;
     let target = match Path::new(target).file_name() {
         Some(n) if n.eq_ignore_ascii_case(PROJECT) => {
@@ -62,8 +58,6 @@ pub fn add(lib: &Path, existing: &[Wallpaper], target: &str) -> Result<Wallpaper
     };
     let as_path = Path::new(target);
     if as_path.is_dir() {
-        // A Wallpaper Engine folder is converted on the way in. The original is never changed:
-        // the new sarab.json goes into the library copy.
         let converted = if read(as_path).is_none() && as_path.join(PROJECT).is_file() {
             Some(we::convert(as_path)?)
         } else {
@@ -75,7 +69,6 @@ pub fn add(lib: &Path, existing: &[Wallpaper], target: &str) -> Result<Wallpaper
         if converted.is_none() && as_path.starts_with(lib) {
             return read(as_path).ok_or_else(|| "unreadable".into());
         }
-        // The copy is named after the source path, so adding the same folder again reuses it.
         let src = fs::canonicalize(as_path).map_err(|e| e.to_string())?;
         let title: String = as_path
             .file_name()
@@ -146,13 +139,11 @@ pub fn add(lib: &Path, existing: &[Wallpaper], target: &str) -> Result<Wallpaper
     read(&dir).ok_or_else(|| "write failed".into())
 }
 
-/// `canonicalize` on Windows returns `\\?\C:\...`; strip it so paths stay readable and URL friendly.
 pub(in crate::library) fn dunce_str(p: &Path) -> String {
     let s = p.to_string_lossy();
     s.strip_prefix(r"\\?\").unwrap_or(&s).to_string()
 }
 
-/// FNV-1a: a hash that stays the same across Rust releases, unlike DefaultHasher.
 pub(in crate::library) fn fnv(bytes: &[u8]) -> u32 {
     bytes.iter().fold(0x811c9dc5u32, |h, b| {
         (h ^ *b as u32).wrapping_mul(0x0100_0193)

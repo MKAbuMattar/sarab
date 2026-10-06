@@ -10,7 +10,6 @@ pub enum Command {
         display: Option<usize>,
     },
     Pause,
-    /// Force play, ignoring every pause rule, until `resume`.
     Play,
     Resume,
     Toggle,
@@ -24,13 +23,10 @@ pub enum Command {
     Import(String),
     Ui,
     Quit,
-    /// Write status.json, including what each page reports about itself.
     Status,
-    /// Download a 4K preset by id.
     Preset(String),
     CheckUpdate,
     InstallUpdate,
-    /// Save a display's wallpaper as a PNG at this full path.
     Screenshot {
         path: String,
         display: Option<usize>,
@@ -39,7 +35,6 @@ pub enum Command {
 
 pub const USAGE: &str = "usage: sarab [set <file|folder|url> | close | pause | play | resume | toggle | prop <key>=<value> | volume <0-100> | next | import <zip> | ui | status | preset <id> | check-update | install-update | screenshot <file.png> | quit] [--display N]";
 
-/// `args` excludes the program name. No args means "just start" (None).
 pub fn parse(args: &[String]) -> Result<Option<Command>, String> {
     let mut display = None;
     let mut rest = vec![];
@@ -52,7 +47,6 @@ pub fn parse(args: &[String]) -> Result<Option<Command>, String> {
                     .map_err(|_| format!("bad display: {n}"))?,
             );
         } else if !a.starts_with("--") || a.len() == 2 {
-            // Ignore unknown --flags: autostart and the OS may pass their own.
             rest.push(a.as_str());
         }
     }

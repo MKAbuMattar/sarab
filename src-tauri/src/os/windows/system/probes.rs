@@ -1,5 +1,3 @@
-//! What the pause rules look at: covering windows, the foreground app, lock and screensaver, idle time.
-
 use super::*;
 
 pub(in crate::os::windows) const DESKTOP_CLASSES: [&str; 5] = [
@@ -52,9 +50,6 @@ pub(in crate::os::windows) fn frame(hwnd: HWND) -> Option<RECT> {
     Some(r)
 }
 
-/// Whether windows together hide `area`: every point of a 12 by 12 grid lies inside one of
-/// them. Two windows snapped side by side cover a display as well as one maximized window does.
-// ponytail: grid sampling, so a gap narrower than a grid cell (area/12) still counts as covered.
 pub(in crate::os::windows) fn covered(area: &RECT, wins: &[RECT]) -> bool {
     const N: i32 = 12;
     let (w, h) = (area.right - area.left, area.bottom - area.top);
@@ -71,7 +66,6 @@ pub(in crate::os::windows) fn covered(area: &RECT, wins: &[RECT]) -> bool {
     })
 }
 
-/// Visible, uncloaked, unminimized top-level windows of other processes, with their frame rects.
 pub(in crate::os::windows) fn app_windows() -> Vec<(HWND, RECT)> {
     unsafe extern "system" fn cb(hwnd: HWND, out: LPARAM) -> BOOL {
         let list = unsafe { &mut *(out.0 as *mut Vec<(HWND, RECT)>) };
@@ -83,7 +77,6 @@ pub(in crate::os::windows) fn app_windows() -> Vec<(HWND, RECT)> {
                 return true.into();
             }
             let ex = GetWindowLongPtrW(hwnd, GWL_EXSTYLE) as u32;
-            // Click-through overlays and tool windows never count as covering the desktop.
             if ex & (WS_EX_TRANSPARENT.0 | WS_EX_TOOLWINDOW.0) != 0 {
                 return true.into();
             }
@@ -114,7 +107,6 @@ pub fn signals(mons: &[Monitor]) -> Signals {
 
     let fg = unsafe { GetForegroundWindow() };
     let fg_ok = !fg.is_invalid();
-    // Exclusive-fullscreen games may not report a normal frame; the shell still knows.
     if let Ok(state) = unsafe { SHQueryUserNotificationState() } {
         if fg_ok && (state == QUNS_RUNNING_D3D_FULL_SCREEN || state == QUNS_PRESENTATION_MODE) {
             let hm = unsafe { MonitorFromWindow(fg, MONITOR_DEFAULTTONEAREST) };
@@ -146,18 +138,15 @@ pub fn signals(mons: &[Monitor]) -> Signals {
         manual: None,
         on_battery: power && ps.ACLineStatus == 0,
         power_saver: power && ps.SystemStatusFlag == 1,
-        // The Windows screensaver hides the desktop just as the lock screen does.
         locked: is_locked() || screensaver_running(),
         remote: unsafe { GetSystemMetrics(SM_REMOTESESSION) } != 0,
         foreground_app,
         desktop_focused,
         covered,
-        // Set by the tick, which keeps the readings between calls.
         cpu_busy: false,
     }
 }
 
-/// Is the Windows screensaver on screen right now?
 pub(in crate::os::windows) fn screensaver_running() -> bool {
     let mut on = BOOL(0);
     unsafe {
@@ -172,7 +161,6 @@ pub(in crate::os::windows) fn screensaver_running() -> bool {
         && on.as_bool()
 }
 
-/// The lock screen and UAC prompts switch to the secure desktop, which we cannot open.
 pub(in crate::os::windows) fn is_locked() -> bool {
     match unsafe { OpenInputDesktop(DESKTOP_CONTROL_FLAGS(0), false, DESKTOP_SWITCHDESKTOP) } {
         Ok(d) => {
@@ -185,8 +173,6 @@ pub(in crate::os::windows) fn is_locked() -> bool {
     }
 }
 
-/// Milliseconds since the last key press or mouse move anywhere in this session, and the tick
-/// count of that input, which changes whenever the user touches anything.
 pub fn last_input() -> (u32, u32) {
     use windows::Win32::System::SystemInformation::GetTickCount;
     use windows::Win32::UI::Input::KeyboardAndMouse::{GetLastInputInfo, LASTINPUTINFO};

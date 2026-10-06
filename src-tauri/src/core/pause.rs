@@ -4,16 +4,12 @@ use serde::Serialize;
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize)]
 pub enum State {
     Play,
-    /// Visible, animation stopped. Used when the desktop can still be seen.
     Frozen,
-    /// Nobody can see it: covered by a fullscreen or maximized app, locked, or remote.
-    /// Frozen in place like `Frozen`; kept separate so the UI and logs say why.
     Covered,
 }
 
 #[derive(Default, Clone, PartialEq, Debug)]
 pub struct Signals {
-    /// Some(true) = user paused, Some(false) = user forced play, None = automatic.
     pub manual: Option<bool>,
     pub on_battery: bool,
     pub power_saver: bool,
@@ -21,15 +17,10 @@ pub struct Signals {
     pub remote: bool,
     pub foreground_app: Option<String>,
     pub desktop_focused: bool,
-    /// Per display, in the same order as the displays: is it covered by a fullscreen or maximized window?
     pub covered: Vec<bool>,
-    /// Other apps (never Sarab itself) have kept the CPU over the set limit; see `CpuGate`.
     pub cpu_busy: bool,
 }
 
-/// Turns CPU readings into a steady yes or no. Busy after 3 readings at or over the limit in a
-/// row; quiet again only after 5 readings at least 15 points under it. The gap and the counts
-/// stop the wallpaper from flapping between playing and resting around the limit.
 #[derive(Default)]
 pub struct CpuGate {
     over: u8,
@@ -63,8 +54,6 @@ impl CpuGate {
     }
 }
 
-/// Why a display is in its state. Chosen by the same branch that chose the state, so the
-/// UI can never show a reason that is not the one holding the pause.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Reason {
@@ -128,7 +117,6 @@ pub fn decide(s: &Signals, r: &Settings) -> Vec<(State, Reason)> {
             } else if let Some(why) = soft {
                 (State::Frozen, why)
             } else if r.pause_fullscreen && !r.per_display && any_covered {
-                // "All displays" mode: an uncovered display freezes too.
                 (State::Frozen, Reason::OtherCovered)
             } else {
                 (State::Play, Reason::None)
@@ -384,7 +372,6 @@ mod tests {
             let states: Vec<State> = decide(&s, r).into_iter().map(|(st, _)| st).collect();
             assert_eq!(states, want, "case: {name}");
         }
-        // The reason comes from the branch that decided, including when rules overlap.
         let why = |s: Signals, r: &Settings| {
             decide(&s, r)
                 .into_iter()

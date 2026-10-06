@@ -1,5 +1,3 @@
-//! status.json, read by `sarab status` and the checks.
-
 use super::*;
 
 pub fn write_status(core: &Core) {
@@ -38,7 +36,6 @@ pub fn write_status(core: &Core) {
     }
 }
 
-/// Ask every page for its own report (frame count, video time); results land in status.json.
 pub fn probe_pages(app: &AppHandle, core: &Core) {
     for i in 0..core.displays.len() {
         let Some(win) = window(app, &core.displays[i]) else {

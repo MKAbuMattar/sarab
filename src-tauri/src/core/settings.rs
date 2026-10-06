@@ -15,47 +15,28 @@ pub struct Settings {
     pub pause_power_saver: bool,
     pub pause_remote: bool,
     pub per_display: bool,
-    /// Rest while other apps keep the CPU at or over this percent; 0 is never.
     pub pause_cpu: u8,
     pub app_pause: Vec<String>,
     pub app_play: Vec<String>,
     pub fps: u32,
     pub volume: u8,
-    /// Mute the wallpaper whenever an app has the focus instead of the desktop.
     pub audio_desktop_only: bool,
-    /// Mute the wallpaper while another app plays sound.
     pub audio_mute_others: bool,
-    /// How videos and GIFs fill the display: "cover", "contain", "fill" or "none".
     pub scaling: String,
-    /// Move to the next wallpaper in the library every this many minutes; 0 is never.
     pub cycle_minutes: u32,
-    /// Show a wallpaper full screen after this many idle minutes; 0 is never.
     pub screensaver_minutes: u32,
-    /// The wallpaper the screensaver shows; None shows each display's own.
     pub screensaver_wallpaper: Option<String>,
-    /// One wallpaper stretched across every display instead of one per display.
     pub span: bool,
-    /// Pass mouse moves and clicks over the desktop to web wallpapers.
     pub mouse_input: bool,
-    /// On quit, leave each display's last frame as its Windows wallpaper.
     pub keep_frame_on_quit: bool,
-    /// Cycling and "next" go through the library "order"ly or at "random".
     pub cycle_order: String,
-    /// Only wallpapers in this category take part in cycling and "next"; "all" for every one.
     pub cycle_category: String,
-    /// Unload a wallpaper nobody can see (covered, locked, remote) after this many minutes, to
-    /// free its memory; it loads again when it would play. 0 is never.
     pub unload_minutes: u32,
     pub language: String,
-    /// "system", "light" or "dark" for the settings window.
     pub theme: String,
-    /// Settings window backdrop: "acrylic" (see-through), "mica", or "solid".
     pub backdrop: String,
-    /// Look for a newer release every few hours. Nothing downloads without the user's consent.
     pub check_updates: bool,
-    /// "stable", or "beta" for test builds too; see `update::feed`.
     pub update_channel: String,
-    /// Start with Windows has been switched on once (at first launch); never forced again.
     pub autostart_set: bool,
 }
 
@@ -85,7 +66,6 @@ impl Default for Settings {
             keep_frame_on_quit: false,
             cycle_order: "order".into(),
             cycle_category: "all".into(),
-            // On by default where memory is tight (SPEC F17).
             unload_minutes: if crate::os::windows::total_ram() < 8 << 30 {
                 5
             } else {
@@ -101,11 +81,8 @@ impl Default for Settings {
     }
 }
 
-/// display key (e.g. `\\.\DISPLAY1`) -> wallpaper id
 pub type Layout = BTreeMap<String, String>;
 
-/// Named after the app identifier, as Tauri does: the installer's "delete app data" option removes
-/// these, and they never collide with the per-user install folder (%LOCALAPPDATA%\Sarab).
 pub const APP_ID: &str = "com.mkabumattar.sarab";
 
 pub fn config_dir() -> PathBuf {
@@ -129,7 +106,6 @@ pub fn load<T: DeserializeOwned + Default>(path: &Path) -> T {
         .unwrap_or_default()
 }
 
-/// Write to a temp file, then rename, so a crash mid-write never leaves a half file.
 pub fn save<T: Serialize>(path: &Path, value: &T) -> io::Result<()> {
     if let Some(dir) = path.parent() {
         fs::create_dir_all(dir)?;

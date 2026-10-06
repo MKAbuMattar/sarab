@@ -1,17 +1,12 @@
-//! Pictures of wallpapers: thumbnails, `sarab screenshot`, and the last frame kept on quit.
-
 use super::*;
 
 pub const THUMBNAIL: &str = "thumbnail.png";
 
-/// Set once at startup, for work that finishes on another thread.
 pub static APP: std::sync::OnceLock<AppHandle> = std::sync::OnceLock::new();
 
 pub(in crate::engine::wallpaper) static FAILED: Mutex<std::collections::BTreeSet<PathBuf>> =
     Mutex::new(std::collections::BTreeSet::new());
 
-/// Give every user wallpaper that has no thumbnail one from Explorer, on a thread. Web and URL
-/// wallpapers get theirs from a frame once they play (`capture_thumbnail`).
 pub fn make_thumbnails(lib: &[Wallpaper]) {
     use std::sync::atomic::{AtomicBool, Ordering};
     static RUNNING: AtomicBool = AtomicBool::new(false);
@@ -38,7 +33,6 @@ pub fn make_thumbnails(lib: &[Wallpaper]) {
                 Ok(()) => log(format!("thumbnail made for {}", dir.display())),
                 Err(e) => {
                     log(e);
-                    // Not tried again this run, so a file Explorer cannot thumbnail never loops.
                     FAILED.lock().unwrap().insert(dir);
                 }
             }
@@ -51,10 +45,6 @@ pub fn make_thumbnails(lib: &[Wallpaper]) {
     });
 }
 
-/// Save one frame of a playing web or URL wallpaper as its thumbnail, scaled to 480 px wide.
-/// Save what the webview `win` shows as a full-size PNG at `path`, then call `done` with
-/// whether it worked, on WebView2's thread. Used by thumbnails, `sarab screenshot` and the
-/// last frame kept on quit.
 pub fn capture_png(win: &WebviewWindow, path: PathBuf, done: impl FnOnce(bool) + Send + 'static) {
     use webview2_com::CapturePreviewCompletedHandler;
     use webview2_com::Microsoft::Web::WebView2::Win32::COREWEBVIEW2_CAPTURE_PREVIEW_IMAGE_FORMAT_PNG;
@@ -71,7 +61,6 @@ pub fn capture_png(win: &WebviewWindow, path: PathBuf, done: impl FnOnce(bool) +
                 true,
                 None,
             )?;
-            // WebView2 holds the stream while it writes; this copy closes the file when done.
             let keep = stream.clone();
             let d = done.clone();
             let handler = CapturePreviewCompletedHandler::create(Box::new(move |r| {
@@ -101,7 +90,6 @@ pub fn capture_png(win: &WebviewWindow, path: PathBuf, done: impl FnOnce(bool) +
     }
 }
 
-/// Save one frame of a playing web or URL wallpaper as its thumbnail, scaled to 480 px wide.
 pub(in crate::engine::wallpaper) fn capture_thumbnail(app: &AppHandle, core: &Core, lbl: &str) {
     let Some(d) = core
         .displays
@@ -140,13 +128,10 @@ pub(in crate::engine::wallpaper) fn capture_thumbnail(app: &AppHandle, core: &Co
     });
 }
 
-/// Where display `key` (such as \\.\DISPLAY1) keeps its last frame: letters and digits only.
 pub(in crate::engine::wallpaper) fn frame_path(key: &str) -> PathBuf {
     cfg("frames").join(format!("{}.png", key_file(key)))
 }
 
-/// Quit, after leaving each display's last frame as its Windows wallpaper. Waits at most 4 s,
-/// so a stuck capture never keeps Sarab from quitting.
 pub fn keep_frames_then_exit(app: &AppHandle, core: &Core) {
     use std::sync::atomic::{AtomicUsize, Ordering};
     let shots: Vec<(WebviewWindow, os::Monitor, PathBuf)> = core
@@ -180,7 +165,6 @@ pub fn keep_frames_then_exit(app: &AppHandle, core: &Core) {
     });
 }
 
-/// `sarab screenshot`: save what display `i` shows as a PNG at `path`.
 pub fn screenshot(app: &AppHandle, core: &Core, i: usize, path: PathBuf) -> Result<(), String> {
     let d = core.displays.get(i).ok_or("no such display")?;
     let win = window(app, d).ok_or("that display shows no web, video or GIF wallpaper")?;

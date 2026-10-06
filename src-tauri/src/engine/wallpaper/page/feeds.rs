@@ -1,8 +1,5 @@
-//! Data pages ask for: system information, now playing, audio levels.
-
 use super::*;
 
-/// Displays playing a wallpaper whose manifest asks for `feed`.
 pub(in crate::engine::wallpaper) fn subscribers(core: &Core, feed: &str) -> Vec<usize> {
     (0..core.displays.len())
         .filter(|&i| {
@@ -17,7 +14,6 @@ pub(in crate::engine::wallpaper) fn subscribers(core: &Core, feed: &str) -> Vec<
         .collect()
 }
 
-/// sarabSystemInfo once a tick, only to wallpapers that asked for it and only while they play.
 pub(in crate::engine::wallpaper) fn push_sysinfo(app: &AppHandle, core: &mut Core) {
     let to = subscribers(core, "system");
     if to.is_empty() {
@@ -35,7 +31,6 @@ pub(in crate::engine::wallpaper) fn push_sysinfo(app: &AppHandle, core: &mut Cor
     }
 }
 
-/// sarabNowPlaying when the track changes, and to a wallpaper that just started asking.
 pub(in crate::engine::wallpaper) fn push_now_playing(app: &AppHandle, core: &mut Core) {
     use std::sync::atomic::Ordering;
     let to = subscribers(core, "nowplaying");
@@ -51,7 +46,6 @@ pub(in crate::engine::wallpaper) fn push_now_playing(app: &AppHandle, core: &mut
         .get_or_insert_with(crate::engine::feeds::NowPlaying::start);
     n.wanted.store(true, Ordering::Relaxed);
     let latest = n.latest.lock().unwrap().clone();
-    // Sent again every 10 ticks so a page that loaded since still learns the track.
     if n.sent.as_ref() == Some(&latest) && !core.ticks.is_multiple_of(10) {
         return;
     }
@@ -64,8 +58,6 @@ pub(in crate::engine::wallpaper) fn push_now_playing(app: &AppHandle, core: &mut
     }
 }
 
-/// Keep the audio capture running exactly while a playing wallpaper asks for "audio". The
-/// capture thread sends each spectrum straight to those webviews (eval is thread-safe).
 pub(in crate::engine::wallpaper) fn run_audio_feed(app: &AppHandle, core: &mut Core) {
     let to: Vec<String> = subscribers(core, "audio")
         .into_iter()

@@ -1,8 +1,3 @@
-//! Import a Wallpaper Engine web, video or application wallpaper. Its project.json becomes a
-//! sarab.json and its properties a properties.json; inject.js then speaks Wallpaper Engine's
-//! page API (wallpaperPropertyListener, wallpaperRegisterAudioListener) to the page. Scenes need
-//! Wallpaper Engine's own renderer, so they are refused with a clear message.
-
 use crate::library::{Kind, Manifest};
 use serde_json::{json, Map, Value};
 use std::{fs, path::Path};
@@ -84,14 +79,12 @@ pub fn convert(dir: &Path) -> Result<Converted, String> {
     Ok(Converted { info, props })
 }
 
-/// A relative path that stays inside `dir` and names a file there.
 fn inside(dir: &Path, rel: &str) -> bool {
     !Path::new(rel).is_absolute()
         && !rel.split(['/', '\\']).any(|c| c == "..")
         && dir.join(rel).is_file()
 }
 
-/// Does the page ask for audio? Then the import turns the audio feed on for it.
 fn uses_audio(dir: &Path) -> bool {
     fn walk(d: &Path, depth: u8, left: &mut u32) -> bool {
         let Ok(rd) = fs::read_dir(d) else {
@@ -126,13 +119,9 @@ fn uses_audio(dir: &Path) -> bool {
         }
         false
     }
-    // ponytail: a bounded scan (1000 entries, 4 levels); a page that loads its audio code from
-    // deeper or from the web is missed, and `"api": ["audio"]` in sarab.json turns it on by hand.
     walk(dir, 0, &mut 1000)
 }
 
-/// Wallpaper Engine properties in their `order`, as Sarab controls. File and folder pickers have
-/// no Sarab control yet and are left out.
 fn properties(we: &Map<String, Value>) -> Map<String, Value> {
     let mut items: Vec<_> = we.iter().collect();
     items.sort_by_key(|(_, p)| p.get("order").and_then(Value::as_i64).unwrap_or(i64::MAX));
@@ -143,7 +132,6 @@ fn properties(we: &Map<String, Value>) -> Map<String, Value> {
 }
 
 fn control(key: &str, p: &Value) -> Option<Value> {
-    // Texts are often localization keys ("ui_browse_properties_scheme_color"): show the key then.
     let text = p
         .get("text")
         .and_then(Value::as_str)
@@ -206,8 +194,6 @@ fn control(key: &str, p: &Value) -> Option<Value> {
     )
 }
 
-/// What a Wallpaper Engine page expects for a control's value: colors as "r g b" in 0 to 1, a
-/// combo as its option value. None for every other control, which passes as it is.
 pub fn page_value(ctl: &Value, v: &Value) -> Option<Value> {
     if ctl.get("we").and_then(Value::as_str) == Some("color") {
         let h = v.as_str()?.trim_start_matches('#');
@@ -227,7 +213,6 @@ pub fn page_value(ctl: &Value, v: &Value) -> Option<Value> {
     values.get(v.as_u64()? as usize).cloned()
 }
 
-/// "r g b" in 0 to 1, as Wallpaper Engine stores colors, to "#rrggbb".
 fn hex(we: &str) -> Option<String> {
     let c: Vec<f64> = we
         .split_whitespace()
@@ -314,14 +299,12 @@ mod tests {
         assert_eq!(c.props["glow"]["step"], 0.01);
         assert_eq!(c.props["glow"]["text"], "Glow");
         assert_eq!(c.props["mode"]["value"], 1);
-        // Back to the page in Wallpaper Engine's own form.
         assert_eq!(
             page_value(&c.props["schemecolor"], &json!("#ff8000")),
             Some(json!("1.0000 0.5020 0.0000"))
         );
         assert_eq!(page_value(&c.props["mode"], &json!(0)), Some(json!("a")));
         assert_eq!(page_value(&c.props["speed"], &json!(4)), None);
-        // Refused: scenes, unknown types, a file outside the folder.
         project(&d, r#"{"type":"scene","file":"scene.json"}"#);
         assert!(convert(&d).unwrap_err().contains("scene"));
         project(&d, r#"{"type":"web","file":"../outside.html"}"#);

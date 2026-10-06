@@ -1,5 +1,3 @@
-//! Library commands: set, add, import, edit, info, export, delete, move the folder, presets.
-
 use super::*;
 
 #[tauri::command]
@@ -59,8 +57,6 @@ pub(crate) async fn details(app: AppHandle, id: String) -> Result<library::Detai
     Ok(library::details(&w))
 }
 
-/// Ask for a folder, then move the library there. Running wallpapers close during the move and
-/// open again from the new place. Returns the new folder, or None when cancelled.
 #[tauri::command]
 pub(crate) async fn move_library(app: AppHandle) -> Result<Option<String>, String> {
     let (old, owner) = with_core(&app, |app, core| {
@@ -101,7 +97,6 @@ pub(crate) async fn move_library(app: AppHandle) -> Result<Option<String>, Strin
     })
 }
 
-/// Saves the wallpaper as a package zip in Downloads and shows it in Explorer.
 #[tauri::command]
 pub(crate) async fn export_wallpaper(app: AppHandle, id: String) -> Result<String, String> {
     let w = with_core(&app, move |_, core| core.find(&id).cloned()).ok_or("not found")?;
@@ -112,7 +107,6 @@ pub(crate) async fn export_wallpaper(app: AppHandle, id: String) -> Result<Strin
     Ok(zip.display().to_string())
 }
 
-/// Opens the wallpaper's own folder in Explorer. Takes an id, never a path.
 #[tauri::command]
 pub(crate) async fn reveal(app: AppHandle, id: String) -> Result<(), String> {
     let w = with_core(&app, move |_, core| core.find(&id).cloned()).ok_or("not found")?;

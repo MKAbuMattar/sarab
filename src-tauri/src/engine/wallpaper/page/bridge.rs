@@ -1,8 +1,5 @@
-//! Host to page: calls into a wallpaper page, its properties, and pause and play.
-
 use super::*;
 
-/// Call a page function if it exists. serde_json output is a valid JS literal, so page data cannot break out.
 pub(in crate::engine::wallpaper) fn call(win: &WebviewWindow, func: &str, args: &[Value]) {
     let a = args
         .iter()
@@ -59,8 +56,6 @@ pub(in crate::engine::wallpaper) fn apply_state(
     let Some(win) = window(app, &core.displays[i]) else {
         return;
     };
-    // Every pause freezes in place. Hiding the window would show the plain Windows wallpaper
-    // whenever the covering app minimizes, alt-tabs, or is see-through, and frozen already costs ~0 CPU.
     let paused = st != State::Play;
     let _ = win.eval(if paused {
         "window.__sarab&&__sarab.freeze()"
@@ -71,7 +66,6 @@ pub(in crate::engine::wallpaper) fn apply_state(
     log(format!("display {i} {:?} -> {st:?}", prev));
 }
 
-/// Page finished loading: send everything the page needs, then its current pause state.
 pub fn on_loaded(app: &AppHandle, core: &mut Core, lbl: &str) {
     let Some(i) = core
         .displays
@@ -98,7 +92,6 @@ pub fn on_loaded(app: &AppHandle, core: &mut Core, lbl: &str) {
     let st = core.displays[i].state;
     apply_state(app, core, i, st, true);
     write_status(core);
-    // A web or URL wallpaper without a thumbnail gets one from its first seconds on screen.
     let lbl = lbl.to_string();
     let a = app.clone();
     std::thread::spawn(move || {

@@ -1,5 +1,3 @@
-//! Getting wallpapers in and out: scan, add, Sarab .zip packages, video conversion.
-
 pub(in crate::library) use super::*;
 
 mod add;
