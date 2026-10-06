@@ -15,54 +15,22 @@ use std::{
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 use windows::Win32::Foundation::RECT;
 
-mod app;
-use app::*;
-mod apply;
-pub use apply::*;
-mod capture;
-pub use capture::*;
-mod cpu;
-use cpu::*;
-mod cycle;
-pub use cycle::*;
-mod displays;
-pub use displays::*;
-mod mouse;
-use mouse::*;
+mod display;
+pub use display::*;
+
 mod page;
 pub use page::*;
-mod page_feeds;
-use page_feeds::*;
-mod playback;
-pub use playback::*;
-mod props;
-pub use props::*;
-mod screensaver;
-use screensaver::*;
-mod span;
-use span::*;
-mod status;
-pub use status::*;
-mod sync;
-use sync::*;
-mod tick;
-pub use tick::*;
-mod unload;
-use unload::*;
-mod urls;
-pub use urls::*;
+
+mod schedule;
+pub use schedule::*;
+
+mod output;
+pub use output::*;
 
 #[cfg(test)]
 mod tests;
 
-mod labels;
-use labels::*;
-mod log;
-pub use log::*;
-mod paths;
-pub use paths::*;
-mod threads;
-pub use threads::*;
+pub use crate::common::*;
 
 pub const INJECT: &str = include_str!("../../scripts/inject.js");
 

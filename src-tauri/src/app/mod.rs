@@ -19,8 +19,6 @@ mod dispatch;
 pub(crate) use dispatch::*;
 mod i18n;
 pub(crate) use i18n::*;
-mod settings_window;
-pub(crate) use settings_window::*;
 mod tray;
 pub(crate) use tray::*;
 mod window;

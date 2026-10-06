@@ -2,6 +2,7 @@
 
 mod app;
 mod cli;
+mod common;
 mod core;
 mod engine;
 mod library;

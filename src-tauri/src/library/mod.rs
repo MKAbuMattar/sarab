@@ -1,5 +1,4 @@
 pub mod presets;
-pub mod wallpaper_engine;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -8,22 +7,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
-mod add;
-pub use add::*;
-mod convert;
-pub use convert::*;
-mod details;
-pub use details::*;
-mod edit;
-pub use edit::*;
-mod folder;
-pub use folder::*;
-mod package;
-pub use package::*;
-mod props;
-pub use props::*;
-mod scan;
-pub use scan::*;
+pub mod import;
+pub use import::*;
+
+mod manage;
+pub use manage::*;
 
 #[cfg(test)]
 mod tests;

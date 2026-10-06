@@ -675,7 +675,7 @@ Add-Type -AssemblyName System.Windows.Forms
   'preset' {
     # Real download from NASA, pinned checksum, then playback inside the clip range.
     $id = 'nasa-iss-earth-view-4k'
-    $cat = Get-Content (Join-Path $root 'src-tauri/src/library/presets.json') -Raw | ConvertFrom-Json
+    $cat = Get-Content (Join-Path $root 'src-tauri/src/data/presets.json') -Raw | ConvertFrom-Json
     $p = $cat | Where-Object id -eq $id
     Assert $p "no preset $id in the catalog"
     Start-Sarab -Fresh

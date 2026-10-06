@@ -31,7 +31,7 @@ pub struct Video {
 }
 
 pub fn catalog() -> Vec<Video> {
-    serde_json::from_str(include_str!("presets.json")).expect("presets.json is valid")
+    serde_json::from_str(include_str!("../data/presets.json")).expect("presets.json is valid")
 }
 
 /// Download progress per preset id, 0 to 100.

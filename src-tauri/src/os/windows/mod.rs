@@ -29,36 +29,17 @@ use windows::Win32::UI::WindowsAndMessaging::*;
 
 use windows::Win32::Graphics::Imaging::{IWICBitmapSource, IWICImagingFactory};
 
-mod app_process;
-pub use app_process::*;
-mod audio;
-pub use audio::*;
 mod desktop;
 pub use desktop::*;
-mod dialogs;
-pub use dialogs::*;
-mod displays;
-pub use displays::*;
-mod images;
-pub use images::*;
+
+mod system;
+pub use system::*;
+
 mod media;
 pub use media::*;
-mod mouse;
-pub use mouse::*;
-mod picture;
-pub use picture::*;
-mod probes;
-pub use probes::*;
-mod processes;
-pub use processes::*;
-mod recycle;
-pub use recycle::*;
-mod sysinfo;
-pub use sysinfo::*;
-mod terminal;
-pub use terminal::*;
-mod toast;
-pub use toast::*;
+
+mod shell;
+pub use shell::*;
 
 #[cfg(test)]
 mod tests;
