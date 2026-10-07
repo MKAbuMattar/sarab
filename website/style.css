@@ -1,0 +1,96 @@
+:root {
+  --iris: #2B2233; --sand: #D9A36A; --salt: #EAE6DB; --deadsea: #2F5D6B; --petra: #C76B6B;
+  --bg: #F3F3F3; --surface: #FFFFFF; --stroke: rgba(0, 0, 0, 0.08);
+  --text: rgba(0, 0, 0, 0.9); --text-2: rgba(0, 0, 0, 0.62);
+  --accent: var(--deadsea); --on-accent: #FFFFFF; --accent-hover: #3A6B7A;
+  --code: #EDEBE6; --term: #1C1A20; --term-text: #EAE6DB;
+  --radius: 8px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #202020; --surface: #2B2B2B; --stroke: rgba(255, 255, 255, 0.08);
+    --text: #FFFFFF; --text-2: rgba(255, 255, 255, 0.72);
+    --accent: var(--sand); --on-accent: #1A1A1A; --accent-hover: #E2B482;
+    --code: #333033; --term: #141216;
+  }
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 16px/1.6 "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+a { color: var(--accent); }
+a:hover { color: var(--accent-hover); }
+code { font: 0.9em/1.4 "Cascadia Mono", Consolas, ui-monospace, monospace; background: var(--code); padding: 2px 6px; border-radius: 4px; }
+:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; border-radius: 4px; }
+
+.bar {
+  position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; padding: 12px max(16px, calc((100% - 1120px) / 2));
+  background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--stroke);
+}
+.brand { display: flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; font-weight: 600; font-size: 18px; }
+.brand img { border-radius: 6px; }
+.brand .ar { color: var(--text-2); font-weight: 400; }
+nav { display: flex; gap: 20px; flex-wrap: wrap; }
+nav a { color: var(--text-2); text-decoration: none; font-size: 15px; }
+nav a:hover { color: var(--text); }
+
+main, footer { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+section { padding: 56px 0; }
+section + section { border-top: 1px solid var(--stroke); }
+h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.15; margin: 0 0 20px; font-weight: 600; letter-spacing: -0.01em; }
+h2 { font-size: 28px; line-height: 1.25; margin: 0 0 24px; font-weight: 600; }
+h3 { font-size: 18px; margin: 0 0 8px; font-weight: 600; }
+p { margin: 0 0 12px; }
+
+.hero { display: grid; gap: 40px; padding-top: 64px; }
+.lead { font-size: 19px; color: var(--text-2); max-width: 62ch; }
+.cta { display: flex; gap: 12px; flex-wrap: wrap; margin: 28px 0 12px; }
+.button {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 20px; border-radius: 6px;
+  background: var(--surface); color: var(--text); border: 1px solid var(--stroke); text-decoration: none; font-weight: 600;
+}
+.button:hover { color: var(--text); border-color: var(--text-2); }
+.button.primary { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+.button.primary:hover { background: var(--accent-hover); color: var(--on-accent); }
+.fine { font-size: 14px; color: var(--text-2); }
+.shot img { display: block; width: 100%; height: auto; border-radius: var(--radius); border: 1px solid var(--stroke); box-shadow: 0 24px 48px rgba(0, 0, 0, 0.22); }
+
+.grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.grid article { background: var(--surface); border: 1px solid var(--stroke); border-radius: var(--radius); padding: 24px; }
+.grid article p { color: var(--text-2); margin: 0; }
+
+.split { display: grid; gap: 32px; align-items: center; }
+.hero > *, .split > *, .grid > * { min-width: 0; }
+code { overflow-wrap: anywhere; }
+.plain { list-style: none; padding: 0; margin: 16px 0 0; display: grid; gap: 10px; }
+.term {
+  margin: 0; padding: 20px 24px; border-radius: var(--radius); background: var(--term); color: var(--term-text);
+  font: 14px/1.7 "Cascadia Mono", Consolas, ui-monospace, monospace; overflow-x: auto; white-space: pre;
+}
+.term .prompt { color: var(--sand); }
+
+.steps { padding-inline-start: 22px; display: grid; gap: 12px; margin: 0 0 20px; max-width: 72ch; }
+
+footer { padding-block: 32px 48px; border-top: 1px solid var(--stroke); color: var(--text-2); font-size: 14px; }
+footer p { margin: 4px 0; }
+
+@media (min-width: 900px) {
+  .hero { grid-template-columns: 5fr 6fr; align-items: center; }
+  .split { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 560px) {
+  nav { gap: 14px; }
+  nav a:nth-child(-n+3) { display: none; }
+  .brand .ar { display: none; }
+  section { padding: 40px 0; }
+}
+@media (forced-colors: active) {
+  .button.primary { background: ButtonText; color: ButtonFace; }
+  .grid article, .shot img { border-color: CanvasText; }
+}

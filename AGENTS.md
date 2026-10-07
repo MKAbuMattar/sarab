@@ -61,7 +61,7 @@ A check passes only when it exits 0 and prints `<name> gate passed`. Read the ou
 5. **Keep the package format stable.** Add fields to `sarab.json` and `properties.json`; never rename or remove one.
 6. **Every UI string goes in every `ui/i18n/*.json`.** English and Arabic must have the same keys; `static` fails otherwise. Arabic is right to left: use logical CSS properties (`inset-inline-start`, `margin-inline`), never `left` or `right`, except in the display map, which keeps physical order.
 7. **Bundled or downloadable content must be redistributable.** Presets are public domain (NASA) or carry a GPL-3.0 compatible license with its notice. Stock sites such as Pexels and Pixabay forbid redistribution in wallpaper apps, and Shadertoy's default license is non-commercial. Downloads are pinned by size and SHA-256 in `src-tauri/src/data/presets.json`.
-8. **No other wallpaper app is named** anywhere in the repository, code or docs. `brand` scans every file.
+8. **No other wallpaper app is named** anywhere in the repository, code or docs, except Wallpaper Engine where Sarab imports its format. `brand` scans every file.
 9. **No email addresses.** The project has no mailbox; contact goes through GitHub (issues, private vulnerability reporting).
 10. **GitHub Actions are pinned by full commit SHA** with the version as a comment, for example `actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1`. Resolve a new pin with `gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`, and check the action's inputs at that commit.
 11. **No comments in source** (`src-tauri/src`, `ui/`). Names and small files say what code does; the reason for a non-obvious line goes in its commit message, and a trap goes in the table below.

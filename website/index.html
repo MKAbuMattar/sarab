@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sarab · Animated wallpapers for Windows</title>
+<meta name="description" content="Sarab plays videos, GIFs, web pages and pictures behind your Windows desktop icons, and rests whenever you work. Free and open source.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="Sarab · Animated wallpapers for Windows">
+<meta property="og:description" content="Videos, GIFs and web pages behind your desktop icons. Sarab rests whenever an app covers the screen, so it stays light on old PCs.">
+<meta property="og:image" content="https://sarab.mkabumattar.com/window-dark.png">
+<meta property="og:url" content="https://sarab.mkabumattar.com/">
+<link rel="icon" href="favicon.ico">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="bar">
+  <a class="brand" href="#top"><img src="logo.png" alt="" width="32" height="32"><span>Sarab</span><span class="ar" lang="ar" dir="rtl">سراب</span></a>
+  <nav>
+    <a href="#features">Features</a>
+    <a href="#command-line">Command line</a>
+    <a href="#install">Install</a>
+    <a href="https://github.com/MKAbuMattar/sarab">GitHub</a>
+  </nav>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="pitch">
+      <h1>Animated wallpapers for Windows that rest when you work.</h1>
+      <p class="lead">Sarab plays videos, GIFs, web pages and pictures behind your desktop icons, on one display or many. When an app covers the screen, the laptop runs on battery or the PC locks, the wallpaper freezes on its last frame, so it stays light on old PCs.</p>
+      <div class="cta">
+        <a class="button primary" href="https://github.com/MKAbuMattar/sarab/releases/latest">Download for Windows</a>
+        <a class="button" href="https://github.com/MKAbuMattar/sarab">Source on GitHub</a>
+      </div>
+      <p class="fine">Windows 10 (1903 or later) and Windows 11. Free, GPL-3.0. Installs for your user, no administrator rights.</p>
+    </div>
+    <picture class="shot">
+      <source srcset="window-dark.png" media="(prefers-color-scheme: dark)">
+      <img src="window-light.png" alt="The Sarab window: two displays playing Dead Sea at dusk, and a library of wallpapers with thumbnails" width="1280" height="820">
+    </picture>
+  </section>
+
+  <section id="features">
+    <h2>What it does</h2>
+    <div class="grid">
+      <article>
+        <h3>Rests when you work</h3>
+        <p>An app covering a display, two windows side by side, battery, energy saver, a locked screen, the screensaver, remote desktop, or other apps keeping the CPU busy: the wallpaper freezes in place, and the window says why. About 0.005 CPU cores while paused.</p>
+      </article>
+      <article>
+        <h3>Every display</h3>
+        <p>One wallpaper on all displays, a different one on each, or one stretched across them. Displays playing the same video stay on the same frame.</p>
+      </article>
+      <article>
+        <h3>Your wallpapers</h3>
+        <p>Videos, GIFs, pictures, web pages, web addresses and YouTube links. AVI, WMV and MPEG convert to MP4 when ffmpeg is installed. Programs can run behind the icons too, and rest with the rest.</p>
+      </article>
+      <article>
+        <h3>Brings your library with it</h3>
+        <p>Web, video and application wallpapers from Wallpaper Engine import with their settings. Sarab's own packages are plain zip files you can export and share.</p>
+      </article>
+      <article>
+        <h3>Looks like Windows 11</h3>
+        <p>Light and dark, Acrylic or Mica, a library with categories, tags, search and thumbnails. In ten languages, Arabic right to left.</p>
+      </article>
+      <article>
+        <h3>Changes with you</h3>
+        <p>Change wallpaper every few minutes, in order or at random, through one category. A screensaver of your own, mouse input for interactive pages, and the last frame kept as your Windows wallpaper when you quit.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="command-line" class="split">
+    <div>
+      <h2>Command line</h2>
+      <p>Every action is a <code>sarab</code> command, so scripts and hotkey tools can drive it. The installer puts it on your PATH.</p>
+      <ul class="plain">
+        <li><code>sarab set &lt;file, folder or URL&gt; [--display N]</code></li>
+        <li><code>sarab pause</code>, <code>play</code>, <code>next</code>, <code>volume 30</code></li>
+        <li><code>sarab screenshot C:\shots\desk.png</code></li>
+        <li><code>sarab status --json</code> for scripts</li>
+      </ul>
+    </div>
+<pre class="term" aria-label="Example terminal session"><span class="prompt">&gt;</span> sarab set C:\Wallpapers\dunes.mp4
+<span class="prompt">&gt;</span> sarab status
+Sarab 0.0.7 (pid 7428)
+Display 1  1920x1080  dunes (video)  Playing
+Display 2  1920x1080  dunes (video)  Resting: on battery</pre>
+  </section>
+
+  <section id="install">
+    <h2>Install</h2>
+    <ol class="steps">
+      <li><strong>Download</strong> <code>Sarab_&lt;version&gt;_x64-setup.exe</code> from the <a href="https://github.com/MKAbuMattar/sarab/releases/latest">latest release</a>.</li>
+      <li><strong>Run it.</strong> It installs for your user only and asks for a language. It downloads the WebView2 runtime if the PC lacks it (Windows 11 always has it).</li>
+      <li><strong>SmartScreen</strong> may warn about an unknown publisher, because the installer is not code-signed yet. Choose More info, then Run anyway.</li>
+    </ol>
+    <p>Sarab checks for updates every few hours and installs one only when you choose Update now, after checking its signature.</p>
+  </section>
+</main>
+
+<footer>
+  <p>Sarab (<span lang="ar" dir="rtl">سراب</span>) means mirage in Arabic. Free software under the GPL-3.0.</p>
+  <p><a href="https://github.com/MKAbuMattar/sarab">GitHub</a> · <a href="https://github.com/MKAbuMattar/sarab/issues">Report a problem</a> · <a href="https://github.com/MKAbuMattar/sarab/blob/main/CHANGELOG.md">Changelog</a></p>
+</footer>
+</body>
+</html>

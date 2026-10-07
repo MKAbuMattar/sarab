@@ -12,7 +12,7 @@ Download: [latest release](https://github.com/MKAbuMattar/sarab/releases/latest)
 
 ## Status
 
-Version 0.0.3, an early release for **Windows 10 (1903 or later) and Windows 11**. Linux and macOS are planned; see the [roadmap](ROADMAP.md).
+Version 0.0.7, an early release for **Windows 10 (1903 or later) and Windows 11**. Website: [sarab.mkabumattar.com](https://sarab.mkabumattar.com). Linux and macOS are planned; see the [roadmap](ROADMAP.md).
 
 ## What it does
 
@@ -20,9 +20,9 @@ Version 0.0.3, an early release for **Windows 10 (1903 or later) and Windows 11*
 - **Every display:** one wallpaper on all displays, or a different one on each. The same video on several displays plays in step.
 - **Pauses itself:** when an app covers a display, on battery, in energy saver, when locked, during remote desktop, or for apps you list. A paused wallpaper freezes on its last frame, and the window says why it paused.
 - **Cheap when paused:** about 0.005 CPU cores on the test machine with two web wallpapers, measured by `scripts/check.ps1 budget`.
-- **Looks like Windows 11:** light and dark themes, Acrylic or Mica backdrop, English and Arabic (right to left).
+- **Looks like Windows 11:** light and dark themes, Acrylic or Mica backdrop, ten languages with Arabic right to left.
 - **4K presets:** public-domain NASA Earth videos, downloaded only when you choose **Get** and checked against a pinned SHA-256 before use.
-- **Updates:** a daily check (you can turn it off) notifies you of a new version. It installs only when you choose **Update now**, and the installer's signature is verified first.
+- **Updates:** a check every 3 hours and when the window opens (you can turn it off) notifies you of a new version, on the stable or beta channel. It installs only when you choose **Update now**, and the installer's signature is verified first.
 - **Command line:** every action is also a `sarab` command, so scripts and hotkey tools can drive it.
 
 ## Install
