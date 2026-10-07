@@ -130,13 +130,14 @@ function renderMonitors() {
   const order = [...ds.keys()].sort((a, b) => ds[a].x - ds[b].x);
   box.replaceChildren(...ds.map((d, i) => {
     const kind = d.wallpaper ? kindOf(d.wallpaper) : null;
+    const thumb = d.wallpaper && state.library.find(w => w.id === d.wallpaper)?.thumb_url;
     const b = el('button', {
-      type: 'button', class: 'monitor', 'aria-pressed': String(selected === i),
+      type: 'button', class: thumb ? 'monitor has-thumb' : 'monitor', 'aria-pressed': String(selected === i),
       'aria-label': `${t('displays.n', { n: i + 1 })}: ${d.wallpaper ? title(d.wallpaper) : t('displays.empty')}, ${t(`reason.${d.reason}`)}`,
       onclick: () => { selected = selected === i ? null : i; render(); },
     },
       el('span', { class: 'num' }, String(i + 1)),
-      icon(kind ? ICON[kind] ?? '' : ''),
+      thumb ? '' : icon(kind ? ICON[kind] ?? '' : ''),
       d.wallpaper ? el('span', { class: `badge ${d.state}` }, t(`state.${d.state}`)) : '',
       el('span', { class: 'label' }, d.wallpaper ? title(d.wallpaper) : t('displays.empty')));
     const slot = order.indexOf(i);
@@ -144,6 +145,7 @@ function renderMonitors() {
       left: `${offX + (d.x - minX) * scale + slot * gap}px`, top: `${(d.y - minY) * scale}px`,
       width: `${d.width * scale}px`, height: `${d.height * scale}px`,
     });
+    if (thumb) b.style.backgroundImage = `linear-gradient(rgba(0,0,0,.15), rgba(0,0,0,.6)), url(${JSON.stringify(thumb)})`;
     return b;
   }));
 }

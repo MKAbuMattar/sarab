@@ -219,3 +219,40 @@ fn youtube_links() {
     );
     assert_eq!(rewrite_url("https://example.com/"), "https://example.com/");
 }
+
+#[test]
+fn one_thumbnail_capture_per_wallpaper() {
+    let dir = std::env::temp_dir().join("sarab-test-claim");
+    assert!(claim_capture(&dir), "first display captures");
+    assert!(!claim_capture(&dir), "a second display playing it waits");
+    release_capture(&dir);
+    assert!(claim_capture(&dir), "free again once done");
+    release_capture(&dir);
+}
+
+#[test]
+fn released_waits_for_the_writer() {
+    use std::os::windows::fs::OpenOptionsExt;
+    let p = std::env::temp_dir().join(format!("sarab-test-released-{}.png", std::process::id()));
+    std::fs::write(&p, b"png").unwrap();
+    let held = std::fs::OpenOptions::new()
+        .write(true)
+        .share_mode(0)
+        .open(&p)
+        .unwrap();
+    let t = std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(300));
+        drop(held);
+    });
+    let start = std::time::Instant::now();
+    assert!(released(&p), "free once the writer lets go");
+    assert!(
+        start.elapsed() >= std::time::Duration::from_millis(250),
+        "it waited"
+    );
+    t.join().unwrap();
+    assert!(!released(
+        &std::env::temp_dir().join("sarab-test-no-such-file.png")
+    ));
+    let _ = std::fs::remove_file(&p);
+}
