@@ -143,6 +143,37 @@ fn app_wallpaper_ends_with_its_job() {
 }
 
 #[test]
+fn app_wallpaper_rests_and_plays() {
+    use windows::Win32::System::Threading::{ResumeThread, SuspendThread};
+    let ping = std::path::Path::new(r"C:\Windows\System32\PING.EXE");
+    let mut p = launch_app(ping, &["-n", "60", "127.0.0.1"]).unwrap();
+    let pids = p.pids().unwrap();
+    assert_eq!(pids, vec![p.pid], "the job holds the program");
+    let counts = |pids: &[u32]| {
+        let mut c = vec![];
+        for_each_thread(pids, |t| unsafe {
+            c.push(SuspendThread(t));
+            ResumeThread(t);
+        })
+        .unwrap();
+        c
+    };
+    assert!(counts(&pids).iter().all(|&c| c == 0), "running");
+    p.set_paused(true).unwrap();
+    p.set_paused(true).unwrap();
+    let paused = counts(&pids);
+    assert!(
+        !paused.is_empty() && paused.iter().all(|&c| c == 1),
+        "every thread suspended once: {paused:?}"
+    );
+    p.set_paused(false).unwrap();
+    assert!(
+        counts(&pids).iter().all(|&c| c == 0),
+        "one resume undoes a double rest"
+    );
+}
+
+#[test]
 fn on_path_adds_once_and_removes_only_ours() {
     let dir = r"C:\Users\a\AppData\Local\Sarab";
     assert_eq!(path_with("", dir, true), dir);

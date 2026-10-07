@@ -4,6 +4,14 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ## [Unreleased]
 
+### Changed
+
+- App wallpapers rest with the others: when a window covers the display, the PC locks, you pause, or any other pause rule applies, Sarab suspends the program and resumes it when the wallpaper plays again. A game set as a wallpaper no longer uses the GPU behind a maximized window.
+
+### Fixed
+
+- An app wallpaper starts suspended and runs only once it is in its job, so a program it starts in its first instant also ends when the wallpaper changes or Sarab quits.
+
 ## [0.0.7] - 2026-10-07
 
 ### Added

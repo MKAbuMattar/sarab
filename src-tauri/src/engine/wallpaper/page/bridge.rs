@@ -53,6 +53,11 @@ pub(in crate::engine::wallpaper) fn apply_state(
     if st == State::Play {
         core.sync_due = true;
     }
+    if let Some(p) = core.displays[i].app.as_mut() {
+        if let Err(e) = p.set_paused(st != State::Play) {
+            log(format!("app wallpaper on display {i}: {e}"));
+        }
+    }
     let Some(win) = window(app, &core.displays[i]) else {
         return;
     };
