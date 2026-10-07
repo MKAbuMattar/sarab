@@ -8,6 +8,7 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 - App wallpapers rest with the others: when a window covers the display, the PC locks, you pause, or any other pause rule applies, Sarab suspends the program and resumes it when the wallpaper plays again. A game set as a wallpaper no longer uses the GPU behind a maximized window.
 - The display map shows a thumbnail of what each display plays.
+- About > Website opens [sarab.mkabumattar.com](https://sarab.mkabumattar.com) instead of the GitHub repository.
 
 ### Fixed
 
