@@ -65,6 +65,6 @@ pub(crate) async fn open(app: AppHandle, which: String) -> Result<(), String> {
         .map_err(|e| e.to_string())
 }
 
-pub const WEBSITE: &str = "https://github.com/MKAbuMattar/sarab";
+pub const WEBSITE: &str = "https://sarab.mkabumattar.com";
 
 pub const ISSUES: &str = "https://github.com/MKAbuMattar/sarab/issues";
