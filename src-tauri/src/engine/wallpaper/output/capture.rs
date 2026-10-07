@@ -7,6 +7,17 @@ pub static APP: std::sync::OnceLock<AppHandle> = std::sync::OnceLock::new();
 pub(in crate::engine::wallpaper) static FAILED: Mutex<std::collections::BTreeSet<PathBuf>> =
     Mutex::new(std::collections::BTreeSet::new());
 
+static CAPTURING: Mutex<std::collections::BTreeSet<PathBuf>> =
+    Mutex::new(std::collections::BTreeSet::new());
+
+pub(in crate::engine::wallpaper) fn claim_capture(dir: &Path) -> bool {
+    CAPTURING.lock().unwrap().insert(dir.to_path_buf())
+}
+
+pub(in crate::engine::wallpaper) fn release_capture(dir: &Path) {
+    CAPTURING.lock().unwrap().remove(dir);
+}
+
 pub fn make_thumbnails(lib: &[Wallpaper]) {
     use std::sync::atomic::{AtomicBool, Ordering};
     static RUNNING: AtomicBool = AtomicBool::new(false);
@@ -45,6 +56,22 @@ pub fn make_thumbnails(lib: &[Wallpaper]) {
     });
 }
 
+pub(in crate::engine::wallpaper) fn released(path: &Path) -> bool {
+    use std::os::windows::fs::OpenOptionsExt;
+    for _ in 0..60 {
+        if fs::OpenOptions::new()
+            .read(true)
+            .share_mode(0)
+            .open(path)
+            .is_ok()
+        {
+            return true;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(50));
+    }
+    false
+}
+
 pub fn capture_png(win: &WebviewWindow, path: PathBuf, done: impl FnOnce(bool) + Send + 'static) {
     use webview2_com::CapturePreviewCompletedHandler;
     use webview2_com::Microsoft::Web::WebView2::Win32::COREWEBVIEW2_CAPTURE_PREVIEW_IMAGE_FORMAT_PNG;
@@ -63,10 +90,13 @@ pub fn capture_png(win: &WebviewWindow, path: PathBuf, done: impl FnOnce(bool) +
             )?;
             let keep = stream.clone();
             let d = done.clone();
+            let written = path.clone();
             let handler = CapturePreviewCompletedHandler::create(Box::new(move |r| {
                 drop(keep);
+                let ok = r.is_ok();
                 if let Some(f) = d.lock().unwrap().take() {
-                    f(r.is_ok());
+                    let written = written.clone();
+                    std::thread::spawn(move || f(ok && released(&written)));
                 }
                 Ok(())
             }));
@@ -107,16 +137,21 @@ pub(in crate::engine::wallpaper) fn capture_thumbnail(app: &AppHandle, core: &Co
     let Some(win) = app.get_webview_window(lbl) else {
         return;
     };
-    let full = std::env::temp_dir().join(format!("sarab-capture-{}.png", std::process::id()));
+    if !claim_capture(&w.dir) {
+        return;
+    }
+    let full = std::env::temp_dir().join(format!("sarab-capture-{}-{lbl}.png", std::process::id()));
     let (a, done) = (app.clone(), full.clone());
     capture_png(&win, full, move |ok| {
         if !ok {
+            release_capture(&w.dir);
             return;
         }
         std::thread::spawn(move || {
             let r = os::shrink_png(&done, &w.dir.join(THUMBNAIL), 480)
                 .and_then(|()| library::set_thumbnail(&w.dir, THUMBNAIL));
             let _ = fs::remove_file(&done);
+            release_capture(&w.dir);
             match r {
                 Ok(()) => later(&a, |app, core| {
                     crate::rescan(core);
