@@ -4,6 +4,8 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ## [Unreleased]
 
+## [0.0.8] - 2026-10-07
+
 ### Changed
 
 - App wallpapers rest with the others: when a window covers the display, the PC locks, you pause, or any other pause rule applies, Sarab suspends the program and resumes it when the wallpaper plays again. A game set as a wallpaper no longer uses the GPU behind a maximized window.
@@ -117,7 +119,8 @@ First public release, for Windows 10 (1903 or later) and Windows 11.
 - Opening Sarab from the desktop or Start menu opens its window, also when it already runs in the background. Starting at sign-in stays in the tray.
 - Start with Windows, on by default: switched on once at the first launch, and it stays off if you turn it off. Uninstalling removes it.
 
-[Unreleased]: https://github.com/MKAbuMattar/sarab/compare/v0.0.7...HEAD
+[Unreleased]: https://github.com/MKAbuMattar/sarab/compare/v0.0.8...HEAD
+[0.0.8]: https://github.com/MKAbuMattar/sarab/compare/v0.0.7...v0.0.8
 [0.0.7]: https://github.com/MKAbuMattar/sarab/compare/v0.0.6...v0.0.7
 [0.0.6]: https://github.com/MKAbuMattar/sarab/compare/v0.0.5...v0.0.6
 [0.0.5]: https://github.com/MKAbuMattar/sarab/compare/v0.0.4...v0.0.5
