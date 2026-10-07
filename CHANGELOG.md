@@ -4,6 +4,8 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ## [Unreleased]
 
+## [0.0.7] - 2026-10-07
+
 ### Added
 
 - `sarab status` prints in the terminal: Sarab's version, then one line per display with the wallpaper's title and whether it plays or why it rests. `--json` gives the raw status for scripts, and it says so when Sarab is not running. The installer adds `sarab.com` next to `sarab.exe` so the terminal waits for the answer.
@@ -104,7 +106,8 @@ First public release, for Windows 10 (1903 or later) and Windows 11.
 - Opening Sarab from the desktop or Start menu opens its window, also when it already runs in the background. Starting at sign-in stays in the tray.
 - Start with Windows, on by default: switched on once at the first launch, and it stays off if you turn it off. Uninstalling removes it.
 
-[Unreleased]: https://github.com/MKAbuMattar/sarab/compare/v0.0.6...HEAD
+[Unreleased]: https://github.com/MKAbuMattar/sarab/compare/v0.0.7...HEAD
+[0.0.7]: https://github.com/MKAbuMattar/sarab/compare/v0.0.6...v0.0.7
 [0.0.6]: https://github.com/MKAbuMattar/sarab/compare/v0.0.5...v0.0.6
 [0.0.5]: https://github.com/MKAbuMattar/sarab/compare/v0.0.4...v0.0.5
 [0.0.4]: https://github.com/MKAbuMattar/sarab/compare/v0.0.3...v0.0.4
