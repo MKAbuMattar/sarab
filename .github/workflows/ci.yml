@@ -224,6 +224,14 @@ jobs:
           su builder -c 'cd ~/pkg && makepkg --noconfirm --nodeps'
           pacman -U --noconfirm /home/builder/pkg/*.pkg.tar.zst
 
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: matrix.distro == 'Arch Linux'
+        with:
+          archive: false
+          path: /home/builder/pkg/*.pkg.tar.zst
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Sarab is installed with every library it needs
         run: |
           test -x /usr/bin/sarab
