@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 
 const NOT_YET: &str = "not available on Linux yet";
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct RECT {
     pub left: i32,
@@ -11,6 +12,7 @@ pub struct RECT {
     pub bottom: i32,
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct HWND(pub *mut std::ffi::c_void);
 
@@ -39,10 +41,6 @@ pub struct AppProcess {
 impl AppProcess {
     pub fn set_paused(&mut self, _paused: bool) -> Result<(), String> {
         Err(NOT_YET.into())
-    }
-
-    pub fn pids(&self) -> Result<Vec<u32>, String> {
-        Ok(vec![self.pid])
     }
 }
 
@@ -190,10 +188,6 @@ pub fn capture_preview(
     done: impl FnOnce(bool) + Send + 'static,
 ) {
     done(false);
-}
-
-pub fn released(_path: &Path) -> bool {
-    true
 }
 
 pub fn update_toast_xml(_title: &str, _body: &str, _install: &str, _later: &str) -> String {
