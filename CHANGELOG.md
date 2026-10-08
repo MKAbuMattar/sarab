@@ -4,6 +4,8 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ## [Unreleased]
 
+## [0.0.9] - 2026-10-09
+
 ### Added
 
 - Windows installers for 32-bit (x86) and ARM64 PCs, next to x64. The updater installs the one that matches the PC.
@@ -128,7 +130,8 @@ First public release, for Windows 10 (1903 or later) and Windows 11.
 - Opening Sarab from the desktop or Start menu opens its window, also when it already runs in the background. Starting at sign-in stays in the tray.
 - Start with Windows, on by default: switched on once at the first launch, and it stays off if you turn it off. Uninstalling removes it.
 
-[Unreleased]: https://github.com/MKAbuMattar/sarab/compare/v0.0.8...HEAD
+[Unreleased]: https://github.com/MKAbuMattar/sarab/compare/v0.0.9...HEAD
+[0.0.9]: https://github.com/MKAbuMattar/sarab/compare/v0.0.8...v0.0.9
 [0.0.8]: https://github.com/MKAbuMattar/sarab/compare/v0.0.7...v0.0.8
 [0.0.7]: https://github.com/MKAbuMattar/sarab/compare/v0.0.6...v0.0.7
 [0.0.6]: https://github.com/MKAbuMattar/sarab/compare/v0.0.5...v0.0.6
