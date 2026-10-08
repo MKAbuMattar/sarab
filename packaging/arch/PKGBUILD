@@ -1,5 +1,5 @@
 pkgname=sarab-bin
-pkgver=0.0.8
+pkgver=0.0.9
 pkgrel=1
 pkgdesc='Animated desktop wallpapers that rest when you work'
 arch=('x86_64')

@@ -1,6 +1,6 @@
 [package]
 name = "sarab"
-version = "0.0.8"
+version = "0.0.9"
 edition = "2021"
 description = "Animated desktop wallpapers that rest when you work"
 license = "GPL-3.0-only"
