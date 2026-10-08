@@ -209,7 +209,7 @@ jobs:
           cp "$deb" /home/builder/pkg/
           sed "s|^source=.*|source=(\"$(basename "$deb")\")|" packaging/arch/PKGBUILD > /home/builder/pkg/PKGBUILD
           chown -R builder /home/builder/pkg
-          su builder -c 'cd ~/pkg && makepkg --noconfirm'
+          su builder -c 'cd ~/pkg && makepkg --noconfirm --nodeps'
           pacman -U --noconfirm /home/builder/pkg/*.pkg.tar.zst
 
       - name: Sarab is installed with every library it needs
