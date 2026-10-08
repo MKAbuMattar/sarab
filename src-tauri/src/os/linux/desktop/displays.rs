@@ -1,4 +1,5 @@
 use super::RECT;
+use gdk::prelude::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Monitor {
