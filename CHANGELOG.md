@@ -4,6 +4,15 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ## [Unreleased]
 
+### Added
+
+- Windows installers for 32-bit (x86) and ARM64 PCs, next to x64. The updater installs the one that matches the PC.
+
+### Fixed
+
+- Pausing an app wallpaper could leave threads running that the program started at that moment. Sarab now sweeps until no new thread appears, and resumes exactly the threads it suspended.
+- Window styles on 32-bit Windows.
+
 ## [0.0.8] - 2026-10-07
 
 ### Changed

@@ -4,24 +4,39 @@ pub struct AppProcess {
     job: isize,
     pub pid: u32,
     pub hwnd: Option<isize>,
-    paused: bool,
+    suspended: Vec<u32>,
 }
 
 impl AppProcess {
     pub fn set_paused(&mut self, paused: bool) -> Result<(), String> {
-        if self.paused == paused {
+        use windows::Win32::System::Threading::{
+            OpenThread, ResumeThread, SuspendThread, THREAD_SUSPEND_RESUME,
+        };
+        if !paused {
+            for tid in self.suspended.drain(..) {
+                unsafe {
+                    if let Ok(t) = OpenThread(THREAD_SUSPEND_RESUME, false, tid) {
+                        ResumeThread(t);
+                        let _ = CloseHandle(t);
+                    }
+                }
+            }
             return Ok(());
         }
-        let pids = self.pids()?;
-        for_each_thread(&pids, |t| unsafe {
-            use windows::Win32::System::Threading::{ResumeThread, SuspendThread};
-            if paused {
-                SuspendThread(t);
-            } else {
-                ResumeThread(t);
+        for _ in 0..5 {
+            let pids = self.pids()?;
+            let mut found = false;
+            let suspended = &mut self.suspended;
+            for_each_thread(&pids, |tid, t| unsafe {
+                if !suspended.contains(&tid) && SuspendThread(t) != u32::MAX {
+                    suspended.push(tid);
+                    found = true;
+                }
+            })?;
+            if !found {
+                break;
             }
-        })?;
-        self.paused = paused;
+        }
         Ok(())
     }
 
@@ -56,7 +71,7 @@ fn job_pids(job: isize) -> Result<Vec<u32>, String> {
 
 pub fn for_each_thread(
     pids: &[u32],
-    mut f: impl FnMut(windows::Win32::Foundation::HANDLE),
+    mut f: impl FnMut(u32, windows::Win32::Foundation::HANDLE),
 ) -> Result<(), String> {
     use windows::Win32::System::Diagnostics::ToolHelp::{
         CreateToolhelp32Snapshot, Thread32First, Thread32Next, TH32CS_SNAPTHREAD, THREADENTRY32,
@@ -72,7 +87,7 @@ pub fn for_each_thread(
         while more {
             if pids.contains(&e.th32OwnerProcessID) {
                 if let Ok(t) = OpenThread(THREAD_SUSPEND_RESUME, false, e.th32ThreadID) {
-                    f(t);
+                    f(e.th32ThreadID, t);
                     let _ = CloseHandle(t);
                 }
             }
@@ -101,7 +116,7 @@ pub fn launch_app(exe: &std::path::Path, args: &[&str]) -> Result<AppProcess, St
         job: job.0 as isize,
         pid: 0,
         hwnd: None,
-        paused: false,
+        suspended: Vec::new(),
     };
     let mut limits = JOBOBJECT_EXTENDED_LIMIT_INFORMATION::default();
     limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
@@ -128,7 +143,7 @@ pub fn launch_app(exe: &std::path::Path, args: &[&str]) -> Result<AppProcess, St
         return Err(e.to_string());
     }
     p.pid = child.id();
-    for_each_thread(&[p.pid], |t| unsafe {
+    for_each_thread(&[p.pid], |_, t| unsafe {
         windows::Win32::System::Threading::ResumeThread(t);
     })?;
     Ok(p)

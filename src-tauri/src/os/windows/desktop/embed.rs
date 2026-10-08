@@ -75,16 +75,16 @@ pub fn attach(d: &Desktop, hwnd: HWND, r: RECT) -> windows::core::Result<()> {
     unsafe {
         let style = GetWindowLongPtrW(hwnd, GWL_STYLE) as u32;
         let style = (style | WS_CHILD.0) & !(WS_POPUP.0 | WS_CAPTION.0 | WS_THICKFRAME.0);
-        SetWindowLongPtrW(hwnd, GWL_STYLE, style as isize);
+        SetWindowLongPtrW(hwnd, GWL_STYLE, style as _);
         let ex = GetWindowLongPtrW(hwnd, GWL_EXSTYLE) as u32;
         SetWindowLongPtrW(
             hwnd,
             GWL_EXSTYLE,
-            ((ex | WS_EX_TOOLWINDOW.0) & !WS_EX_APPWINDOW.0) as isize,
+            ((ex | WS_EX_TOOLWINDOW.0) & !WS_EX_APPWINDOW.0) as _,
         );
         let parent = if d.raised {
             let ex = GetWindowLongPtrW(hwnd, GWL_EXSTYLE) as u32;
-            SetWindowLongPtrW(hwnd, GWL_EXSTYLE, (ex | WS_EX_LAYERED.0) as isize);
+            SetWindowLongPtrW(hwnd, GWL_EXSTYLE, (ex | WS_EX_LAYERED.0) as _);
             SetLayeredWindowAttributes(
                 hwnd,
                 windows::Win32::Foundation::COLORREF(0),
