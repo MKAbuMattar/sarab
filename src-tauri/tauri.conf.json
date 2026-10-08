@@ -50,6 +50,33 @@
         "installerHooks": "windows/hooks.nsh"
       }
     },
+    "linux": {
+      "deb": {
+        "depends": [
+          "libwebkit2gtk-4.1-0",
+          "libgtk-3-0",
+          "libayatana-appindicator3-1"
+        ],
+        "recommends": [
+          "gstreamer1.0-plugins-good",
+          "gstreamer1.0-libav"
+        ]
+      },
+      "rpm": {
+        "depends": [
+          "webkit2gtk4.1",
+          "gtk3",
+          "libayatana-appindicator-gtk3"
+        ],
+        "recommends": [
+          "gstreamer1-plugins-good",
+          "gstreamer1-plugin-libav"
+        ]
+      },
+      "appimage": {
+        "bundleMediaFramework": true
+      }
+    },
     "createUpdaterArtifacts": true,
     "resources": [
       "presets/**/*"

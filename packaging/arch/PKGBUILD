@@ -1,0 +1,18 @@
+pkgname=sarab-bin
+pkgver=0.0.8
+pkgrel=1
+pkgdesc='Animated desktop wallpapers that rest when you work'
+arch=('x86_64')
+url='https://sarab.mkabumattar.com'
+license=('GPL-3.0-only')
+depends=('webkit2gtk-4.1' 'gtk3' 'libayatana-appindicator')
+optdepends=('gst-plugins-good: video wallpapers'
+            'gst-libav: H.264 and other video formats')
+provides=('sarab')
+conflicts=('sarab')
+source=("https://github.com/MKAbuMattar/sarab/releases/download/v${pkgver}/Sarab_${pkgver}_amd64.deb")
+sha256sums=('SKIP')
+
+package() {
+  bsdtar -xf data.tar.* -C "${pkgdir}"
+}
