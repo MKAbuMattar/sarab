@@ -147,11 +147,12 @@ fn app_wallpaper_rests_and_plays() {
     use windows::Win32::System::Threading::{ResumeThread, SuspendThread};
     let ping = std::path::Path::new(r"C:\Windows\System32\PING.EXE");
     let mut p = launch_app(ping, &["-n", "60", "127.0.0.1"]).unwrap();
+    std::thread::sleep(std::time::Duration::from_millis(800));
     let pids = p.pids().unwrap();
     assert_eq!(pids, vec![p.pid], "the job holds the program");
     let counts = |pids: &[u32]| {
         let mut c = vec![];
-        for_each_thread(pids, |t| unsafe {
+        for_each_thread(pids, |_, t| unsafe {
             c.push(SuspendThread(t));
             ResumeThread(t);
         })
