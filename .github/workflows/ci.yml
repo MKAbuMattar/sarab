@@ -110,8 +110,16 @@ jobs:
         run: cargo test --locked
 
   linux-packages:
-    name: Linux packages
-    runs-on: ubuntu-24.04
+    name: Linux packages (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -177,9 +185,9 @@ jobs:
           retention-days: 14
 
   linux-install:
-    name: Install on ${{ matrix.distro }}
+    name: Install on ${{ matrix.distro }} (${{ matrix.arch }})
     needs: linux-packages
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     container: ${{ matrix.image }}
     strategy:
@@ -188,10 +196,29 @@ jobs:
         include:
           - distro: Ubuntu
             image: ubuntu:24.04
+            arch: x64
+            runner: ubuntu-24.04
+            deb: amd64
           - distro: Fedora
             image: fedora:42
+            arch: x64
+            runner: ubuntu-24.04
+            rpm: x86_64
           - distro: Arch Linux
             image: archlinux:latest
+            arch: x64
+            runner: ubuntu-24.04
+            deb: amd64
+          - distro: Ubuntu
+            image: ubuntu:24.04
+            arch: arm64
+            runner: ubuntu-24.04-arm
+            deb: arm64
+          - distro: Fedora
+            image: fedora:42
+            arch: arm64
+            runner: ubuntu-24.04-arm
+            rpm: aarch64
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -205,11 +232,11 @@ jobs:
         if: matrix.distro == 'Ubuntu'
         run: |
           apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y ./pkgs/*.deb
+          DEBIAN_FRONTEND=noninteractive apt-get install -y ./pkgs/*_${{ matrix.deb }}.deb
 
       - name: Install the .rpm
         if: matrix.distro == 'Fedora'
-        run: dnf install -y ./pkgs/*.rpm
+        run: dnf install -y ./pkgs/*.${{ matrix.rpm }}.rpm
 
       - name: Build and install the Arch package
         if: matrix.distro == 'Arch Linux'
@@ -217,7 +244,7 @@ jobs:
           pacman -Syu --noconfirm --needed base-devel
           useradd -m builder
           install -d -o builder /home/builder/pkg
-          deb=$(ls pkgs/*.deb)
+          deb=$(ls pkgs/*_${{ matrix.deb }}.deb)
           cp "$deb" /home/builder/pkg/
           sed "s|^source=.*|source=(\"$(basename "$deb")\")|" packaging/arch/PKGBUILD > /home/builder/pkg/PKGBUILD
           chown -R builder /home/builder/pkg
