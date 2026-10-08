@@ -215,7 +215,7 @@ fn youtube_links() {
     assert_eq!(youtube_ids("https://youtu.be/abc\"><script>"), v("abc"));
     assert_eq!(
         rewrite_url("https://youtu.be/aqz-KE-bpKQ"),
-        "http://tauri.localhost/youtube.html?v=aqz-KE-bpKQ"
+        format!("{APP_ORIGIN}/youtube.html?v=aqz-KE-bpKQ")
     );
     assert_eq!(rewrite_url("https://example.com/"), "https://example.com/");
 }
