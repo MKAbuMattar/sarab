@@ -10,6 +10,7 @@ optdepends=('gst-plugins-good: video wallpapers'
             'gst-libav: H.264 and other video formats')
 provides=('sarab')
 conflicts=('sarab')
+options=('!debug')
 source=("https://github.com/MKAbuMattar/sarab/releases/download/v${pkgver}/Sarab_${pkgver}_amd64.deb")
 sha256sums=('SKIP')
 
