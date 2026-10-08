@@ -7,12 +7,12 @@ pub fn tick(app: &AppHandle, core: &mut Core) {
             .displays
             .iter()
             .filter_map(|x| window(app, x))
-            .filter_map(|w| w.hwnd().ok())
+            .filter_map(|w| os::handle(&w))
             .chain(
                 core.displays
                     .iter()
                     .filter_map(|x| x.app.as_ref()?.hwnd)
-                    .map(|h| windows::Win32::Foundation::HWND(h as _)),
+                    .map(|h| os::HWND(h as _)),
             )
             .collect();
         if os::ensure_order(&d, &wins) {

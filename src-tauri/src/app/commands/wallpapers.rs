@@ -62,12 +62,12 @@ pub(crate) async fn move_library(app: AppHandle) -> Result<Option<String>, Strin
     let (old, owner) = with_core(&app, |app, core| {
         let owner = app
             .get_webview_window("main")
-            .and_then(|w| w.hwnd().ok())
+            .and_then(|w| os::platform::handle(&w))
             .map(|h| h.0 as isize);
         (wallpaper::library_dir(&core.settings), owner)
     });
-    let owner = owner.map(|h| windows::Win32::Foundation::HWND(h as *mut _));
-    let Some(new) = os::windows::pick_folder(owner, old.parent()) else {
+    let owner = owner.map(|h| os::platform::HWND(h as *mut _));
+    let Some(new) = os::platform::pick_folder(owner, old.parent()) else {
         return Ok(None);
     };
     let new = if new.file_name().is_some_and(|n| n == "Library") {

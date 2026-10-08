@@ -2,7 +2,7 @@ use super::*;
 
 pub(in crate::engine::wallpaper) fn run_mouse_input(app: &AppHandle, core: &mut Core) {
     use std::sync::atomic::{AtomicBool, Ordering};
-    let targets: Vec<(windows::Win32::Foundation::RECT, isize)> = if core.settings.mouse_input {
+    let targets: Vec<(os::RECT, isize)> = if core.settings.mouse_input {
         core.displays
             .iter()
             .filter(|d| {
@@ -11,7 +11,7 @@ pub(in crate::engine::wallpaper) fn run_mouse_input(app: &AppHandle, core: &mut 
                     .and_then(|id| core.find(id))
                     .is_some_and(|w| matches!(w.info.r#type, Kind::Web | Kind::Url))
             })
-            .filter_map(|d| window(app, d)?.hwnd().ok())
+            .filter_map(|d| os::handle(&window(app, d)?))
             .filter_map(|h| Some((os::window_rect(h)?, os::input_window(h)?)))
             .collect()
     } else {

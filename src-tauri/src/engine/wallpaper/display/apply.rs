@@ -108,11 +108,13 @@ pub(in crate::engine::wallpaper) fn create_window(
         .build()
         .map_err(|e| e.to_string())?;
     core.displays[i].label = Some(lbl);
-    let attached = win.hwnd().map_err(|e| e.to_string()).and_then(|hwnd| {
-        os::attach(&desk, hwnd, wallpaper_rect(core, i)).map_err(|e| e.to_string())?;
-        os::show(hwnd, true);
-        Ok(())
-    });
+    let attached = os::handle(&win)
+        .ok_or_else(|| "no window handle".to_string())
+        .and_then(|hwnd| {
+            os::attach(&desk, hwnd, wallpaper_rect(core, i)).map_err(|e| e.to_string())?;
+            os::show(hwnd, true);
+            Ok(())
+        });
     if attached.is_err() {
         close_window(app, core, i);
     }

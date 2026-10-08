@@ -134,7 +134,7 @@ fn notify(app: &AppHandle, version: &str) {
             let _ = tray.set_menu(Some(menu));
         }
     }
-    let xml = crate::os::windows::update_toast_xml(
+    let xml = crate::os::platform::update_toast_xml(
         &t("update.toastTitle"),
         &t("update.toastBody"),
         &t("update.now"),
@@ -142,7 +142,7 @@ fn notify(app: &AppHandle, version: &str) {
     );
     let a = app.clone();
     let shown =
-        crate::os::windows::show_toast(crate::core::settings::APP_ID, &xml, move |answer| {
+        crate::os::platform::show_toast(crate::core::settings::APP_ID, &xml, move |answer| {
             log(format!("update toast: {answer:?}"));
             match answer.as_str() {
                 "install" => crate::handle_args(&a, &["install-update".to_string()]),

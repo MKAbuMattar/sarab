@@ -44,7 +44,7 @@ pub(in crate::engine::wallpaper) fn attach_app(core: &mut Core, i: usize, pid: u
     let Some(desk) = core.desktop else {
         return;
     };
-    let h = windows::Win32::Foundation::HWND(hwnd as _);
+    let h = os::HWND(hwnd as _);
     match os::attach(&desk, h, wallpaper_rect(core, i)) {
         Ok(()) => {
             os::show(h, true);

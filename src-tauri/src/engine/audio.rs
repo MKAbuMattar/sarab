@@ -68,7 +68,7 @@ impl Feed {
         let wanted = Arc::new(AtomicBool::new(true));
         let w = wanted.clone();
         std::thread::spawn(move || {
-            if let Err(e) = crate::os::windows::loopback(&w, &mut |samples: &[f32]| {
+            if let Err(e) = crate::os::platform::loopback(&w, &mut |samples: &[f32]| {
                 send(&spectrum(samples));
             }) {
                 crate::engine::wallpaper::log(format!("audio feed: {e}"));

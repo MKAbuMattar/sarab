@@ -12,7 +12,7 @@ pub(crate) fn theme_of(name: &str) -> Option<tauri::Theme> {
 
 pub(crate) fn effects_for(name: &str) -> Option<tauri::utils::config::WindowEffectsConfig> {
     use tauri::window::{Effect, EffectsBuilder};
-    let build = windows_version::OsVersion::current().build;
+    let build = crate::os::platform::os_build();
     let effect = match name {
         "acrylic" if build >= 18362 => Effect::Acrylic,
         "mica" if build >= 22000 => Effect::Mica,

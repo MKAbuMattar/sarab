@@ -2,6 +2,8 @@ pub(in crate::os::windows) use super::*;
 
 mod images;
 pub use images::*;
+mod capture;
+pub use capture::*;
 mod dialogs;
 pub use dialogs::*;
 mod toast;
