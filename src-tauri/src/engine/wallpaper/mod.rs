@@ -33,6 +33,8 @@ pub const INJECT: &str = include_str!("../../scripts/inject.js");
 
 #[cfg(windows)]
 const APP_ORIGIN: &str = "http://tauri.localhost";
+#[cfg(not(windows))]
+const APP_ORIGIN: &str = "tauri://localhost";
 
 pub struct Display {
     pub mon: os::Monitor,
