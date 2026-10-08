@@ -1,4 +1,4 @@
-use crate::os::windows as os;
+use crate::os::platform as os;
 use serde::Serialize;
 use std::time::Instant;
 

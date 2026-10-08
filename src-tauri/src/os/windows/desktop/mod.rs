@@ -1,5 +1,7 @@
 pub(in crate::os::windows) use super::*;
 
+mod window;
+pub use window::*;
 mod embed;
 pub use embed::*;
 mod displays;

@@ -1,7 +1,8 @@
 use crate::core::pause::{self, Reason, Signals, State};
 use crate::core::settings::{self, Layout, Settings};
 use crate::library::{self, Kind, Target, Wallpaper};
-use crate::os::windows as os;
+use crate::os::platform as os;
+use crate::os::platform::RECT;
 use serde_json::{json, Map, Value};
 use std::{
     collections::BTreeMap,
@@ -10,7 +11,6 @@ use std::{
     sync::Mutex,
 };
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
-use windows::Win32::Foundation::RECT;
 
 mod display;
 pub use display::*;
@@ -33,6 +33,8 @@ pub const INJECT: &str = include_str!("../../scripts/inject.js");
 
 #[cfg(windows)]
 const APP_ORIGIN: &str = "http://tauri.localhost";
+#[cfg(not(windows))]
+const APP_ORIGIN: &str = "tauri://localhost";
 
 pub struct Display {
     pub mon: os::Monitor,

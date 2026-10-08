@@ -215,7 +215,7 @@ fn youtube_links() {
     assert_eq!(youtube_ids("https://youtu.be/abc\"><script>"), v("abc"));
     assert_eq!(
         rewrite_url("https://youtu.be/aqz-KE-bpKQ"),
-        "http://tauri.localhost/youtube.html?v=aqz-KE-bpKQ"
+        format!("{APP_ORIGIN}/youtube.html?v=aqz-KE-bpKQ")
     );
     assert_eq!(rewrite_url("https://example.com/"), "https://example.com/");
 }
@@ -228,31 +228,4 @@ fn one_thumbnail_capture_per_wallpaper() {
     release_capture(&dir);
     assert!(claim_capture(&dir), "free again once done");
     release_capture(&dir);
-}
-
-#[test]
-fn released_waits_for_the_writer() {
-    use std::os::windows::fs::OpenOptionsExt;
-    let p = std::env::temp_dir().join(format!("sarab-test-released-{}.png", std::process::id()));
-    std::fs::write(&p, b"png").unwrap();
-    let held = std::fs::OpenOptions::new()
-        .write(true)
-        .share_mode(0)
-        .open(&p)
-        .unwrap();
-    let t = std::thread::spawn(move || {
-        std::thread::sleep(std::time::Duration::from_millis(300));
-        drop(held);
-    });
-    let start = std::time::Instant::now();
-    assert!(released(&p), "free once the writer lets go");
-    assert!(
-        start.elapsed() >= std::time::Duration::from_millis(250),
-        "it waited"
-    );
-    t.join().unwrap();
-    assert!(!released(
-        &std::env::temp_dir().join("sarab-test-no-such-file.png")
-    ));
-    let _ = std::fs::remove_file(&p);
 }

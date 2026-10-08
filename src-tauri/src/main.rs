@@ -32,13 +32,13 @@ fn main() {
         Some("--remove-from-path") => Some(false),
         _ => None,
     } {
-        if let Err(e) = os::windows::set_on_path(add) {
+        if let Err(e) = os::platform::set_on_path(add) {
             log(format!("PATH: {e}"));
         }
         return;
     }
     if let Err(e) = cli::parse(&args) {
-        os::windows::tell_terminal(&format!("sarab: {e}"));
+        os::platform::tell_terminal(&format!("sarab: {e}"));
         std::process::exit(2);
     }
     let app = tauri::Builder::default()
@@ -129,11 +129,11 @@ fn main() {
                 let st = h.state::<Shared>();
                 let mut core = st.lock().unwrap();
                 rescan(&mut core);
-                core.desktop = os::windows::find_desktop();
+                core.desktop = os::platform::find_desktop();
                 if core.desktop.is_none() {
                     log("desktop layer (WorkerW) not found; will retry");
                 }
-                os::windows::refresh_desktop(core.desktop.as_ref());
+                os::platform::refresh_desktop(core.desktop.as_ref());
                 wallpaper::sync_displays(&h, &mut core);
                 core.settings.language.clone()
             };
@@ -183,7 +183,7 @@ fn main() {
             for w in app.webview_windows().values() {
                 let _ = w.destroy();
             }
-            os::windows::refresh_desktop(core.desktop.as_ref());
+            os::platform::refresh_desktop(core.desktop.as_ref());
             log("exit");
         }
         _ => {}

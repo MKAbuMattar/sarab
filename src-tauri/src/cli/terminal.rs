@@ -1,5 +1,5 @@
 use crate::cli::{self, Command};
-use crate::os::windows as os;
+use crate::os::platform as os;
 use serde_json::Value;
 use std::time::{Duration, SystemTime};
 

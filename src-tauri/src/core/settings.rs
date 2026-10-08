@@ -66,7 +66,7 @@ impl Default for Settings {
             keep_frame_on_quit: false,
             cycle_order: "order".into(),
             cycle_category: "all".into(),
-            unload_minutes: if crate::os::windows::total_ram() < 8 << 30 {
+            unload_minutes: if crate::os::platform::total_ram() < 8 << 30 {
                 5
             } else {
                 0

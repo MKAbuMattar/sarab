@@ -1,6 +1,7 @@
 use crate::core::pause::Signals;
 use windows::core::{w, BOOL, HSTRING, PCWSTR, PWSTR};
-use windows::Win32::Foundation::{CloseHandle, HWND, LPARAM, POINT, RECT, WPARAM};
+use windows::Win32::Foundation::{CloseHandle, LPARAM, POINT, WPARAM};
+pub use windows::Win32::Foundation::{HWND, RECT};
 use windows::Win32::Graphics::Dwm::{
     DwmGetWindowAttribute, DWMWA_CLOAKED, DWMWA_EXTENDED_FRAME_BOUNDS,
 };
