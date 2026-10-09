@@ -1,13 +1,10 @@
-// The part of a video that plays: a preview, a track with start and end handles,
-// time fields, [ and ] marks while it plays, and a loop of only the seam.
-const TRIM_LAG = 0.25; // reaction time taken off a [ or ] mark made while playing
-const TRIM_MIN = 0.5; // the shortest loop, as the backend allows
+const TRIM_LAG = 0.25;
+const TRIM_MIN = 0.5;
 
 const fmtTime = (s) => {
   const m = Math.floor(s / 60);
   return `${m}:${(s - m * 60).toFixed(1).padStart(4, "0")}`;
 };
-// "1:05.5", "65.5" and "1,5" all read as seconds.
 const parseTime = (text) => {
   const parts = text.trim().replace(",", ".").split(":");
   if (parts.some((p) => p === "" || isNaN(p))) return NaN;
@@ -69,8 +66,7 @@ function trimEditor(src, clip) {
   const said = el("p", { class: "said caption", "aria-live": "polite" });
   const root = el(
     "section",
-    { id: "trim", class: "trim", "aria-labelledby": "trim-title" },
-    el("h3", { id: "trim-title" }, t("trim.title")),
+    { id: "trim", class: "trim" },
     video,
     track,
     el("div", { class: "times" }, fStart, fEnd),
@@ -110,7 +106,6 @@ function trimEditor(src, clip) {
       d: fmtTime(dur),
     });
   }
-  // Moves one edge, keeps the loop at least TRIM_MIN long, and shows that frame.
   function set(which, s, show = true) {
     s = Math.min(Math.max(s, 0), dur);
     if (which === "start") start = Math.min(s, dur - TRIM_MIN);
@@ -121,6 +116,7 @@ function trimEditor(src, clip) {
     }
     if (show && !looping) video.currentTime = which === "start" ? start : end;
     render();
+    root.dispatchEvent(new Event("input", { bubbles: true }));
   }
 
   video.addEventListener("loadedmetadata", () => {
@@ -131,7 +127,6 @@ function trimEditor(src, clip) {
     video.currentTime = start;
     render();
   });
-  // The playhead, and the loop: the whole selection, or only its seam.
   function tick() {
     head.style.left = dur ? `${(video.currentTime / dur) * 100}%` : "0";
     if (looping) {
@@ -177,9 +172,9 @@ function trimEditor(src, clip) {
     start = 0;
     end = dur;
     render();
+    root.dispatchEvent(new Event("input", { bubbles: true }));
   };
 
-  // Dragging a handle, or clicking the track to look at a moment.
   const secAt = (x) => {
     const r = track.getBoundingClientRect();
     return ((x - r.left) / r.width) * dur;
@@ -223,7 +218,6 @@ function trimEditor(src, clip) {
       video.currentTime = Math.min(Math.max(secAt(e.clientX), 0), dur);
   });
 
-  // Typed times: m:ss.s or seconds. A time that does not read goes back to the last one.
   for (const [f, which] of [
     [fStart.lastChild, "start"],
     [fEnd.lastChild, "end"],
@@ -243,14 +237,12 @@ function trimEditor(src, clip) {
     });
   }
 
-  // [ and ] set the start and the end where the video is, while it plays or paused.
   root.addEventListener("keydown", (e) => {
     if (e.target.tagName === "INPUT" || !dur) return;
     if (e.code !== "BracketLeft" && e.code !== "BracketRight") return;
     e.preventDefault();
     const at = Math.max(0, video.currentTime - (video.paused ? 0 : TRIM_LAG));
     const which = e.code === "BracketLeft" ? "start" : "end";
-    // A start after the end, or an end before the start, swaps the two.
     const pair = which === "start" ? [at, end] : [start, at];
     [start, end] = pair[0] <= pair[1] ? pair : [pair[1], pair[0]];
     set(which, which === "start" ? start : end, false);
@@ -259,7 +251,6 @@ function trimEditor(src, clip) {
 
   return {
     el: root,
-    // Undefined keeps the saved clip, [] plays the whole video, [start, end] that part.
     value: () =>
       !dur
         ? undefined

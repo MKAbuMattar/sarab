@@ -1,0 +1,63 @@
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--card-stroke);
+}
+.tabs [role="tab"] {
+  position: relative;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 4px 4px 0 0;
+  background: transparent;
+  color: var(--text-2);
+}
+.tabs [role="tab"][hidden] {
+  display: none;
+}
+.tabs [role="tab"]:hover {
+  background: var(--subtle-hover);
+  color: var(--text);
+}
+.tabs [role="tab"][aria-selected="true"] {
+  color: var(--text);
+  font-weight: 600;
+}
+.tabs [role="tab"][aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  inset-inline: 12px;
+  bottom: -1px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.tabs [role="tab"]:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: -2px;
+}
+.tabs .dirty {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-inline-start: 6px;
+  vertical-align: middle;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.tabs .dirty[hidden] {
+  display: none;
+}
+dialog .panel {
+  display: grid;
+  gap: 16px;
+}
+dialog .panel[hidden] {
+  display: none;
+}
+@media (forced-colors: active) {
+  .tabs [role="tab"][aria-selected="true"]::after,
+  .tabs .dirty {
+    background: Highlight;
+  }
+}

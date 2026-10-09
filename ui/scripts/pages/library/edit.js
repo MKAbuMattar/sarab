@@ -1,8 +1,34 @@
 let trim = null;
+let editTabs = null;
+
+const editField = (message) => {
+  const m = String(message);
+  if (/part that plays|start of 0/i.test(m)) return "#trim [name=start]";
+  if (/tag/i.test(m)) return "#edit-form [name=tags]";
+  if (/categor/i.test(m)) return "#edit-form [name=category]";
+  if (/description|author/i.test(m)) return "#edit-form [name=description]";
+  return "#edit-form [name=title]";
+};
+
+function showEditField(node) {
+  if (!node) return;
+  editTabs.select(editTabs.of(node));
+  node.focus();
+}
 
 async function openEdit(w) {
   const d = $("#edit"),
     f = $("#edit-form");
+  if (!editTabs) {
+    editTabs = tabs($("#edit .tabs"));
+    f.addEventListener(
+      "invalid",
+      (e) => {
+        if (f.querySelector(":invalid") === e.target) showEditField(e.target);
+      },
+      { capture: true },
+    );
+  }
   f.title.value = w.info.title || "";
   f.description.value = w.info.description || "";
   f.author.value = w.info.author || "";
@@ -14,12 +40,16 @@ async function openEdit(w) {
   f.tags.value = (w.info.tags || []).join(", ");
   $("#edit-error").hidden = true;
   combo(f.category);
-  // Videos get the part-that-plays editor.
   trim?.stop();
   trim = null;
   $("#trim-slot").replaceChildren();
-  d.classList.toggle("wide", w.info.type === "video");
-  if (w.info.type === "video") {
+  const video = w.info.type === "video";
+  d.classList.toggle("wide", video);
+  $("#edit-tab-part").hidden = !video;
+  $("#edit-tab-thumb").hidden = true;
+  d.querySelectorAll(".tabs .dirty").forEach((x) => (x.hidden = true));
+  editTabs.select($("#edit-tab-details"));
+  if (video) {
     const file = await invoke("video_file", { id: w.id }).catch(() => null);
     if (file) {
       trim = trimEditor(
@@ -29,6 +59,10 @@ async function openEdit(w) {
       $("#trim-slot").append(trim.el);
     }
   }
+  f.oninput = (e) => {
+    const tab = editTabs.of(e.target);
+    if (tab) tab.querySelector(".dirty").hidden = false;
+  };
   d.onclose = () => {
     trim?.stop();
     trim = null;
@@ -59,6 +93,7 @@ async function openEdit(w) {
     } catch (err) {
       $("#edit-error").textContent = String(err);
       $("#edit-error").hidden = false;
+      showEditField(document.querySelector(editField(err)));
     }
   };
 }

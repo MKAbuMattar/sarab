@@ -4,6 +4,10 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ## [Unreleased]
 
+### Changed
+
+- Edit wallpaper has tabs: Details, and Part that plays for videos. A dot marks a tab with unsaved changes, and a failed save opens the tab with the problem.
+
 ### Added
 
 - Edit wallpaper has a "Part that plays" editor for videos: drag the start and end handles, type the times, or press [ and ] while it plays. "Seam only" loops the moment the end runs into the start, the one you see over and over on the desktop. Displays playing the wallpaper switch to the new part when you save.

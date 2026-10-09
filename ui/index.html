@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="styles/pages/library/bar.css" />
     <link rel="stylesheet" href="styles/components/dialog-footer.css" />
     <link rel="stylesheet" href="styles/components/trim.css" />
+    <link rel="stylesheet" href="styles/components/tabs.css" />
     <link rel="stylesheet" href="styles/base/media.css" />
     <link rel="stylesheet" href="styles/controls/combo.css" />
     <link rel="stylesheet" href="styles/pages/about.css" />
@@ -543,6 +544,21 @@
       <form method="dialog" id="edit-form">
         <div class="content">
           <h2 id="edit-title" data-t="edit.title"></h2>
+          <div class="tabs" role="tablist" aria-labelledby="edit-title">
+            <button type="button" role="tab" id="edit-tab-details" aria-controls="edit-panel-details" aria-selected="true">
+              <span data-t="edit.details"></span>
+              <span class="dirty" hidden><span class="sr-only" data-t="edit.unsaved"></span></span>
+            </button>
+            <button type="button" role="tab" id="edit-tab-part" aria-controls="edit-panel-part" aria-selected="false" tabindex="-1">
+              <span data-t="trim.title"></span>
+              <span class="dirty" hidden><span class="sr-only" data-t="edit.unsaved"></span></span>
+            </button>
+            <button type="button" role="tab" id="edit-tab-thumb" aria-controls="edit-panel-thumb" aria-selected="false" tabindex="-1" hidden>
+              <span data-t="edit.thumbnail"></span>
+              <span class="dirty" hidden><span class="sr-only" data-t="edit.unsaved"></span></span>
+            </button>
+          </div>
+          <div class="panel" role="tabpanel" id="edit-panel-details" aria-labelledby="edit-tab-details">
           <label
             ><span data-t="edit.name"></span
             ><input
@@ -581,7 +597,11 @@
               data-t="edit.tagsHint"
             ></span
           ></label>
-          <div id="trim-slot"></div>
+          </div>
+          <div class="panel" role="tabpanel" id="edit-panel-part" aria-labelledby="edit-tab-part" hidden>
+            <div id="trim-slot"></div>
+          </div>
+          <div class="panel" role="tabpanel" id="edit-panel-thumb" aria-labelledby="edit-tab-thumb" hidden></div>
           <p
             id="edit-error"
             class="caption danger-text"
@@ -642,6 +662,7 @@
     <script src="scripts/components/combo.js"></script>
     <script src="scripts/components/dialog.js"></script>
     <script src="scripts/components/text-menu.js"></script>
+    <script src="scripts/components/tabs.js"></script>
     <script src="scripts/components/trim.js"></script>
     <script src="scripts/components/window-menu.js"></script>
     <script src="scripts/components/menu.js"></script>
