@@ -1,0 +1,25 @@
+.infobar {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 16px;
+  margin: 12px 0;
+  border-radius: 4px;
+  background: var(--infobar-error);
+  border: 1px solid var(--card-stroke);
+}
+.infobar .icon {
+  color: var(--danger-text);
+  margin-top: 2px;
+}
+.infobar.info {
+  background: var(--card);
+  align-items: center;
+}
+.infobar.info .icon {
+  color: var(--accent);
+  margin-top: 0;
+}
+.infobar[hidden] {
+  display: none;
+}

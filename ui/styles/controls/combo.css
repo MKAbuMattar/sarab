@@ -1,0 +1,65 @@
+button.subtle[aria-pressed="true"] {
+  background: var(--subtle-hover);
+}
+
+select.native {
+  display: none;
+}
+.combo {
+  min-width: 140px;
+  justify-content: space-between;
+}
+.combo .icon {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.flyout {
+  position: fixed;
+  z-index: 10;
+  padding: 2px 0;
+  max-height: 60vh;
+  overflow: auto;
+  background: var(--dialog);
+  color: var(--text);
+  border: 1px solid var(--card-stroke);
+  border-radius: 8px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.14);
+}
+.option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 32px;
+  margin: 3px 4px;
+  padding: 0 12px;
+  border-radius: 4px;
+  cursor: default;
+  white-space: nowrap;
+}
+.option:hover,
+.option:focus {
+  background: var(--subtle-hover);
+  outline: none;
+}
+.option[aria-selected="true"] {
+  background: var(--subtle-hover);
+}
+.option[aria-selected="true"]::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  top: 9px;
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+@media (forced-colors: active) {
+  .flyout {
+    background: Canvas;
+    border-color: CanvasText;
+  }
+  .option[aria-selected="true"] {
+    outline: 1px solid Highlight;
+  }
+}

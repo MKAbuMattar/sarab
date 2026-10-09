@@ -1,0 +1,71 @@
+button,
+select,
+input[type="text"],
+input[type="number"],
+input[type="password"],
+textarea {
+  font: inherit;
+  color: var(--text);
+  border-radius: 4px;
+  min-height: 32px;
+  border: 1px solid var(--control-stroke);
+  border-bottom-color: var(--control-stroke-bottom);
+  background: var(--control);
+}
+button {
+  padding: 5px 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: default;
+}
+button:hover,
+select:hover {
+  background: var(--control-hover);
+}
+button:active {
+  color: var(--text-2);
+}
+button.accent {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: transparent;
+}
+button.accent:hover {
+  background: var(--accent-hover);
+}
+button.subtle {
+  background: transparent;
+  border-color: transparent;
+}
+button.subtle:hover {
+  background: var(--subtle-hover);
+}
+button.danger .icon {
+  color: var(--danger-text);
+}
+select {
+  padding: 5px 30px 5px 11px;
+  padding-inline: 11px 30px;
+}
+input[type="text"],
+input[type="number"],
+input[type="password"],
+textarea {
+  padding: 5px 11px;
+  background: var(--control);
+}
+input[type="text"]:focus,
+textarea:focus {
+  outline: none;
+  background: var(--control-input);
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 4px;
+}
+input[type="text"]::placeholder {
+  color: var(--text-3);
+}
+textarea {
+  width: 100%;
+  resize: vertical;
+}
