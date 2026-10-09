@@ -57,6 +57,7 @@ fn main() {
         .manage::<Shared>(Mutex::new(Core::load()))
         .invoke_handler(tauri::generate_handler![
             state,
+            clipboard_text,
             set_wallpaper,
             add,
             import,

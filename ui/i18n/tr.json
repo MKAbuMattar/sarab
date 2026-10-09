@@ -223,5 +223,10 @@
   "channel.beta": "Beta",
   "library.appTitle": "{title} duvar kâğıdı olarak çalıştırılsın mı?",
   "library.appBody": "Bu bir program. Açtığınız her uygulamayla aynı yetkilerle çalışır; yalnızca güvendiğiniz programları kullanın. Duvar kâğıdı değişince veya Sarab kapanınca Sarab onu kapatır.",
-  "library.run": "Çalıştır"
+  "library.run": "Çalıştır",
+  "menu.undo": "Geri al",
+  "menu.cut": "Kes",
+  "menu.copy": "Kopyala",
+  "menu.paste": "Yapıştır",
+  "menu.selectAll": "Tümünü seç"
 }

@@ -1,0 +1,65 @@
+* {
+  box-sizing: border-box;
+}
+html {
+  height: 100%;
+  background: var(--solid-base);
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: default;
+}
+input,
+textarea,
+[contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+  cursor: text;
+}
+input[type="checkbox"],
+input[type="range"],
+input[type="color"] {
+  cursor: default;
+}
+a[href] {
+  cursor: pointer;
+}
+img,
+video {
+  -webkit-user-drag: none;
+}
+html.translucent {
+  background: transparent;
+}
+html:not([data-theme]) body {
+  visibility: hidden;
+}
+body {
+  margin: 0;
+  height: 100%;
+  color: var(--text);
+  font:
+    14px/20px "Segoe UI Variable Text",
+    "Segoe UI Variable",
+    "Segoe UI",
+    system-ui,
+    sans-serif;
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  -webkit-font-smoothing: antialiased;
+}
+.icon {
+  font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+  font-size: 16px;
+  line-height: 1;
+  font-style: normal;
+}
+[dir="rtl"] .flip {
+  transform: scaleX(-1);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}

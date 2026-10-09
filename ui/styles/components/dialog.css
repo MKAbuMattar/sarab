@@ -1,0 +1,28 @@
+dialog {
+  padding: 0;
+  border: 1px solid var(--card-stroke);
+  border-radius: 8px;
+  background: var(--dialog);
+  color: var(--text);
+  width: min(540px, 92vw);
+  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.28);
+}
+dialog::backdrop {
+  background: var(--smoke);
+}
+dialog .content {
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+  max-height: 60vh;
+  overflow: auto;
+}
+dialog h2 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 28px;
+}
+dialog label {
+  display: grid;
+  gap: 6px;
+}

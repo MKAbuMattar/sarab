@@ -1,0 +1,42 @@
+main {
+  min-height: 0;
+  overflow: auto;
+  padding: 28px 40px 40px;
+  background: var(--layer);
+  border-top: 1px solid var(--layer-stroke);
+  border-inline-start: 1px solid var(--layer-stroke);
+  border-start-start-radius: 8px;
+}
+.page[hidden] {
+  display: none;
+}
+.page {
+  max-width: 1000px;
+}
+h1 {
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 600;
+  margin: 0 0 20px;
+}
+h2 {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  margin: 24px 0 8px;
+}
+.caption {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-2);
+}
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.grow {
+  flex: 1 1 280px;
+  min-width: 0;
+}

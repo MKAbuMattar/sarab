@@ -1,0 +1,67 @@
+.menu {
+  position: fixed;
+  z-index: 10;
+  min-width: 180px;
+  padding: 4px;
+  display: grid;
+  gap: 2px;
+  background: var(--dialog);
+  color: var(--text);
+  border: 1px solid var(--card-stroke-hover);
+  border-radius: 8px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.26);
+}
+.menu[hidden] {
+  display: none;
+}
+.menu:focus {
+  outline: none;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.26);
+}
+.menu button {
+  border: 0;
+  background: transparent;
+  min-height: 32px;
+  padding: 0 12px;
+  gap: 12px;
+  justify-content: flex-start;
+  text-align: start;
+  width: 100%;
+}
+.menu button:hover,
+.menu button:focus-visible {
+  background: var(--subtle-hover);
+  outline: none;
+  box-shadow: none;
+}
+.menu button .icon {
+  font-size: 16px;
+}
+.menu button.danger .icon {
+  color: inherit;
+}
+.menu button.danger:hover .icon,
+.menu button.danger:focus-visible .icon {
+  color: var(--danger-text);
+}
+@media (forced-colors: active) {
+  .menu {
+    border-color: CanvasText;
+  }
+  .menu button:focus-visible {
+    outline: 2px solid Highlight;
+  }
+}
+.menu button .keys {
+  margin-inline-start: auto;
+  padding-inline-start: 24px;
+  color: var(--text-2);
+  font-size: 12px;
+}
+.menu button:disabled {
+  color: var(--text-3);
+  background: transparent;
+}
+.menu button:disabled .keys {
+  color: var(--text-3);
+}

@@ -1,0 +1,37 @@
+input.switch {
+  appearance: none;
+  position: relative;
+  width: 40px;
+  height: 20px;
+  margin: 0;
+  flex: none;
+  border-radius: 10px;
+  border: 1px solid var(--text-2);
+  background: var(--control);
+  cursor: default;
+}
+input.switch::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  inset-inline-start: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--text-2);
+  transition: inset-inline-start 0.15s ease;
+}
+input.switch:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+input.switch:checked::before {
+  inset-inline-start: 23px;
+  background: var(--on-accent);
+}
+.switch-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-2);
+}

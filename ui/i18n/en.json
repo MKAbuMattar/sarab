@@ -223,5 +223,10 @@
   "channel.beta": "Beta",
   "library.appTitle": "Run {title} as your wallpaper?",
   "library.appBody": "This is a program. It runs with the same rights as any app you open, so use only programs you trust. Sarab closes it when the wallpaper changes or Sarab quits.",
-  "library.run": "Run"
+  "library.run": "Run",
+  "menu.undo": "Undo",
+  "menu.cut": "Cut",
+  "menu.copy": "Copy",
+  "menu.paste": "Paste",
+  "menu.selectAll": "Select all"
 }
