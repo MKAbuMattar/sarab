@@ -10,7 +10,7 @@
     "withGlobalTauri": true,
     "windows": [],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' data: http://asset.localhost; media-src 'self' http://asset.localhost; style-src 'self' 'unsafe-inline'; connect-src 'self' ipc: http://ipc.localhost; frame-src https://www.youtube.com",
+      "csp": "default-src 'self'; img-src 'self' data: http://asset.localhost asset://localhost; media-src 'self' http://asset.localhost asset://localhost; style-src 'self' 'unsafe-inline'; connect-src 'self' ipc: http://ipc.localhost; frame-src https://www.youtube.com",
       "assetProtocol": {
         "enable": true,
         "scope": []
@@ -55,6 +55,7 @@
         "depends": [
           "libwebkit2gtk-4.1-0",
           "libgtk-3-0",
+          "libgtk-layer-shell0",
           "libayatana-appindicator3-1"
         ],
         "recommends": [
@@ -66,6 +67,7 @@
         "depends": [
           "webkit2gtk4.1",
           "gtk3",
+          "gtk-layer-shell",
           "libayatana-appindicator-gtk3"
         ],
         "recommends": [

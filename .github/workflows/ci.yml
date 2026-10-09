@@ -140,7 +140,7 @@ jobs:
       - name: Tauri's Linux libraries
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libssl-dev
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev libgtk-layer-shell-dev librsvg2-dev libssl-dev
 
       - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
         with:
@@ -181,7 +181,7 @@ jobs:
       - name: Tauri's Linux libraries
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libssl-dev xvfb
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev libgtk-layer-shell-dev librsvg2-dev libssl-dev xvfb
 
       - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
         with:
@@ -207,8 +207,14 @@ jobs:
       - name: A wallpaper on the X11 desktop
         if: matrix.arch == 'x64'
         run: |
-          sudo apt-get install -y openbox xdotool x11-utils dbus-x11
+          sudo apt-get install -y openbox xdotool x11-utils x11-apps dbus-x11
           bash scripts/check-linux.sh src-tauri/target/release/sarab
+
+      - name: A wallpaper on the Wayland desktop (Sway)
+        if: matrix.arch == 'x64'
+        run: |
+          sudo apt-get install -y sway grim
+          bash scripts/check-wayland.sh src-tauri/target/release/sarab
 
       - name: The AppImage starts
         env:
