@@ -12,7 +12,7 @@ Download: [latest release](https://github.com/MKAbuMattar/sarab/releases/latest)
 
 ## Status
 
-Version 0.0.7, an early release for **Windows 10 (1903 or later) and Windows 11**. Website: [sarab.mkabumattar.com](https://sarab.mkabumattar.com). Linux and macOS are planned; see the [roadmap](ROADMAP.md).
+Version 0.0.9, an early release for **Windows 10 (1903 or later) and Windows 11**, on x64, ARM64 and x86. Website: [sarab.mkabumattar.com](https://sarab.mkabumattar.com). Linux is in testing and macOS is planned; see the [roadmap](ROADMAP.md).
 
 ## What it does
 
