@@ -4,6 +4,14 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ## [Unreleased]
 
+### Added
+
+- Edit wallpaper has a "Part that plays" editor for videos: drag the start and end handles, type the times, or press [ and ] while it plays. "Seam only" loops the moment the end runs into the start, the one you see over and over on the desktop. Displays playing the wallpaper switch to the new part when you save.
+
+### Fixed
+
+- Text in dialogs could be selected with the mouse. Chromium's own stylesheet makes modal dialogs selectable; Sarab's dialogs now behave like the rest of the window.
+
 ## [0.0.10] - 2026-10-09
 
 ### Added

@@ -95,6 +95,7 @@ fn main() {
             install_update,
             get_preset,
             edit_info,
+            video_file,
             details,
             reveal,
             export_wallpaper,

@@ -1,4 +1,6 @@
-function openEdit(w) {
+let trim = null;
+
+async function openEdit(w) {
   const d = $("#edit"),
     f = $("#edit-form");
   f.title.value = w.info.title || "";
@@ -12,6 +14,25 @@ function openEdit(w) {
   f.tags.value = (w.info.tags || []).join(", ");
   $("#edit-error").hidden = true;
   combo(f.category);
+  // Videos get the part-that-plays editor.
+  trim?.stop();
+  trim = null;
+  $("#trim-slot").replaceChildren();
+  d.classList.toggle("wide", w.info.type === "video");
+  if (w.info.type === "video") {
+    const file = await invoke("video_file", { id: w.id }).catch(() => null);
+    if (file) {
+      trim = trimEditor(
+        window.__TAURI__.core.convertFileSrc(file),
+        w.info.clip,
+      );
+      $("#trim-slot").append(trim.el);
+    }
+  }
+  d.onclose = () => {
+    trim?.stop();
+    trim = null;
+  };
   d.returnValue = "cancel";
   d.showModal();
   f.title.focus();
@@ -30,6 +51,7 @@ function openEdit(w) {
             .split(",")
             .map((x) => x.trim())
             .filter(Boolean),
+          clip: trim?.value(),
         },
       });
       d.close("save");

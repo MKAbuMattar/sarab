@@ -1,0 +1,104 @@
+dialog.wide {
+  width: min(680px, 94vw);
+}
+dialog.wide .content {
+  max-height: 76vh;
+}
+.trim {
+  display: grid;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--card-stroke);
+}
+.trim h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.trim video {
+  width: 100%;
+  max-height: 220px;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  background: #000;
+  border-radius: 6px;
+}
+/* The track always runs from 0 on the left, in Arabic too. */
+.trim .track {
+  position: relative;
+  height: 28px;
+  margin: 0 8px;
+  border-radius: 4px;
+  background: var(--control-stroke);
+  touch-action: none;
+}
+.trim .range {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+  border-block: 2px solid var(--accent);
+}
+.trim .head {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--text);
+  pointer-events: none;
+}
+.trim .handle {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 14px;
+  margin-left: -7px;
+  border-radius: 4px;
+  background: var(--accent);
+  cursor: ew-resize;
+}
+.trim .handle::after {
+  content: "";
+  position: absolute;
+  inset: 8px 6px;
+  border-radius: 1px;
+  background: var(--on-accent);
+}
+.trim .handle:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+/* Start sits under the start of the track, in Arabic too. */
+.trim .times {
+  direction: ltr;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.trim .times input {
+  font-variant-numeric: tabular-nums;
+}
+.trim .controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.trim .seam[aria-pressed="true"] {
+  background: var(--subtle-hover);
+  border-color: var(--accent);
+}
+.trim .caption {
+  margin: 0;
+}
+@media (forced-colors: active) {
+  .trim .range {
+    background: Highlight;
+  }
+  .trim .handle {
+    background: ButtonText;
+  }
+}
+[dir="rtl"] .trim .times span {
+  direction: rtl;
+}
