@@ -27,7 +27,8 @@ export WAYLAND_DISPLAY=$sock SWAYSOCK=$(ls "$XDG_RUNTIME_DIR"/sway-ipc.* | head 
 
 dbus-run-session -- bash -c '
   set -euo pipefail
-  "$0" --autostart & sleep 6
+  WAYLAND_DEBUG=client "$0" --autostart 2> "$2/wl-debug.log" & sleep 6
+  grim -t ppm "$2/before.ppm"
   "$0" set "$1"
   status="$XDG_CONFIG_HOME/com.mkabumattar.sarab/status.json"
   for i in $(seq 30); do
@@ -41,6 +42,16 @@ dbus-run-session -- bash -c '
   fi
   swaymsg -t get_tree | grep -E "\"(name|app_id)\"" || true
   grim -t ppm "$2/shot.ppm"
+  echo "layer-shell requests:"
+  grep -oE "zwlr_layer_(shell|surface)_v1@[0-9]+\.[a-z_]+" "$2/wl-debug.log" | sort | uniq -c | head -20 || true
+  grep -E "zwlr_layer_surface_v1@[0-9]+\.configure" "$2/wl-debug.log" | head -3 || true
+  python3 - "$2/before.ppm" <<EOF || true
+import re, sys
+data = open(sys.argv[1], "rb").read()
+head = re.match(rb"P6\s+(\d+)\s+(\d+)\s+\d+\s", data)
+w = int(head[1]); px = data[head.end():]; i = (int(head[2]) // 2 * w + w // 2) * 3
+print("before the wallpaper, centre pixel: #" + px[i:i+3].hex().upper())
+EOF
   python3 - "$2/shot.ppm" <<EOF
 import re, sys
 data = open(sys.argv[1], "rb").read()
