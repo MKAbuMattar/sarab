@@ -16,7 +16,13 @@ pub struct Edit {
     pub author: String,
     pub category: Option<String>,
     pub tags: Vec<String>,
+    /// The part of a video that plays. Missing keeps the current one, `[]` plays the whole
+    /// video, `[start, end]` in seconds plays that part.
+    pub clip: Option<Vec<f64>>,
 }
+
+/// The shortest part of a video that can loop without flickering the desktop.
+pub const MIN_CLIP: f64 = 0.5;
 
 pub(in crate::library) fn optional(s: &str) -> Option<String> {
     let s = s.trim();
@@ -53,11 +59,22 @@ pub fn edit_info(dir: &Path, e: Edit) -> Result<Manifest, String> {
     if tags.len() > 5 {
         return Err("use at most 5 tags".into());
     }
+    let clip = match e.clip.as_deref() {
+        None => info.clip,
+        Some([]) => None,
+        Some(&[a, b]) if info.r#type == Kind::Video && a.is_finite() && b.is_finite() && a >= 0.0 && b - a >= MIN_CLIP => {
+            Some([a, b])
+        }
+        Some(_) => {
+            return Err("the part that plays needs a start of 0 or more and an end at least half a second later".into())
+        }
+    };
     info.title = Some(title.to_string());
     info.description = optional(&e.description);
     info.author = optional(&e.author);
     info.category = category;
     info.tags = tags;
+    info.clip = clip;
     info.version += 1;
     crate::core::settings::save(&dir.join(INFO), &info).map_err(|e| e.to_string())?;
     Ok(info)

@@ -44,8 +44,16 @@ pub(crate) async fn edit_info(
 ) -> Result<(), String> {
     with_core(&app, move |app, core| {
         let w = editable(core, &id)?;
-        library::edit_info(&w.dir, edit)?;
+        let clip = library::edit_info(&w.dir, edit)?.clip;
         rescan(core);
+        // A new clip reloads the displays that play this wallpaper.
+        if clip != w.info.clip {
+            for i in 0..core.displays.len() {
+                if core.displays[i].wallpaper.as_deref() == Some(id.as_str()) {
+                    wallpaper::apply(app, core, i, &id)?;
+                }
+            }
+        }
         changed(app);
         Ok(())
     })
@@ -128,4 +136,21 @@ pub(crate) fn editable(core: &Core, id: &str) -> Result<library::Wallpaper, Stri
         return Err("built-in wallpapers cannot be edited".into());
     }
     Ok(w)
+}
+
+/// The video file of a wallpaper, opened to the window for the trim editor's preview.
+#[tauri::command]
+pub(crate) async fn video_file(app: AppHandle, id: String) -> Result<String, String> {
+    with_core(&app, move |app, core| {
+        let w = core.find(&id).ok_or("not found")?;
+        match (w.info.r#type, w.target()) {
+            (library::Kind::Video, Some(library::Target::File(f))) if f.is_file() => {
+                app.asset_protocol_scope()
+                    .allow_file(&f)
+                    .map_err(|e| e.to_string())?;
+                Ok(f.to_string_lossy().into_owned())
+            }
+            _ => Err("not a video file".into()),
+        }
+    })
 }

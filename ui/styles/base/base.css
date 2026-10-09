@@ -8,6 +8,12 @@ html {
   user-select: none;
   cursor: default;
 }
+/* Chromium's own stylesheet makes modal dialogs selectable
+   (dialog:-internal-dialog-in-top-layer), so they say no again. */
+dialog {
+  -webkit-user-select: none;
+  user-select: none;
+}
 input,
 textarea,
 [contenteditable] {

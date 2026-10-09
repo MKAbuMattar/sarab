@@ -387,6 +387,7 @@ fn edit_info_validates_and_saves() {
         author: "".into(),
         category: category.map(String::from),
         tags: tags.iter().map(|t| t.to_string()).collect(),
+        clip: None,
     };
     let info = edit_info(
         &d,
@@ -464,4 +465,62 @@ fn details_report_folder_facts() {
     )
     .unwrap();
     assert_eq!(details(&read(&url).unwrap()).source, "https://example.com/");
+}
+
+#[test]
+fn edit_info_clip() {
+    let d = tmp("edit-clip");
+    fs::write(
+        d.join(INFO),
+        r#"{"title":"Sea","type":"video","file":"a.mp4","version":1,"clip":[1.0,9.0]}"#,
+    )
+    .unwrap();
+    let with = |clip: Option<Vec<f64>>| Edit {
+        title: "Sea".into(),
+        clip,
+        ..Default::default()
+    };
+    assert_eq!(
+        edit_info(&d, with(None)).unwrap().clip,
+        Some([1.0, 9.0]),
+        "missing keeps it"
+    );
+    assert_eq!(
+        edit_info(&d, with(Some(vec![2.0, 5.5]))).unwrap().clip,
+        Some([2.0, 5.5])
+    );
+    assert_eq!(
+        read(&d).unwrap().info.clip,
+        Some([2.0, 5.5]),
+        "written to sarab.json"
+    );
+    for bad in [
+        vec![-1.0, 3.0],
+        vec![4.0, 4.2],
+        vec![5.0, 2.0],
+        vec![f64::NAN, 3.0],
+        vec![1.0],
+    ] {
+        assert!(edit_info(&d, with(Some(bad.clone()))).is_err(), "{bad:?}");
+    }
+    assert_eq!(
+        read(&d).unwrap().info.clip,
+        Some([2.0, 5.5]),
+        "a bad clip changes nothing"
+    );
+    assert_eq!(
+        edit_info(&d, with(Some(vec![]))).unwrap().clip,
+        None,
+        "[] plays the whole video"
+    );
+
+    fs::write(
+        d.join(INFO),
+        r#"{"title":"Page","type":"web","file":"i.html","version":1}"#,
+    )
+    .unwrap();
+    assert!(
+        edit_info(&d, with(Some(vec![0.0, 2.0]))).is_err(),
+        "only videos have a clip"
+    );
 }
