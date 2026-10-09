@@ -52,3 +52,16 @@
     outline: 2px solid Highlight;
   }
 }
+.menu button .keys {
+  margin-inline-start: auto;
+  padding-inline-start: 24px;
+  color: var(--text-2);
+  font-size: 12px;
+}
+.menu button:disabled {
+  color: var(--text-3);
+  background: transparent;
+}
+.menu button:disabled .keys {
+  color: var(--text-3);
+}

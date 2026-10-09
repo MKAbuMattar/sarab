@@ -8,6 +8,8 @@ mod dialogs;
 pub use dialogs::*;
 mod toast;
 pub use toast::*;
+mod clipboard;
+pub use clipboard::*;
 mod recycle;
 pub use recycle::*;
 mod terminal;

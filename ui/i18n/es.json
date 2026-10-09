@@ -223,5 +223,10 @@
   "channel.beta": "Beta",
   "library.appTitle": "¿Ejecutar {title} como fondo?",
   "library.appBody": "Es un programa. Se ejecuta con los mismos permisos que cualquier app que abras, así que usa solo programas de confianza. Sarab lo cierra al cambiar el fondo o al salir.",
-  "library.run": "Ejecutar"
+  "library.run": "Ejecutar",
+  "menu.undo": "Deshacer",
+  "menu.cut": "Cortar",
+  "menu.copy": "Copiar",
+  "menu.paste": "Pegar",
+  "menu.selectAll": "Seleccionar todo"
 }

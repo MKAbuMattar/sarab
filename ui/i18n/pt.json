@@ -223,5 +223,10 @@
   "channel.beta": "Beta",
   "library.appTitle": "Executar {title} como papel de parede?",
   "library.appBody": "Isto é um programa. Ele roda com as mesmas permissões de qualquer app que você abre, então use só programas confiáveis. O Sarab o fecha quando o papel de parede muda ou o Sarab sai.",
-  "library.run": "Executar"
+  "library.run": "Executar",
+  "menu.undo": "Desfazer",
+  "menu.cut": "Recortar",
+  "menu.copy": "Copiar",
+  "menu.paste": "Colar",
+  "menu.selectAll": "Selecionar tudo"
 }

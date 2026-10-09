@@ -223,5 +223,10 @@
   "channel.beta": "بيتا",
   "library.appTitle": "تشغيل {title} خلفيةً للشاشة؟",
   "library.appBody": "هذا برنامج يعمل بالصلاحيات نفسها لأي تطبيق تفتحه، فاستخدم فقط البرامج التي تثق بها. يغلقه سراب عند تغيير الخلفية أو إغلاق سراب.",
-  "library.run": "تشغيل"
+  "library.run": "تشغيل",
+  "menu.undo": "تراجع",
+  "menu.cut": "قص",
+  "menu.copy": "نسخ",
+  "menu.paste": "لصق",
+  "menu.selectAll": "تحديد الكل"
 }

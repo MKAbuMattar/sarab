@@ -223,5 +223,10 @@
   "channel.beta": "测试版",
   "library.appTitle": "将 {title} 作为壁纸运行？",
   "library.appBody": "这是一个程序，它和你打开的任何应用拥有相同的权限，请只使用你信任的程序。更换壁纸或退出 Sarab 时会关闭它。",
-  "library.run": "运行"
+  "library.run": "运行",
+  "menu.undo": "撤消",
+  "menu.cut": "剪切",
+  "menu.copy": "复制",
+  "menu.paste": "粘贴",
+  "menu.selectAll": "全选"
 }
