@@ -37,6 +37,17 @@ fn main() {
         }
         return;
     }
+    if let Some(r) = cli::answer(&args) {
+        let (text, code) = match r {
+            Ok(t) => (t, 0),
+            Err(e) => (format!("sarab: {e}\n"), 2),
+        };
+        #[cfg(windows)]
+        os::platform::tell_terminal(text.trim_end());
+        #[cfg(not(windows))]
+        print!("{text}");
+        std::process::exit(code);
+    }
     if let Err(e) = cli::parse(&args) {
         os::platform::tell_terminal(&format!("sarab: {e}"));
         std::process::exit(2);

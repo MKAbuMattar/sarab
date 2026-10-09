@@ -29,3 +29,17 @@ pub fn menu_theme(_theme: &str) {}
 pub(in crate::os::linux) fn gtk_window(h: HWND) -> gtk::Window {
     unsafe { glib::translate::from_glib_none(h.0 as *mut gtk::ffi::GtkWindow) }
 }
+
+/// The system for `sarab --version`: "Linux/6.8.0-45-generic session/wayland".
+pub fn os_label() -> String {
+    let kernel = std::fs::read_to_string("/proc/sys/kernel/osrelease").unwrap_or_default();
+    let session = std::env::var("XDG_SESSION_TYPE").unwrap_or_else(|_| {
+        if std::env::var_os("WAYLAND_DISPLAY").is_some() {
+            "wayland"
+        } else {
+            "x11"
+        }
+        .into()
+    });
+    format!("Linux/{} session/{session}", kernel.trim())
+}

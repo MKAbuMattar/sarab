@@ -48,3 +48,10 @@ pub fn round_corners(hwnd: HWND) {
         );
     }
 }
+
+/// The system for `sarab --version`: "Windows/11 build/26100".
+pub fn os_label() -> String {
+    let build = os_build();
+    let major = if build >= 22000 { 11 } else { 10 };
+    format!("Windows/{major} build/{build}")
+}

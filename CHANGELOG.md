@@ -10,6 +10,8 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 - A first Linux preview, for x64 and ARM64: `.deb`, `.rpm`, AppImage and an Arch package with each release. Wallpapers play on X11 desktops, and on Wayland desktops with the layer-shell protocol (KDE Plasma, Sway, Hyprland, COSMIC and others); on GNOME, Sarab runs through XWayland. Wallpapers do not rest on Linux yet.
 - Text boxes have Sarab's own right-click menu: Undo, Cut, Copy, Paste and Select all.
+- `sarab help` lists every command, and `sarab help <command>` (or `sarab <command> --help`) shows its synopsis, options and examples.
+- `sarab --version` prints one line for bug reports: `sarab/0.0.10 Windows/11 build/26100 WebView2/... exe/x64 channel/stable`.
 
 ### Changed
 

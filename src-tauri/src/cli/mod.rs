@@ -1,3 +1,4 @@
+pub mod help;
 pub mod terminal;
 
 #[derive(Debug, PartialEq)]
@@ -33,7 +34,42 @@ pub enum Command {
     },
 }
 
-pub const USAGE: &str = "usage: sarab [set <file|folder|url> | close | pause | play | resume | toggle | prop <key>=<value> | volume <0-100> | next | import <zip> | ui | status | preset <id> | check-update | install-update | screenshot <file.png> | quit] [--display N]";
+pub const USAGE: &str = "usage: sarab [help | --version | set <file|folder|url> | close | pause | play | resume | toggle | prop <key>=<value> | volume <0-100> | next | import <zip> | ui | status | preset <id> | check-update | install-update | screenshot <file.png> | quit] [--display N]";
+
+/// One line in the style of `aws --version`: name/version pairs for a bug report.
+pub fn version_line() -> String {
+    use crate::core::settings::{self, Settings};
+    let s: Settings = settings::load(&settings::config_dir().join("settings.json"));
+    let arch = match std::env::consts::ARCH {
+        "x86_64" => "x64",
+        "aarch64" => "arm64",
+        a => a,
+    };
+    let engine = if cfg!(windows) {
+        "WebView2"
+    } else {
+        "WebKitGTK"
+    };
+    let webview = tauri::webview_version()
+        .map(|v| format!(" {engine}/{v}"))
+        .unwrap_or_default();
+    format!(
+        "sarab/{} {}{webview} exe/{arch} channel/{}",
+        env!("CARGO_PKG_VERSION"),
+        crate::os::platform::os_label(),
+        s.update_channel
+    )
+}
+
+/// Answers that need no running Sarab: `--version` and help.
+pub fn answer(args: &[String]) -> Option<Result<String, String>> {
+    if args.first().is_some_and(|a| a == "--version") {
+        return Some(Ok(version_line()
+            + "
+"));
+    }
+    help::wants_help(args).map(help::help)
+}
 
 pub fn parse(args: &[String]) -> Result<Option<Command>, String> {
     let mut display = None;
