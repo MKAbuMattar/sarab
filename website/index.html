@@ -1,108 +1,357 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sarab · Animated wallpapers for Windows</title>
-<meta name="description" content="Sarab plays videos, GIFs, web pages and pictures behind your Windows desktop icons, and rests whenever you work. Free and open source.">
-<meta name="color-scheme" content="light dark">
-<meta property="og:title" content="Sarab · Animated wallpapers for Windows">
-<meta property="og:description" content="Videos, GIFs and web pages behind your desktop icons. Sarab rests whenever an app covers the screen, so it stays light on old PCs.">
-<meta property="og:image" content="https://sarab.mkabumattar.com/window-dark.png">
-<meta property="og:url" content="https://sarab.mkabumattar.com/">
-<link rel="icon" href="favicon.ico">
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
-<header class="bar">
-  <a class="brand" href="#top"><img src="logo.png" alt="" width="32" height="32"><span>Sarab</span><span class="ar" lang="ar" dir="rtl">سراب</span></a>
-  <nav>
-    <a href="#features">Features</a>
-    <a href="#command-line">Command line</a>
-    <a href="#install">Install</a>
-    <a href="https://github.com/MKAbuMattar/sarab">GitHub</a>
-  </nav>
-</header>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sarab · Animated wallpapers that rest when you work</title>
+    <meta
+      name="description"
+      content="Sarab plays videos, GIFs, web pages and pictures behind your desktop icons, and rests whenever you work. Free and open source, a 2 MB download for Windows x64, ARM64 and x86."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#2b2233" />
+    <meta
+      property="og:title"
+      content="Sarab · Animated wallpapers that rest when you work"
+    />
+    <meta
+      property="og:description"
+      content="Videos, GIFs and web pages behind your desktop icons. Sarab rests whenever an app covers the screen, so it stays light on old PCs."
+    />
+    <meta
+      property="og:image"
+      content="https://sarab.mkabumattar.com/window-dark.png"
+    />
+    <meta property="og:url" content="https://sarab.mkabumattar.com/" />
+    <link rel="icon" href="favicon.ico" />
+    <link rel="stylesheet" href="style.css" />
+    <script src="download.js" defer></script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="bar">
+      <a class="brand" href="#top"
+        ><img src="logo.png" alt="" width="28" height="28" /><span>Sarab</span
+        ><span class="ar" lang="ar" dir="rtl">سراب</span></a
+      >
+      <nav aria-label="Sections">
+        <a href="#features">Features</a>
+        <a href="#command-line">Command line</a>
+        <a href="#download">Download</a>
+        <a href="https://github.com/MKAbuMattar/sarab">GitHub</a>
+      </nav>
+    </header>
 
-<main id="top">
-  <section class="hero">
-    <div class="pitch">
-      <h1>Animated wallpapers for Windows that rest when you work.</h1>
-      <p class="lead">Sarab plays videos, GIFs, web pages and pictures behind your desktop icons, on one display or many. When an app covers the screen, the laptop runs on battery or the PC locks, the wallpaper freezes on its last frame, so it stays light on old PCs.</p>
-      <div class="cta">
-        <a class="button primary" href="https://github.com/MKAbuMattar/sarab/releases/latest">Download for Windows</a>
-        <a class="button" href="https://github.com/MKAbuMattar/sarab">Source on GitHub</a>
-      </div>
-      <p class="fine">Windows 10 (1903 or later) and Windows 11. Free, GPL-3.0. Installs for your user, no administrator rights.</p>
-    </div>
-    <picture class="shot">
-      <source srcset="window-dark.png" media="(prefers-color-scheme: dark)">
-      <img src="window-light.png" alt="The Sarab window: two displays playing Dead Sea at dusk, and a library of wallpapers with thumbnails" width="1280" height="820">
-    </picture>
-  </section>
+    <main id="main">
+      <section class="hero" id="top">
+        <div class="wrap hero-grid">
+          <div class="pitch">
+            <p class="eyebrow">
+              Free and open source ·
+              <a href="#download" data-latest>Version 0.0.9</a>
+            </p>
+            <h1>
+              Animated wallpapers that <em>rest</em> when you work.
+            </h1>
+            <p class="lead">
+              Sarab plays videos, GIFs, web pages and pictures behind your
+              desktop icons, on one display or many. When an app covers the
+              screen, the laptop runs on battery or the PC locks, the wallpaper
+              freezes on its last frame, so it stays light on old PCs.
+            </p>
+            <div class="cta">
+              <a
+                class="button primary"
+                id="hero-download"
+                href="https://github.com/MKAbuMattar/sarab/releases/download/v0.0.9/Sarab_0.0.9_x64-setup.exe"
+                ><svg aria-hidden="true" viewBox="0 0 16 16">
+                  <path d="M8 1v9m0 0L4.5 6.5M8 10l3.5-3.5M2 13.5h12" />
+                </svg>
+                <span id="hero-label">Download for Windows</span></a
+              >
+              <a class="button" href="#download">Other downloads</a>
+            </div>
+            <p class="fine" id="hero-fine">
+              Windows 10 (1903 or later) and 11 · x64 · 2.2 MB · No
+              administrator rights
+            </p>
+          </div>
+          <div class="stage">
+            <div class="mirage" aria-hidden="true"></div>
+            <picture>
+              <source
+                srcset="window-dark.png"
+                media="(prefers-color-scheme: dark)"
+              />
+              <img
+                src="window-light.png"
+                alt="The Sarab window: two displays playing Dead Sea at dusk, and a library of wallpapers with thumbnails"
+                width="1280"
+                height="820"
+              />
+            </picture>
+          </div>
+        </div>
+      </section>
 
-  <section id="features">
-    <h2>What it does</h2>
-    <div class="grid">
-      <article>
-        <h3>Rests when you work</h3>
-        <p>An app covering a display, two windows side by side, battery, energy saver, a locked screen, the screensaver, remote desktop, or other apps keeping the CPU busy: the wallpaper freezes in place, and the window says why. About 0.005 CPU cores while paused.</p>
-      </article>
-      <article>
-        <h3>Every display</h3>
-        <p>One wallpaper on all displays, a different one on each, or one stretched across them. Displays playing the same video stay on the same frame.</p>
-      </article>
-      <article>
-        <h3>Your wallpapers</h3>
-        <p>Videos, GIFs, pictures, web pages, web addresses and YouTube links. AVI, WMV and MPEG convert to MP4 when ffmpeg is installed. Programs can run behind the icons too, and rest with the rest.</p>
-      </article>
-      <article>
-        <h3>Brings your library with it</h3>
-        <p>Web, video and application wallpapers from Wallpaper Engine import with their settings. Sarab's own packages are plain zip files you can export and share.</p>
-      </article>
-      <article>
-        <h3>Looks like Windows 11</h3>
-        <p>Light and dark, Acrylic or Mica, a library with categories, tags, search and thumbnails. In ten languages, Arabic right to left.</p>
-      </article>
-      <article>
-        <h3>Changes with you</h3>
-        <p>Change wallpaper every few minutes, in order or at random, through one category. A screensaver of your own, mouse input for interactive pages, and the last frame kept as your Windows wallpaper when you quit.</p>
-      </article>
-    </div>
-  </section>
+      <section class="facts" aria-label="At a glance">
+        <ul class="wrap">
+          <li><strong>~0.005</strong><span>CPU cores while resting</span></li>
+          <li><strong>2 MB</strong><span>installer</span></li>
+          <li><strong>10</strong><span>languages, Arabic right to left</span></li>
+          <li><strong>3</strong><span>CPU types: x64, ARM64, x86</span></li>
+        </ul>
+      </section>
 
-  <section id="command-line" class="split">
-    <div>
-      <h2>Command line</h2>
-      <p>Every action is a <code>sarab</code> command, so scripts and hotkey tools can drive it. The installer puts it on your PATH.</p>
-      <ul class="plain">
-        <li><code>sarab set &lt;file, folder or URL&gt; [--display N]</code></li>
-        <li><code>sarab pause</code>, <code>play</code>, <code>next</code>, <code>volume 30</code></li>
-        <li><code>sarab screenshot C:\shots\desk.png</code></li>
-        <li><code>sarab status --json</code> for scripts</li>
-      </ul>
-    </div>
-<pre class="term" aria-label="Example terminal session"><span class="prompt">&gt;</span> sarab set C:\Wallpapers\dunes.mp4
+      <section id="features">
+        <div class="wrap">
+          <h2>What it does</h2>
+          <p class="sub">
+            Everything a live wallpaper needs, and the good manners to step
+            aside.
+          </p>
+          <div class="grid">
+            <article>
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M9 5v14M15 5v14" />
+              </svg>
+              <h3>Rests when you work</h3>
+              <p>
+                A window covering a display, battery, energy saver, a locked
+                screen, the screensaver, remote desktop or a busy CPU: the
+                wallpaper freezes in place, and the window says why.
+              </p>
+            </article>
+            <article>
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <rect x="2" y="5" width="9" height="7" rx="1" />
+                <rect x="13" y="5" width="9" height="7" rx="1" />
+                <path d="M6.5 16v3M17.5 16v3M4 19h5M15 19h5" />
+              </svg>
+              <h3>Every display</h3>
+              <p>
+                One wallpaper on all displays, a different one on each, or one
+                stretched across them. Displays playing the same video stay on
+                the same frame.
+              </p>
+            </article>
+            <article>
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <rect x="3" y="4" width="18" height="16" rx="2" />
+                <path d="M10 9l5 3-5 3z" />
+              </svg>
+              <h3>Your wallpapers</h3>
+              <p>
+                Videos, GIFs, pictures, web pages, web addresses and YouTube
+                links. Programs can run behind the icons too, and rest with the
+                rest.
+              </p>
+            </article>
+            <article>
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M4 7h16v12H4zM4 7l2-3h12l2 3M10 11h4" />
+              </svg>
+              <h3>Brings your library with it</h3>
+              <p>
+                Web, video and application wallpapers from Wallpaper Engine
+                import with their settings. Sarab packages are plain zip files
+                you can export and share.
+              </p>
+            </article>
+            <article>
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="8" />
+                <path d="M12 4a8 8 0 0 0 0 16z" />
+              </svg>
+              <h3>Feels native</h3>
+              <p>
+                Light and dark, Acrylic or Mica, a library with categories,
+                tags, search and thumbnails, and menus that look like the rest
+                of Windows 11.
+              </p>
+            </article>
+            <article>
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3" />
+                <path d="M18 3v4h-4M6 21v-4h4" />
+              </svg>
+              <h3>Changes with you</h3>
+              <p>
+                A new wallpaper every few minutes, in order or at random,
+                through one category. A screensaver of your own, and mouse input
+                for interactive pages.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="command-line" class="tint">
+        <div class="wrap split">
+          <div>
+            <h2>Drive it from the command line</h2>
+            <p class="sub">
+              Every action is a <code>sarab</code> command, so scripts and
+              hotkey tools can drive it. The installer puts it on your PATH.
+            </p>
+            <ul class="plain">
+              <li>
+                <code>sarab set &lt;file, folder or URL&gt; [--display N]</code>
+              </li>
+              <li>
+                <code>sarab pause</code>, <code>play</code>,
+                <code>next</code>, <code>volume 30</code>
+              </li>
+              <li><code>sarab screenshot C:\shots\desk.png</code></li>
+              <li><code>sarab status --json</code> for scripts</li>
+            </ul>
+          </div>
+          <pre
+            class="term"
+            aria-label="Example terminal session"
+          ><span class="prompt">&gt;</span> sarab set C:\Wallpapers\dunes.mp4
 <span class="prompt">&gt;</span> sarab status
-Sarab 0.0.7 (pid 7428)
+Sarab <span data-version>0.0.9</span> (pid 7428)
 Display 1  1920x1080  dunes (video)  Playing
 Display 2  1920x1080  dunes (video)  Resting: on battery</pre>
-  </section>
+        </div>
+      </section>
 
-  <section id="install">
-    <h2>Install</h2>
-    <ol class="steps">
-      <li><strong>Download</strong> <code>Sarab_&lt;version&gt;_x64-setup.exe</code> from the <a href="https://github.com/MKAbuMattar/sarab/releases/latest">latest release</a>.</li>
-      <li><strong>Run it.</strong> It installs for your user only and asks for a language. It downloads the WebView2 runtime if the PC lacks it (Windows 11 always has it).</li>
-      <li><strong>SmartScreen</strong> may warn about an unknown publisher, because the installer is not code-signed yet. Choose More info, then Run anyway.</li>
-    </ol>
-    <p>Sarab checks for updates every few hours and installs one only when you choose Update now, after checking its signature.</p>
-  </section>
-</main>
+      <section id="download">
+        <div class="wrap">
+          <h2>Download</h2>
+          <p class="sub">
+            <span data-latest-line
+              >Sarab 0.0.9, released 8 October 2026.</span
+            >
+            <a
+              id="notes"
+              href="https://github.com/MKAbuMattar/sarab/releases/tag/v0.0.9"
+              >What's new</a
+            >
+          </p>
 
-<footer>
-  <p>Sarab (<span lang="ar" dir="rtl">سراب</span>) means mirage in Arabic. Free software under the GPL-3.0.</p>
-  <p><a href="https://github.com/MKAbuMattar/sarab">GitHub</a> · <a href="https://github.com/MKAbuMattar/sarab/issues">Report a problem</a> · <a href="https://github.com/MKAbuMattar/sarab/blob/main/CHANGELOG.md">Changelog</a></p>
-</footer>
-</body>
+          <div class="downloads">
+            <article class="dl" data-arch="x64">
+              <h3>Windows x64</h3>
+              <p>Most PCs: Intel and AMD, 64-bit.</p>
+              <a
+                class="button primary"
+                href="https://github.com/MKAbuMattar/sarab/releases/download/v0.0.9/Sarab_0.0.9_x64-setup.exe"
+                >Download <span class="size">2.2 MB</span></a
+              >
+              <code class="file">Sarab_0.0.9_x64-setup.exe</code>
+            </article>
+            <article class="dl" data-arch="arm64">
+              <h3>Windows ARM64</h3>
+              <p>Snapdragon laptops and other ARM PCs.</p>
+              <a
+                class="button primary"
+                href="https://github.com/MKAbuMattar/sarab/releases/download/v0.0.9/Sarab_0.0.9_arm64-setup.exe"
+                >Download <span class="size">2.0 MB</span></a
+              >
+              <code class="file">Sarab_0.0.9_arm64-setup.exe</code>
+            </article>
+            <article class="dl" data-arch="x86">
+              <h3>Windows x86</h3>
+              <p>Older 32-bit Windows 10.</p>
+              <a
+                class="button primary"
+                href="https://github.com/MKAbuMattar/sarab/releases/download/v0.0.9/Sarab_0.0.9_x86-setup.exe"
+                >Download <span class="size">2.0 MB</span></a
+              >
+              <code class="file">Sarab_0.0.9_x86-setup.exe</code>
+            </article>
+            <article class="dl soon">
+              <h3>Linux</h3>
+              <p>
+                .deb, .rpm, AppImage and Arch packages for x64 and ARM64 are
+                being tested. X11 first, Wayland next.
+              </p>
+              <a
+                class="button"
+                href="https://github.com/MKAbuMattar/sarab/blob/main/ROADMAP.md"
+                >See the roadmap</a
+              >
+            </article>
+          </div>
+
+          <div class="after">
+            <div>
+              <h3>Install</h3>
+              <ol class="steps">
+                <li>
+                  <strong>Run the installer.</strong> It installs for your user
+                  only, asks for a language, and fetches the WebView2 runtime if
+                  the PC lacks it.
+                </li>
+                <li>
+                  <strong>SmartScreen</strong> may warn about an unknown
+                  publisher, because the installer is not code-signed yet.
+                  Choose More info, then Run anyway.
+                </li>
+                <li>
+                  <strong>Updates</strong> are checked every few hours and
+                  installed only when you choose Update now, after their
+                  signature is checked.
+                </li>
+              </ol>
+            </div>
+            <div>
+              <h3>Earlier versions</h3>
+              <ul class="versions" id="versions">
+                <li>
+                  <a
+                    href="https://github.com/MKAbuMattar/sarab/releases/tag/v0.0.8"
+                    >0.0.8</a
+                  ><span>7 October 2026</span>
+                </li>
+                <li>
+                  <a
+                    href="https://github.com/MKAbuMattar/sarab/releases/tag/v0.0.7"
+                    >0.0.7</a
+                  ><span>7 October 2026</span>
+                </li>
+                <li>
+                  <a
+                    href="https://github.com/MKAbuMattar/sarab/releases/tag/v0.0.6"
+                    >0.0.6</a
+                  ><span>6 October 2026</span>
+                </li>
+              </ul>
+              <p class="fine">
+                <a href="https://github.com/MKAbuMattar/sarab/releases"
+                  >All releases</a
+                >
+                ·
+                <a
+                  href="https://github.com/MKAbuMattar/sarab/blob/main/CHANGELOG.md"
+                  >Changelog</a
+                >
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <p>
+          Sarab (<span lang="ar" dir="rtl">سراب</span>) means mirage in Arabic.
+          Free software under the GPL-3.0.
+        </p>
+        <p>
+          <a href="https://github.com/MKAbuMattar/sarab">GitHub</a> ·
+          <a href="https://github.com/MKAbuMattar/sarab/issues"
+            >Report a problem</a
+          >
+          ·
+          <a href="https://github.com/MKAbuMattar/sarab/blob/main/CHANGELOG.md"
+            >Changelog</a
+          >
+        </p>
+      </div>
+    </footer>
+  </body>
 </html>
