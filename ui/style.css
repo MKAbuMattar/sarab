@@ -62,7 +62,11 @@
 }
 
 * { box-sizing: border-box; }
-html { height: 100%; background: var(--solid-base); }
+html { height: 100%; background: var(--solid-base); -webkit-user-select: none; user-select: none; cursor: default; }
+input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; cursor: text; }
+input[type=checkbox], input[type=range], input[type=color] { cursor: default; }
+a[href] { cursor: pointer; }
+img, video { -webkit-user-drag: none; }
 html.translucent { background: transparent; }
 html:not([data-theme]) body { visibility: hidden; }
 body {

@@ -348,7 +348,8 @@ document.addEventListener('keydown', e => {
   const browser = ['F5', 'F7', 'BrowserBack', 'BrowserForward', 'BrowserRefresh'].includes(e.key)
     || (e.ctrlKey && ['r', 'p', 's', 'u', 'f', 'g', 'j', 'h'].includes(k))
     || (e.altKey && ['ArrowLeft', 'ArrowRight', 'Home'].includes(e.key));
-  if (browser) e.preventDefault();
+  const selectAll = e.ctrlKey && k === 'a' && !e.target.closest?.('input, textarea, [contenteditable]');
+  if (browser || selectAll) e.preventDefault();
 }, true);
 
 const iconBtn = (glyph, label, onclick, cls = '') =>
