@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Live check on X11: a web wallpaper becomes a desktop-type window, full screen, below everything.
-# Needs: Xvfb, openbox, xdotool, x11-utils, dbus. Usage: scripts/check-linux.sh path/to/sarab
+# Needs: Xvfb, openbox, xdotool, x11-utils, x11-apps, dbus. Usage: scripts/check-linux.sh path/to/sarab
 set -euo pipefail
 exe=$(realpath "$1")
 sb=$(mktemp -d)
@@ -15,6 +15,7 @@ Xvfb :99 -screen 0 1920x1080x24 & sleep 2
 openbox & sleep 1
 
 dbus-run-session -- bash -c '
+  set -euo pipefail
   "$0" --autostart & sleep 6
   "$0" set "$1"
   for i in $(seq 30); do
@@ -39,6 +40,20 @@ dbus-run-session -- bash -c '
   [ -f "$status" ] || status=$(find "$HOME" "$XDG_CONFIG_HOME" "$XDG_DATA_HOME" -name status.json | head -1)
   echo "status: $status"
   grep -q "\"loaded\": true" "$status" || { echo "FAIL: page did not load"; cat "$status"; exit 1; }
+  sleep 2
+  xwd -root -silent -out "$2/shot.xwd"
+  python3 - "$2/shot.xwd" <<EOF
+import struct, sys
+d = open(sys.argv[1], "rb").read()
+f = struct.unpack(">25I", d[:100])
+size, w, h, order, bpp, bpl, ncolors = f[0], f[4], f[5], f[7], f[11], f[12], f[19]
+px = d[size + ncolors * 12:]
+for x, y in [(w // 2, h // 2), (10, 10), (w - 10, h - 10)]:
+    i = y * bpl + x * bpp // 8
+    b, g, r = (px[i], px[i + 1], px[i + 2]) if order == 0 else (px[i + 3], px[i + 2], px[i + 1])
+    print(f"pixel {x},{y}: #{r:02X}{g:02X}{b:02X}")
+    assert (r, g, b) == (0x2F, 0x5D, 0x6B), "FAIL: the wallpaper does not show its page"
+EOF
   "$0" quit || true
   echo "x11 check passed"
-' "$exe" "$sb/web"
+' "$exe" "$sb/web" "$sb"

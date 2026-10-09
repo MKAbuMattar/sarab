@@ -207,7 +207,7 @@ jobs:
       - name: A wallpaper on the X11 desktop
         if: matrix.arch == 'x64'
         run: |
-          sudo apt-get install -y openbox xdotool x11-utils dbus-x11
+          sudo apt-get install -y openbox xdotool x11-utils x11-apps dbus-x11
           bash scripts/check-linux.sh src-tauri/target/release/sarab
 
       - name: A wallpaper on the Wayland desktop (Sway)
