@@ -7,7 +7,7 @@ exe=$(realpath "$1")
 sb=$(mktemp -d)
 export HOME="$sb/home" XDG_CONFIG_HOME="$sb/config" XDG_DATA_HOME="$sb/data"
 export XDG_RUNTIME_DIR="$sb/run" WLR_BACKENDS=headless WLR_LIBINPUT_NO_DEVICES=1 WLR_RENDERER=pixman
-export WEBKIT_DISABLE_DMABUF_RENDERER=1 GDK_BACKEND=wayland
+export WEBKIT_DISABLE_DMABUF_RENDERER=1 WEBKIT_DISABLE_COMPOSITING_MODE=1 GDK_BACKEND=wayland
 unset DISPLAY WAYLAND_DISPLAY
 mkdir -p "$HOME" "$sb/web" "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
 cat > "$sb/web/sarab.json" <<'EOF'
@@ -26,6 +26,7 @@ done
 export WAYLAND_DISPLAY=$sock SWAYSOCK=$(ls "$XDG_RUNTIME_DIR"/sway-ipc.* | head -1)
 
 dbus-run-session -- bash -c '
+  set -euo pipefail
   "$0" --autostart & sleep 6
   "$0" set "$1"
   status="$XDG_CONFIG_HOME/com.mkabumattar.sarab/status.json"
@@ -38,6 +39,7 @@ dbus-run-session -- bash -c '
   if swaymsg -t get_tree | grep -q "sarab-wp-"; then
     echo "FAIL: the wallpaper is an ordinary window, not a layer surface"; exit 1
   fi
+  swaymsg -t get_tree | grep -E "\"(name|app_id)\"" || true
   grim -t ppm "$2/shot.ppm"
   python3 - "$2/shot.ppm" <<EOF
 import sys
@@ -52,4 +54,4 @@ for x, y in [(w // 2, h // 2), (10, 10), (w - 10, h - 10)]:
 EOF
   "$0" quit || true
   echo "wayland check passed"
-' "$exe" "$sb/web" "$sb"
+' "$exe" "$sb/web" "$sb" || { echo "--- sway log"; tail -30 "$sb/sway.log"; exit 1; }
