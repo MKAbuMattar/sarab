@@ -228,5 +228,11 @@
   "menu.cut": "Вырезать",
   "menu.copy": "Копировать",
   "menu.paste": "Вставить",
-  "menu.selectAll": "Выделить всё"
+  "menu.selectAll": "Выделить всё",
+  "menu.restore": "Восстановить",
+  "menu.move": "Переместить",
+  "menu.size": "Размер",
+  "menu.minimize": "Свернуть",
+  "menu.maximize": "Развернуть",
+  "menu.close": "Закрыть"
 }

@@ -130,10 +130,8 @@ fn notify(app: &AppHandle, version: &str) {
     log(format!("update available: {version}"));
     if let Some(tray) = app.tray_by_id("sarab") {
         let _ = tray.set_tooltip(Some(t("update.tooltip")));
-        if let Ok(menu) = crate::tray_menu(app, &lang, Some(version)) {
-            let _ = tray.set_menu(Some(menu));
-        }
     }
+    crate::tray_update(app, &lang, version);
     let xml = crate::os::platform::update_toast_xml(
         &t("update.toastTitle"),
         &t("update.toastBody"),

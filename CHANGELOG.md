@@ -6,7 +6,7 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ### Changed
 
-- The title bar's menu and the tray menu follow Sarab's Light or Dark theme, not only the Windows setting.
+- The title bar's menu (right-click the title bar, Alt+Space) and the tray menu are Sarab's own menus, in its theme and language, instead of the Windows ones.
 
 ## [0.0.9] - 2026-10-09
 

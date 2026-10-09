@@ -49,7 +49,26 @@ pub(crate) fn open_ui(app: &AppHandle, s: &settings::Settings) {
     if let Some(fx) = effects_for(backdrop) {
         b = b.effects(fx);
     }
-    if let Err(e) = b.build() {
-        log(format!("open ui: {e}"));
+    match b.build() {
+        Ok(w) => {
+            if let Some(h) = os::platform::handle(&w) {
+                os::platform::own_system_menu(h, show_system_menu);
+            }
+        }
+        Err(e) => log(format!("open ui: {e}")),
     }
+}
+
+fn show_system_menu(m: os::platform::SystemMenu) {
+    let Some(app) = wallpaper::APP.get() else {
+        return;
+    };
+    if let Some(w) = app.get_webview_window("main") {
+        let _ = w.set_focus();
+    }
+    let _ = app.emit_to(
+        "main",
+        "system-menu",
+        json!({ "x": m.x, "y": m.y, "keyboard": m.keyboard, "maximized": m.maximized }),
+    );
 }

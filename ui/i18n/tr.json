@@ -228,5 +228,11 @@
   "menu.cut": "Kes",
   "menu.copy": "Kopyala",
   "menu.paste": "Yapıştır",
-  "menu.selectAll": "Tümünü seç"
+  "menu.selectAll": "Tümünü seç",
+  "menu.restore": "Geri yükle",
+  "menu.move": "Taşı",
+  "menu.size": "Boyut",
+  "menu.minimize": "Simge durumuna küçült",
+  "menu.maximize": "Ekranı kapla",
+  "menu.close": "Kapat"
 }

@@ -73,3 +73,15 @@ pub const ISSUES: &str = "https://github.com/MKAbuMattar/sarab/issues";
 pub(crate) async fn clipboard_text(app: AppHandle) -> Result<String, String> {
     on_main(&app, |_| os::platform::clipboard_text())
 }
+
+#[tauri::command]
+pub(crate) async fn system_menu(app: AppHandle, action: String) {
+    on_main(&app, move |app| {
+        if let Some(h) = app
+            .get_webview_window("main")
+            .and_then(|w| os::platform::handle(&w))
+        {
+            os::platform::system_command(h, &action);
+        }
+    })
+}

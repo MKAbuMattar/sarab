@@ -9,6 +9,20 @@ pub fn os_build() -> u32 {
     0
 }
 
+pub struct SystemMenu {
+    pub x: i32,
+    pub y: i32,
+    pub keyboard: bool,
+    pub maximized: bool,
+}
+
+/// The window menu comes from the window manager on Linux.
+pub fn own_system_menu(_hwnd: HWND, _open: fn(SystemMenu)) {}
+
+pub fn system_command(_hwnd: HWND, _action: &str) {}
+
+pub fn round_corners(_hwnd: HWND) {}
+
 /// GTK menus already follow the theme Tauri sets on the window.
 pub fn menu_theme(_theme: &str) {}
 

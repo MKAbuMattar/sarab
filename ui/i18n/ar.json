@@ -228,5 +228,11 @@
   "menu.cut": "قص",
   "menu.copy": "نسخ",
   "menu.paste": "لصق",
-  "menu.selectAll": "تحديد الكل"
+  "menu.selectAll": "تحديد الكل",
+  "menu.restore": "استعادة",
+  "menu.move": "نقل",
+  "menu.size": "الحجم",
+  "menu.minimize": "تصغير",
+  "menu.maximize": "تكبير",
+  "menu.close": "إغلاق"
 }

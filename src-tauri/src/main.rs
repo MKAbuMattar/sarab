@@ -58,6 +58,10 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             state,
             clipboard_text,
+            system_menu,
+            tray_menu_items,
+            tray_menu_show,
+            tray_menu_pick,
             set_wallpaper,
             add,
             import,

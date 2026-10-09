@@ -33,3 +33,18 @@ pub fn menu_theme(theme: &str) {
         }
     }
 }
+
+/// Small rounded corners for an undecorated popup, like Windows 11 menus.
+pub fn round_corners(hwnd: HWND) {
+    use windows::Win32::Graphics::Dwm::{
+        DwmSetWindowAttribute, DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUNDSMALL,
+    };
+    unsafe {
+        let _ = DwmSetWindowAttribute(
+            hwnd,
+            DWMWA_WINDOW_CORNER_PREFERENCE,
+            &DWMWCP_ROUNDSMALL as *const _ as *const _,
+            std::mem::size_of_val(&DWMWCP_ROUNDSMALL) as u32,
+        );
+    }
+}
