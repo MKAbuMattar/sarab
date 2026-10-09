@@ -85,18 +85,36 @@ pub type Layout = BTreeMap<String, String>;
 
 pub const APP_ID: &str = "com.mkabumattar.sarab";
 
-pub fn config_dir() -> PathBuf {
-    let base = std::env::var_os("APPDATA")
+#[cfg(windows)]
+fn base(windows: &str, _xdg: &str, _home: &str) -> PathBuf {
+    std::env::var_os(windows)
         .map(PathBuf::from)
-        .unwrap_or_else(|| ".".into());
-    base.join(APP_ID)
+        .unwrap_or_else(|| ".".into())
+}
+
+#[cfg(not(windows))]
+fn base(_windows: &str, xdg: &str, home: &str) -> PathBuf {
+    xdg_dir(std::env::var_os(xdg), std::env::var_os("HOME"), home)
+}
+
+#[cfg(not(windows))]
+fn xdg_dir(
+    set: Option<std::ffi::OsString>,
+    home: Option<std::ffi::OsString>,
+    under_home: &str,
+) -> PathBuf {
+    set.filter(|v| !v.is_empty() && Path::new(v).is_absolute())
+        .map(PathBuf::from)
+        .or_else(|| home.map(|h| PathBuf::from(h).join(under_home)))
+        .unwrap_or_else(|| ".".into())
+}
+
+pub fn config_dir() -> PathBuf {
+    base("APPDATA", "XDG_CONFIG_HOME", ".config").join(APP_ID)
 }
 
 pub fn data_dir() -> PathBuf {
-    let base = std::env::var_os("LOCALAPPDATA")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| ".".into());
-    base.join(APP_ID)
+    base("LOCALAPPDATA", "XDG_DATA_HOME", ".local/share").join(APP_ID)
 }
 
 pub fn load<T: DeserializeOwned + Default>(path: &Path) -> T {
@@ -113,4 +131,31 @@ pub fn save<T: Serialize>(path: &Path, value: &T) -> io::Result<()> {
     let tmp = path.with_extension("tmp");
     fs::write(&tmp, serde_json::to_vec_pretty(value)?)?;
     fs::rename(tmp, path)
+}
+
+#[cfg(all(test, not(windows)))]
+mod xdg_tests {
+    use super::*;
+
+    #[test]
+    fn xdg_dirs() {
+        let home = Some("/home/a".into());
+        assert_eq!(
+            xdg_dir(Some("/x/cfg".into()), home.clone(), ".config"),
+            PathBuf::from("/x/cfg")
+        );
+        assert_eq!(
+            xdg_dir(None, home.clone(), ".config"),
+            PathBuf::from("/home/a/.config")
+        );
+        assert_eq!(
+            xdg_dir(Some("".into()), home.clone(), ".local/share"),
+            PathBuf::from("/home/a/.local/share")
+        );
+        assert_eq!(
+            xdg_dir(Some("relative".into()), home, ".config"),
+            PathBuf::from("/home/a/.config"),
+            "XDG paths must be absolute"
+        );
+    }
 }

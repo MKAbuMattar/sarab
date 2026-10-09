@@ -204,6 +204,12 @@ jobs:
           APPIMAGE_EXTRACT_AND_RUN: 1
         run: cargo tauri build --bundles deb,rpm,appimage --config '{"bundle":{"createUpdaterArtifacts":false}}'
 
+      - name: A wallpaper on the X11 desktop
+        if: matrix.arch == 'x64'
+        run: |
+          sudo apt-get install -y openbox xdotool x11-utils dbus-x11
+          bash scripts/check-linux.sh src-tauri/target/release/sarab
+
       - name: The AppImage starts
         env:
           APPIMAGE_EXTRACT_AND_RUN: 1
