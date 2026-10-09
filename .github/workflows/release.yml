@@ -82,9 +82,99 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  linux:
+    name: Linux packages (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Tauri's Linux libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev libgtk-layer-shell-dev librsvg2-dev libssl-dev
+
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
+        with:
+          toolchain: stable
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: src-tauri
+
+      - name: Test
+        working-directory: src-tauri
+        run: cargo test --locked
+
+      - uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # v2.87.22
+        with:
+          tool: cargo-binstall
+
+      - name: Install Tauri CLI
+        run: cargo binstall -y --locked "tauri-cli@2.12.1"
+
+      # No updater artifacts: Linux updates come from the package manager or a new download.
+      - name: Build .deb, .rpm and AppImage
+        working-directory: src-tauri
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: 1
+        run: cargo tauri build --bundles deb,rpm,appimage --config '{"bundle":{"createUpdaterArtifacts":false}}'
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: linux-${{ matrix.arch }}
+          path: |
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/rpm/*.rpm
+            src-tauri/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: error
+          retention-days: 7
+
+  arch:
+    name: Arch package
+    needs: linux
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    container: archlinux:latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: linux-x64
+          path: pkgs
+
+      - name: Build the Arch package from the .deb
+        run: |
+          pacman -Syu --noconfirm --needed base-devel
+          useradd -m builder
+          install -d -o builder /home/builder/pkg
+          deb=$(ls pkgs/deb/*_amd64.deb)
+          version=$(grep -m1 '^version = ' src-tauri/Cargo.toml | cut -d'"' -f2)
+          cp "$deb" /home/builder/pkg/
+          sed -e "s|^source=.*|source=(\"$(basename "$deb")\")|" -e "s|^pkgver=.*|pkgver=$version|" packaging/arch/PKGBUILD > /home/builder/pkg/PKGBUILD
+          chown -R builder /home/builder/pkg
+          su builder -c 'cd ~/pkg && makepkg --noconfirm --nodeps'
+          mkdir -p out && cp /home/builder/pkg/*.pkg.tar.zst out/
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: linux-arch
+          path: out/*.pkg.tar.zst
+          if-no-files-found: error
+          retention-days: 7
+
   publish:
     name: Publish
-    needs: build
+    needs: [build, linux, arch]
     runs-on: windows-latest
     defaults:
       run:
@@ -97,6 +187,19 @@ jobs:
           pattern: installer-*
           path: dist
           merge-multiple: true
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: linux-*
+          path: linux
+          merge-multiple: true
+
+      - name: Linux packages next to the installers
+        run: |
+          Get-ChildItem linux -Recurse -File | Where-Object Name -match '\.(deb|rpm|AppImage|pkg\.tar\.zst)$' | Copy-Item -Destination dist
+          foreach ($ext in 'deb', 'rpm', 'AppImage', 'pkg.tar.zst') {
+            if (-not (Get-ChildItem dist -Filter "*.$ext")) { throw "no .$ext package" }
+          }
 
       - name: Release notes and latest.json
         run: |
@@ -138,6 +241,10 @@ jobs:
           files: |
             dist/*-setup.exe
             dist/*-setup.exe.sig
+            dist/*.deb
+            dist/*.rpm
+            dist/*.AppImage
+            dist/*.pkg.tar.zst
             latest.json
           fail_on_unmatched_files: true
 
