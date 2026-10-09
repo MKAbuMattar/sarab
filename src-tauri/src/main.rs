@@ -97,6 +97,8 @@ fn main() {
             edit_info,
             video_file,
             thumbnail_image,
+            capture_frame,
+            keep_frame,
             details,
             reveal,
             export_wallpaper,

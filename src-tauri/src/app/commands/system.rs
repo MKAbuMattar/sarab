@@ -32,6 +32,9 @@ pub(crate) async fn state(app: AppHandle) -> Value {
                 if let Some(u) = w.custom_thumb.as_deref().and_then(url) {
                     v["custom_thumb_url"] = json!(u);
                 }
+                if let Some(u) = w.frame_thumb.as_deref().and_then(url) {
+                    v["frame_thumb_url"] = json!(u);
+                }
                 if let (Some(library::Target::File(f)), library::Kind::Video | library::Kind::Gif) =
                     (w.target(), w.info.r#type)
                 {
@@ -41,6 +44,7 @@ pub(crate) async fn state(app: AppHandle) -> Value {
                 }
                 v
             }).collect::<Vec<_>>(),
+            "capture": cfg!(windows),
             "categories": library::CATEGORIES,
             "library_dir": wallpaper::library_dir(&core.settings),
             "manual": core.manual,

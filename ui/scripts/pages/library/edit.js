@@ -18,6 +18,28 @@ function showEditField(node) {
   node.focus();
 }
 
+async function captureFrame(at, video) {
+  thumbs.frameBusy(at);
+  const r = video.getBoundingClientRect();
+  const k = Math.min(r.width / video.videoWidth, r.height / video.videoHeight);
+  const [cw, ch] = [video.videoWidth * k, video.videoHeight * k];
+  const dpr = devicePixelRatio;
+  const rect = [
+    (r.x + (r.width - cw) / 2) * dpr,
+    (r.y + (r.height - ch) / 2) * dpr,
+    cw * dpr,
+    ch * dpr,
+  ];
+  try {
+    const path = await invoke("capture_frame", { rect });
+    thumbs.frameReady(
+      `${window.__TAURI__.core.convertFileSrc(path)}?v=${Date.now()}`,
+    );
+  } catch (err) {
+    thumbs.frameFailed(String(err));
+  }
+}
+
 async function openEdit(w) {
   const d = $("#edit"),
     f = $("#edit-form");
@@ -49,7 +71,7 @@ async function openEdit(w) {
   d.classList.toggle("wide", video);
   $("#edit-tab-part").hidden = !video;
   $("#edit-tab-thumb").hidden = w.info.type === "picture";
-  thumbs = thumbChoice(w);
+  thumbs = thumbChoice(w, { capture: state.capture });
   $("#edit-panel-thumb").replaceChildren(thumbs.el);
   d.querySelectorAll(".tabs .dirty").forEach((x) => (x.hidden = true));
   editTabs.select($("#edit-tab-details"));
@@ -59,6 +81,13 @@ async function openEdit(w) {
       trim = trimEditor(
         window.__TAURI__.core.convertFileSrc(file),
         w.info.clip,
+        {
+          capture: state.capture,
+          frame:
+            w.info.thumbnail_choice === "frame" ? w.info.thumbnail_time : null,
+          onFrame: (at, video) =>
+            at === null ? thumbs.frameClear() : captureFrame(at, video),
+        },
       );
       $("#trim-slot").append(trim.el);
     }
@@ -79,6 +108,7 @@ async function openEdit(w) {
     e.preventDefault();
     try {
       const th = thumbs.value();
+      if (th.staged) await invoke("keep_frame", { id: w.id });
       if (th.file) {
         await invoke(
           "thumbnail_image",
@@ -99,6 +129,7 @@ async function openEdit(w) {
             .filter(Boolean),
           clip: trim?.value(),
           thumbnail: th.choice,
+          thumbnail_time: th.time,
         },
       });
       d.close("save");

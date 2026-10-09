@@ -8,6 +8,7 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 - Edit wallpaper has tabs: Details, and Part that plays for videos. A dot marks a tab with unsaved changes, and a failed save opens the tab with the problem.
 - Edit wallpaper has a Thumbnail tab: keep the automatic picture or use an image of your own (PNG, JPEG or WebP, up to 10 MB). Your image is copied into the wallpaper's folder when you save, and stays there if you switch back to automatic. It also gives web pages, apps and Linux wallpapers a thumbnail.
+- On Windows, a video's thumbnail can be any moment of it: in Part that plays, move to the moment and choose Use this frame (or press F). A marker shows it on the timeline, and the frame is saved when you save.
 
 ### Added
 

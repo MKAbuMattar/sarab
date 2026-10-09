@@ -389,6 +389,7 @@ fn edit_info_validates_and_saves() {
         tags: tags.iter().map(|t| t.to_string()).collect(),
         clip: None,
         thumbnail: None,
+        thumbnail_time: None,
     };
     let info = edit_info(
         &d,
@@ -608,4 +609,33 @@ fn thumb_custom_choice() {
         "Automatic keeps the image for later"
     );
     assert!(edit_info(&d, with("frame?")).is_err());
+}
+
+#[test]
+fn thumb_frame_choice() {
+    let d = tmp("thumb-frame");
+    fs::write(
+        d.join(INFO),
+        r#"{"title":"Sea","type":"video","file":"a.mp4","version":1}"#,
+    )
+    .unwrap();
+    let with = |time: Option<f64>| Edit {
+        title: "Sea".into(),
+        thumbnail: Some("frame".into()),
+        thumbnail_time: time,
+        ..Default::default()
+    };
+    assert!(
+        edit_info(&d, with(Some(4.5))).is_err(),
+        "no frame captured yet"
+    );
+    assert!(save_frame_thumbnail(&d, b"GIF89a").is_err());
+    save_frame_thumbnail(&d, &png(48, 27)).unwrap();
+    assert!(edit_info(&d, with(Some(-1.0))).is_err());
+    let info = edit_info(&d, with(Some(4.5))).unwrap();
+    assert_eq!(
+        (info.thumbnail_choice.as_deref(), info.thumbnail_time),
+        (Some("frame"), Some(4.5))
+    );
+    assert_eq!(read(&d).unwrap().thumb, Some(d.join(FRAME_THUMBNAIL)));
 }

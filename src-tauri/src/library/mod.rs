@@ -61,6 +61,7 @@ pub struct Manifest {
     pub app_version: Option<String>,
     pub clip: Option<[f64; 2]>,
     pub thumbnail_choice: Option<String>,
+    pub thumbnail_time: Option<f64>,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -75,6 +76,7 @@ pub struct Wallpaper {
     pub thumb: Option<PathBuf>,
     pub auto_thumb: Option<PathBuf>,
     pub custom_thumb: Option<PathBuf>,
+    pub frame_thumb: Option<PathBuf>,
     pub too_new: bool,
 }
 

@@ -31,10 +31,12 @@ pub fn read(dir: &Path) -> Option<Wallpaper> {
             .map(|t| dir.join(t))
             .filter(|p| p.is_file() && p.starts_with(dir)),
         custom_thumb: crate::library::custom_thumbnail(dir),
+        frame_thumb: crate::library::frame_thumbnail(dir),
         info,
     };
     w.thumb = match w.info.thumbnail_choice.as_deref() {
         Some("image") => w.custom_thumb.clone().or_else(|| w.auto_thumb.clone()),
+        Some("frame") => w.frame_thumb.clone().or_else(|| w.auto_thumb.clone()),
         _ => w.auto_thumb.clone(),
     };
     Some(w)

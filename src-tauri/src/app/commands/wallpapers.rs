@@ -173,3 +173,49 @@ pub(crate) async fn thumbnail_image(
         library::save_custom_thumbnail(&w.dir, &bytes).map(|_| ())
     })
 }
+
+fn frame_dir() -> std::path::PathBuf {
+    std::env::temp_dir().join("sarab-frame")
+}
+
+#[tauri::command]
+pub(crate) async fn capture_frame(app: AppHandle, rect: [f64; 4]) -> Result<String, String> {
+    let dir = frame_dir();
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let (shot, staged) = (dir.join("window.png"), dir.join("frame.png"));
+    let win = app
+        .get_webview_window("main")
+        .ok_or("the window is closed")?;
+    let (tx, rx) = std::sync::mpsc::channel();
+    let path = shot.clone();
+    on_main(&app, move |_| {
+        os::platform::capture_preview(&win, path, move |ok| {
+            let _ = tx.send(ok);
+        })
+    });
+    let ok = tauri::async_runtime::spawn_blocking(move || {
+        rx.recv_timeout(std::time::Duration::from_secs(5))
+            .unwrap_or(false)
+    })
+    .await
+    .unwrap_or(false);
+    if !ok {
+        return Err("the frame could not be captured".into());
+    }
+    let r = rect.map(|v| v.max(0.0).round() as u32);
+    os::platform::crop_png(&shot, &staged, r, 480)?;
+    let _ = std::fs::remove_file(&shot);
+    app.asset_protocol_scope()
+        .allow_file(&staged)
+        .map_err(|e| e.to_string())?;
+    Ok(staged.to_string_lossy().into_owned())
+}
+
+#[tauri::command]
+pub(crate) async fn keep_frame(app: AppHandle, id: String) -> Result<(), String> {
+    let bytes = std::fs::read(frame_dir().join("frame.png")).map_err(|e| e.to_string())?;
+    with_core(&app, move |_, core| {
+        let w = editable(core, &id)?;
+        library::save_frame_thumbnail(&w.dir, &bytes).map(|_| ())
+    })
+}

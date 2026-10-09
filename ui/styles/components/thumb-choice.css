@@ -7,6 +7,9 @@
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
+.thumbs .cards.three {
+  grid-template-columns: 1fr 1fr 1fr;
+}
 .thumb-card {
   display: grid;
   gap: 8px;

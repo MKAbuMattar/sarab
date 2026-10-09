@@ -11,7 +11,7 @@ const parseTime = (text) => {
   return parts.reduce((a, p) => a * 60 + Number(p), 0);
 };
 
-function trimEditor(src, clip) {
+function trimEditor(src, clip, opts = {}) {
   const video = el("video", {
     src,
     muted: "",
@@ -29,11 +29,13 @@ function trimEditor(src, clip) {
   const hStart = handle("start", t("trim.start")),
     hEnd = handle("end", t("trim.end"));
   const range = el("div", { class: "range" }),
-    head = el("div", { class: "head" });
+    head = el("div", { class: "head" }),
+    mark = el("div", { class: "frame", hidden: "" });
   const track = el(
     "div",
     { class: "track", dir: "ltr" },
     range,
+    mark,
     head,
     hStart,
     hEnd,
@@ -63,6 +65,12 @@ function trimEditor(src, clip) {
     { type: "button", class: "whole" },
     t("trim.whole"),
   );
+  const useFrame = el(
+    "button",
+    { type: "button", class: "use-frame" },
+    icon(""),
+    el("span", {}, t("trim.useFrame")),
+  );
   const said = el("p", { class: "said caption", "aria-live": "polite" });
   const root = el(
     "section",
@@ -70,7 +78,14 @@ function trimEditor(src, clip) {
     video,
     track,
     el("div", { class: "times" }, fStart, fEnd),
-    el("div", { class: "controls" }, play, seam, whole),
+    el(
+      "div",
+      { class: "controls" },
+      play,
+      seam,
+      whole,
+      ...(opts.capture ? [useFrame] : []),
+    ),
     said,
     el("p", { class: "caption" }, t("trim.hint")),
   );
@@ -78,7 +93,8 @@ function trimEditor(src, clip) {
   let dur = 0,
     start = 0,
     end = 0,
-    looping = false;
+    looping = false,
+    frame = opts.frame ?? null;
 
   function render() {
     if (!dur) return;
@@ -105,6 +121,8 @@ function trimEditor(src, clip) {
       b: fmtTime(end),
       d: fmtTime(dur),
     });
+    mark.hidden = frame === null;
+    if (frame !== null) mark.style.left = pct(frame);
   }
   function set(which, s, show = true) {
     s = Math.min(Math.max(s, 0), dur);
@@ -115,9 +133,28 @@ function trimEditor(src, clip) {
       else start = Math.max(0, end - TRIM_MIN);
     }
     if (show && !looping) video.currentTime = which === "start" ? start : end;
+    const lost = frame !== null && (frame < start || frame > end);
+    if (lost) frame = null;
     render();
+    if (lost) {
+      said.textContent = t("trim.frameGone");
+      opts.onFrame?.(null);
+    }
     root.dispatchEvent(new Event("input", { bubbles: true }));
   }
+  async function pickFrame() {
+    if (!dur || !opts.capture) return;
+    stopLoop();
+    if (video.seeking)
+      await new Promise((r) =>
+        video.addEventListener("seeked", r, { once: true }),
+      );
+    frame = video.currentTime;
+    render();
+    said.textContent = t("trim.frameSet", { t: fmtTime(frame) });
+    opts.onFrame?.(frame, video);
+  }
+  useFrame.onclick = pickFrame;
 
   video.addEventListener("loadedmetadata", () => {
     dur = video.duration;
@@ -239,6 +276,11 @@ function trimEditor(src, clip) {
 
   root.addEventListener("keydown", (e) => {
     if (e.target.tagName === "INPUT" || !dur) return;
+    if (e.code === "KeyF" && opts.capture) {
+      e.preventDefault();
+      pickFrame();
+      return;
+    }
     if (e.code !== "BracketLeft" && e.code !== "BracketRight") return;
     e.preventDefault();
     const at = Math.max(0, video.currentTime - (video.paused ? 0 : TRIM_LAG));

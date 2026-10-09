@@ -1,6 +1,7 @@
 use super::*;
 
 pub const CUSTOM_THUMBNAIL: &str = "thumbnail-custom";
+pub const FRAME_THUMBNAIL: &str = "thumbnail-frame.png";
 pub const MAX_IMAGE_BYTES: usize = 10 * 1024 * 1024;
 pub const MAX_IMAGE_SIDE: u32 = 8000;
 
@@ -103,6 +104,21 @@ pub fn save_custom_thumbnail(dir: &Path, bytes: &[u8]) -> Result<PathBuf, String
     for old in ["png", "jpg", "webp"] {
         let _ = fs::remove_file(dir.join(format!("{CUSTOM_THUMBNAIL}.{old}")));
     }
+    fs::rename(&tmp, &path).map_err(|e| e.to_string())?;
+    Ok(path)
+}
+
+pub fn frame_thumbnail(dir: &Path) -> Option<PathBuf> {
+    Some(dir.join(FRAME_THUMBNAIL)).filter(|p| p.is_file())
+}
+
+pub fn save_frame_thumbnail(dir: &Path, bytes: &[u8]) -> Result<PathBuf, String> {
+    if check_image(bytes)? != "png" {
+        return Err("the frame must be a PNG image".into());
+    }
+    let path = dir.join(FRAME_THUMBNAIL);
+    let tmp = dir.join(format!("{FRAME_THUMBNAIL}.tmp"));
+    fs::write(&tmp, bytes).map_err(|e| e.to_string())?;
     fs::rename(&tmp, &path).map_err(|e| e.to_string())?;
     Ok(path)
 }
