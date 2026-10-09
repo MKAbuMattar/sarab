@@ -2,7 +2,7 @@ use super::*;
 
 pub fn asset_url(p: &Path) -> String {
     let s = p.to_string_lossy().replace('\\', "/");
-    let mut out = String::from("http://asset.localhost/");
+    let mut out = format!("{ASSET_ORIGIN}/");
     for b in s.bytes() {
         match b {
             b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_' | b'~' | b'/' | b':' => {
