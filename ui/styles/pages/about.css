@@ -1,0 +1,37 @@
+.about-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.about-hero img {
+  border-radius: 12px;
+}
+.about-hero > div {
+  display: grid;
+  gap: 2px;
+}
+.about-name {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+}
+.about-ar {
+  font-weight: 400;
+  color: var(--text-2);
+  margin-inline-start: 6px;
+}
+.about-text {
+  max-width: 680px;
+  color: var(--text-2);
+}
+.swatches {
+  display: inline-flex;
+  gap: 4px;
+}
+.swatches i {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid var(--control-stroke);
+}

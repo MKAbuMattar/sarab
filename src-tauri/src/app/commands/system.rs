@@ -68,3 +68,8 @@ pub(crate) async fn open(app: AppHandle, which: String) -> Result<(), String> {
 pub const WEBSITE: &str = "https://sarab.mkabumattar.com";
 
 pub const ISSUES: &str = "https://github.com/MKAbuMattar/sarab/issues";
+
+#[tauri::command]
+pub(crate) async fn clipboard_text(app: AppHandle) -> Result<String, String> {
+    on_main(&app, |_| os::platform::clipboard_text())
+}

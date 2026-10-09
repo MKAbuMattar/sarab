@@ -223,5 +223,10 @@
   "channel.beta": "Beta",
   "library.appTitle": "{title} als Hintergrund ausführen?",
   "library.appBody": "Das ist ein Programm. Es läuft mit denselben Rechten wie jede App, die Sie öffnen. Verwenden Sie nur Programme, denen Sie vertrauen. Sarab beendet es, wenn der Hintergrund wechselt oder Sarab beendet wird.",
-  "library.run": "Ausführen"
+  "library.run": "Ausführen",
+  "menu.undo": "Rückgängig",
+  "menu.cut": "Ausschneiden",
+  "menu.copy": "Kopieren",
+  "menu.paste": "Einfügen",
+  "menu.selectAll": "Alles auswählen"
 }

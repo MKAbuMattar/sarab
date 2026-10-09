@@ -372,15 +372,15 @@ Add-Type -AssemblyName System.Windows.Forms
     $ar = Get-Content (Join-Path $root 'ui/i18n/ar.json') -Raw | ConvertFrom-Json -AsHashtable
     $missing = @($en.Keys | Where-Object { -not $ar.ContainsKey($_) }) + @($ar.Keys | Where-Object { -not $en.ContainsKey($_) })
     Assert ($missing.Count -eq 0) "string keys differ: $($missing -join ', ')"
-    $used = Select-String -Path (Join-Path $root 'ui/*.html'), (Join-Path $root 'ui/app.js') -Pattern "(data-t[pl]?=""|t\(')([a-zA-Z.]+)" -AllMatches | ForEach-Object { $_.Matches } | ForEach-Object { $_.Groups[2].Value } | Sort-Object -Unique
+    $used = Select-String -Path (@((Join-Path $root 'ui/*.html')) + (Get-ChildItem (Join-Path $root 'ui/scripts') -Recurse -Filter *.js).FullName) -Pattern "(data-t[pl]?=""|t\(['""])([a-zA-Z.]+)" -AllMatches | ForEach-Object { $_.Matches } | ForEach-Object { $_.Groups[2].Value } | Sort-Object -Unique
     $unknown = @($used | Where-Object { -not $en.ContainsKey($_) })
     Assert ($unknown.Count -eq 0) "UI uses keys with no string: $($unknown -join ', ')"
-    Assert ((Get-Content (Join-Path $root 'ui/app.js') -Raw) -match "lang === 'ar' \? 'rtl'") 'Arabic does not switch to rtl'
-    $css = Get-Content (Join-Path $root 'ui/style.css') -Raw
+    Assert (((Get-ChildItem (Join-Path $root 'ui/scripts') -Recurse -Filter *.js | Get-Content -Raw) -join "`n") -match "lang === ['""]ar['""] \? ['""]rtl['""]") 'Arabic does not switch to rtl'
+    $css = (Get-ChildItem (Join-Path $root 'ui/styles') -Recurse -Filter *.css | Get-Content -Raw) -join "`n"
     foreach ($hex in '#EAE6DB', '#D9C9B0', '#2B2233', '#3C3C3C', '#2F5D6B', '#8B1E2D', '#6B7A4F', '#D9A36A', '#C76B6B', '#B9875E') {
       Assert ($css -match $hex) "style.css lacks token $hex"
     }
-    Assert ($css -match 'data-theme=dark') 'no dark theme'
+    Assert ($css -match 'data-theme="?dark"?') 'no dark theme'
     Assert ($css -match 'html\.translucent') 'no translucent background rule'
     Assert ($css -match 'select\.native') 'native dropdown popups are not replaced'
     Assert ((Get-Content (Join-Path $root 'ui/index.html') -Raw) -match 'name="theme"') 'no theme setting'
@@ -570,7 +570,7 @@ Add-Type -AssemblyName System.Windows.Forms
     Assert (Test-Path (Join-Path $root "src-tauri/target/release/bundle/nsis/Sarab_${want}_x64-setup.exe")) 'no installer for this version'
     $html = Get-Content (Join-Path $root 'ui/index.html') -Raw
     Assert ($html -match 'id="page-about"' -and $html -match 'data-page="about"') 'About page or its nav item is missing'
-    Assert ((Get-Content (Join-Path $root 'ui/app.js') -Raw) -match "about-version") 'About does not show the version'
+    Assert (((Get-ChildItem (Join-Path $root 'ui/scripts') -Recurse -Filter *.js | Get-Content -Raw) -join "`n") -match "about-version") 'About does not show the version'
     'about gate passed'
   }
 
@@ -639,7 +639,7 @@ Add-Type -AssemblyName System.Windows.Forms
     Assert ($files.Count -ge 2) 'expected at least English and Arabic'
     # Every language in the menu has a file, and every file is in the menu.
     $html = Get-Content (Join-Path $root 'ui/index.html') -Raw
-    $menu = [regex]::Match($html, '<select name="language">(.*?)</select>').Groups[1].Value
+    $menu = [regex]::Match($html, '(?s)<select name="language">(.*?)</select>').Groups[1].Value
     $offered = @([regex]::Matches($menu, 'value="([\w-]+)"') | ForEach-Object { $_.Groups[1].Value }) | Sort-Object
     $have = @($files | ForEach-Object { $_.BaseName }) | Sort-Object
     Assert (-not (Compare-Object $offered $have)) "language menu ($($offered -join ',')) and ui/i18n ($($have -join ',')) differ"
@@ -651,7 +651,7 @@ Add-Type -AssemblyName System.Windows.Forms
       $empty = @($j.Keys | Where-Object { -not "$($j[$_])".Trim() })
       Assert ($empty.Count -eq 0) "$($f.Name) has empty strings: $($empty -join ', ')"
     }
-    $used = Select-String -Path (Join-Path $root 'ui/*.html'), (Join-Path $root 'ui/app.js') -Pattern "(data-t[pl]?=""|\bt\(')([a-zA-Z.]+)" -AllMatches | ForEach-Object { $_.Matches } | ForEach-Object { $_.Groups[2].Value } | Sort-Object -Unique
+    $used = Select-String -Path (@((Join-Path $root 'ui/*.html')) + (Get-ChildItem (Join-Path $root 'ui/scripts') -Recurse -Filter *.js).FullName) -Pattern "(data-t[pl]?=""|\bt\(['""])([a-zA-Z.]+)" -AllMatches | ForEach-Object { $_.Matches } | ForEach-Object { $_.Groups[2].Value } | Sort-Object -Unique
     $unknown = @($used | Where-Object { -not $en.ContainsKey($_) })
     Assert ($unknown.Count -eq 0) "UI uses keys with no string: $($unknown -join ', ')"
     $src = Get-Content (Join-Path $root 'src-tauri/src/core/pause.rs') -Raw
@@ -659,13 +659,13 @@ Add-Type -AssemblyName System.Windows.Forms
     $noWords = @($reasons | Where-Object { -not $en.ContainsKey("reason.$_") })
     Assert ($reasons.Count -ge 10 -and $noWords.Count -eq 0) "pause reasons without words: $($noWords -join ', ')"
     # The browser's own dialogs say "tauri.localhost says" and ignore the theme; ask() in app.js replaces them.
-    $native = Select-String -Path (Join-Path $root 'ui/*.js'), (Join-Path $root 'ui/*.html') -Pattern '(?<![\w.])(confirm|alert|prompt)\s*\(' | Where-Object { $_.Line -notmatch '^\s*//' }
+    $native = Select-String -Path (@((Join-Path $root 'ui/*.html')) + (Get-ChildItem (Join-Path $root 'ui/scripts') -Recurse -Filter *.js).FullName) -Pattern '(?<![\w.])(confirm|alert|prompt)\s*\(' | Where-Object { $_.Line -notmatch '^\s*//' }
     Assert (-not $native) "native browser dialog used: $($native | ForEach-Object { '{0}:{1}' -f $_.Filename, $_.LineNumber })"
     $cargo = [regex]::Match((Get-Content (Join-Path $root 'src-tauri/Cargo.toml') -Raw), '(?m)^version = "([^"]+)"').Groups[1].Value
     $conf = (Get-Content (Join-Path $root 'src-tauri/tauri.conf.json') -Raw | ConvertFrom-Json).version
     Assert ($cargo -eq $conf) "Cargo.toml says $cargo, tauri.conf.json says $conf"
     Assert ((Get-Content (Join-Path $root 'CHANGELOG.md') -Raw) -match "## \[$([regex]::Escape($cargo))\]") "CHANGELOG.md has no entry for $cargo"
-    # Library filter and sort (ui/filter.js) behave as tested.
+    # Library filter and sort (ui/scripts/lib/filter.js) behave as tested.
     $filters = & node (Join-Path $root 'scripts/check_filters.mjs') 2>&1
     Assert ($LASTEXITCODE -eq 0) "library filters: $filters"
     Write-Host "$($files.Count) languages, $($en.Count) strings, $($used.Count) keys used, $($reasons.Count) reasons, version $cargo"

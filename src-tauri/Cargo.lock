@@ -3176,6 +3176,9 @@ dependencies = [
 name = "sarab"
 version = "0.0.9"
 dependencies = [
+ "gdk",
+ "glib",
+ "gtk",
  "reqwest",
  "rustls",
  "serde",

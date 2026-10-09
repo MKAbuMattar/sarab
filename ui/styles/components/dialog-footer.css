@@ -1,0 +1,62 @@
+#edit .footer,
+#info .footer,
+#props .footer {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 8px;
+}
+.danger-text {
+  color: var(--danger-text);
+}
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 16px;
+  margin: 0;
+}
+.facts dt {
+  color: var(--text-2);
+}
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+dialog .footer {
+  padding: 24px;
+  background: var(--dialog-footer);
+  border-top: 1px solid var(--card-stroke);
+  display: flex;
+  justify-content: flex-end;
+}
+
+#ask {
+  width: min(448px, 92vw);
+}
+#ask .footer {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 8px;
+}
+#ask-body {
+  margin: 0;
+  color: var(--text-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+button.danger-fill {
+  background: var(--jo-keffiyeh);
+  color: #ffffff;
+  border-color: transparent;
+}
+button.danger-fill:hover {
+  background: #9e2535;
+}
+@media (forced-colors: active) {
+  button.danger-fill {
+    background: ButtonFace;
+    color: ButtonText;
+    border-color: ButtonText;
+  }
+}

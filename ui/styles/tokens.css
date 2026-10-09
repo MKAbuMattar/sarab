@@ -1,0 +1,72 @@
+:root {
+  --jo-iris: #2b2233;
+  --jo-sand: #d9a36a;
+  --jo-salt: #eae6db;
+  --jo-amman: #d9c9b0;
+  --jo-basalt: #3c3c3c;
+  --jo-deadsea: #2f5d6b;
+  --jo-keffiyeh: #8b1e2d;
+  --jo-petra: #c76b6b;
+  --jo-olive: #6b7a4f;
+  --jo-camel: #b9875e;
+
+  --solid-base: #f3f3f3;
+  --layer: rgba(255, 255, 255, 0.5);
+  --layer-stroke: rgba(0, 0, 0, 0.0578);
+  --card: rgba(255, 255, 255, 0.7);
+  --card-stroke: rgba(0, 0, 0, 0.0578);
+  --card-hover: rgba(246, 246, 246, 0.9);
+  --card-stroke-hover: rgba(0, 0, 0, 0.1);
+  --control: rgba(255, 255, 255, 0.7);
+  --control-hover: rgba(249, 249, 249, 0.5);
+  --control-input: #ffffff;
+  --control-stroke: rgba(0, 0, 0, 0.0578);
+  --control-stroke-bottom: rgba(0, 0, 0, 0.1622);
+  --subtle-hover: rgba(0, 0, 0, 0.0373);
+  --subtle-press: rgba(0, 0, 0, 0.0241);
+  --text: rgba(0, 0, 0, 0.896);
+  --text-2: rgba(0, 0, 0, 0.606);
+  --text-3: rgba(0, 0, 0, 0.4458);
+  --accent: var(--jo-deadsea);
+  --accent-hover: #3a6b7a;
+  --on-accent: #ffffff;
+  --danger-text: var(--jo-keffiyeh);
+  --infobar-error: #fde7e9;
+  --dialog: #ffffff;
+  --dialog-footer: #f3f3f3;
+  --smoke: rgba(0, 0, 0, 0.3);
+  --tile-a: var(--jo-deadsea);
+  --tile-b: var(--jo-iris);
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --solid-base: #202020;
+  --layer: rgba(58, 58, 58, 0.3);
+  --layer-stroke: rgba(0, 0, 0, 0.1);
+  --card: rgba(255, 255, 255, 0.0512);
+  --card-stroke: rgba(0, 0, 0, 0.1);
+  --card-hover: rgba(255, 255, 255, 0.0837);
+  --card-stroke-hover: rgba(255, 255, 255, 0.0698);
+  --control: rgba(255, 255, 255, 0.0605);
+  --control-hover: rgba(255, 255, 255, 0.0837);
+  --control-input: rgba(30, 30, 30, 0.7);
+  --control-stroke: rgba(255, 255, 255, 0.0698);
+  --control-stroke-bottom: rgba(255, 255, 255, 0.0465);
+  --subtle-hover: rgba(255, 255, 255, 0.0605);
+  --subtle-press: rgba(255, 255, 255, 0.0419);
+  --text: #ffffff;
+  --text-2: rgba(255, 255, 255, 0.786);
+  --text-3: rgba(255, 255, 255, 0.5442);
+  --accent: var(--jo-sand);
+  --accent-hover: #e2b482;
+  --on-accent: #1a1a1a;
+  --danger-text: var(--jo-petra);
+  --infobar-error: #442726;
+  --dialog: #2b2b2b;
+  --dialog-footer: #202020;
+  --smoke: rgba(0, 0, 0, 0.4);
+  --tile-a: var(--jo-iris);
+  --tile-b: #4a3b57;
+  color-scheme: dark;
+}

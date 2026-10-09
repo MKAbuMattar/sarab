@@ -6,6 +6,8 @@ mod dialogs;
 pub use dialogs::*;
 mod images;
 pub use images::*;
+mod clipboard;
+pub use clipboard::*;
 mod recycle;
 pub use recycle::*;
 mod terminal;

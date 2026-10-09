@@ -1,0 +1,58 @@
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  html,
+  html.translucent {
+    background: Canvas;
+  }
+  main,
+  .card,
+  .tile,
+  .desk-card,
+  dialog {
+    background: Canvas;
+    border-color: CanvasText;
+  }
+  .monitor,
+  .thumb {
+    background: ButtonFace;
+    color: ButtonText;
+    border-color: ButtonText;
+  }
+  .monitor .icon,
+  .thumb .icon {
+    color: ButtonText;
+  }
+  .monitor[aria-pressed="true"],
+  .nav-item[aria-current="page"] {
+    outline: 2px solid Highlight;
+  }
+  .badge {
+    background: Canvas !important;
+    color: CanvasText;
+    border: 1px solid CanvasText;
+  }
+  button.accent {
+    background: Highlight;
+    color: HighlightText;
+  }
+  input.switch:checked {
+    background: Highlight;
+    border-color: Highlight;
+  }
+  input.switch:checked::before {
+    background: HighlightText;
+  }
+}
+@media (max-width: 900px) {
+  body {
+    grid-template-columns: 220px 1fr;
+  }
+  main {
+    padding: 24px;
+  }
+}
