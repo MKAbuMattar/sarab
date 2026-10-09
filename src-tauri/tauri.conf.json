@@ -55,6 +55,7 @@
         "depends": [
           "libwebkit2gtk-4.1-0",
           "libgtk-3-0",
+          "libgtk-layer-shell0",
           "libayatana-appindicator3-1"
         ],
         "recommends": [
@@ -66,6 +67,7 @@
         "depends": [
           "webkit2gtk4.1",
           "gtk3",
+          "gtk-layer-shell",
           "libayatana-appindicator-gtk3"
         ],
         "recommends": [

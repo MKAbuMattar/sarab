@@ -41,6 +41,8 @@ fn main() {
         os::platform::tell_terminal(&format!("sarab: {e}"));
         std::process::exit(2);
     }
+    #[cfg(target_os = "linux")]
+    os::platform::pick_backend();
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
             let rest: Vec<String> = argv.into_iter().skip(1).collect();

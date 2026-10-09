@@ -4,6 +4,11 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ## [Unreleased]
 
+### Added
+
+- Linux, in testing: wallpapers on X11 desktops, and on Wayland desktops with the layer-shell protocol (KDE Plasma, Sway, Hyprland, COSMIC and others). On GNOME, Sarab runs through XWayland.
+- Text boxes have Sarab's own right-click menu: Undo, Cut, Copy, Paste and Select all.
+
 ## [0.0.9] - 2026-10-09
 
 ### Added
