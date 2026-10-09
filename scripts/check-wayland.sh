@@ -42,11 +42,11 @@ dbus-run-session -- bash -c '
   swaymsg -t get_tree | grep -E "\"(name|app_id)\"" || true
   grim -t ppm "$2/shot.ppm"
   python3 - "$2/shot.ppm" <<EOF
-import sys
+import re, sys
 data = open(sys.argv[1], "rb").read()
-parts = data.split(maxsplit=4)
-w, h = int(parts[1]), int(parts[2])
-px = parts[4]
+head = re.match(rb"P6\s+(\d+)\s+(\d+)\s+\d+\s", data)
+w, h = int(head[1]), int(head[2])
+px = data[head.end():]
 for x, y in [(w // 2, h // 2), (10, 10), (w - 10, h - 10)]:
     r, g, b = px[(y * w + x) * 3:(y * w + x) * 3 + 3]
     print(f"pixel {x},{y}: #{r:02X}{g:02X}{b:02X}")
