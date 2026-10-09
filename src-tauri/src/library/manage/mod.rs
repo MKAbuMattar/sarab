@@ -8,3 +8,5 @@ mod folder;
 pub use folder::*;
 mod props;
 pub use props::*;
+mod image;
+pub use image::*;

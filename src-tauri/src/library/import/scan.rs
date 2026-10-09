@@ -13,7 +13,7 @@ pub fn scan(lib: &Path) -> Vec<Wallpaper> {
 
 pub fn read(dir: &Path) -> Option<Wallpaper> {
     let info: Manifest = serde_json::from_slice(&fs::read(dir.join(INFO)).ok()?).ok()?;
-    Some(Wallpaper {
+    let mut w = Wallpaper {
         id: dir.file_name()?.to_string_lossy().into_owned(),
         dir: dir.to_path_buf(),
         kind: info.r#type.name(),
@@ -24,13 +24,20 @@ pub fn read(dir: &Path) -> Option<Wallpaper> {
             .app_version
             .as_deref()
             .is_some_and(|v| newer(v, env!("CARGO_PKG_VERSION"))),
-        thumb: info
+        thumb: None,
+        auto_thumb: info
             .thumbnail
             .as_deref()
             .map(|t| dir.join(t))
             .filter(|p| p.is_file() && p.starts_with(dir)),
+        custom_thumb: crate::library::custom_thumbnail(dir),
         info,
-    })
+    };
+    w.thumb = match w.info.thumbnail_choice.as_deref() {
+        Some("image") => w.custom_thumb.clone().or_else(|| w.auto_thumb.clone()),
+        _ => w.auto_thumb.clone(),
+    };
+    Some(w)
 }
 
 pub fn newer(a: &str, b: &str) -> bool {

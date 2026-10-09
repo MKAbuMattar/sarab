@@ -96,6 +96,7 @@ fn main() {
             get_preset,
             edit_info,
             video_file,
+            thumbnail_image,
             details,
             reveal,
             export_wallpaper,

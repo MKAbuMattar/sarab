@@ -388,6 +388,7 @@ fn edit_info_validates_and_saves() {
         category: category.map(String::from),
         tags: tags.iter().map(|t| t.to_string()).collect(),
         clip: None,
+        thumbnail: None,
     };
     let info = edit_info(
         &d,
@@ -523,4 +524,88 @@ fn edit_info_clip() {
         edit_info(&d, with(Some(vec![0.0, 2.0]))).is_err(),
         "only videos have a clip"
     );
+}
+
+fn png(w: u32, h: u32) -> Vec<u8> {
+    let mut b = vec![0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13];
+    b.extend_from_slice(b"IHDR");
+    b.extend_from_slice(&w.to_be_bytes());
+    b.extend_from_slice(&h.to_be_bytes());
+    b.extend_from_slice(&[8, 6, 0, 0, 0]);
+    b
+}
+
+#[test]
+fn thumb_image_check() {
+    assert_eq!(check_image(&png(640, 360)), Ok("png"));
+    let jpeg = [
+        0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x04, 0x00, 0x00, 0xFF, 0xC0, 0x00, 0x11, 0x08, 0x01, 0x68,
+        0x02, 0x80, 0x03,
+    ];
+    assert_eq!(check_image(&jpeg), Ok("jpg"), "a JPEG of 640 by 360");
+    let mut webp = b"RIFF\0\0\0\0WEBPVP8X\x0a\0\0\0\0\0\0\0".to_vec();
+    webp.extend_from_slice(&[0x7F, 0x02, 0x00, 0x67, 0x01, 0x00]);
+    assert_eq!(check_image(&webp), Ok("webp"), "a WebP of 640 by 360");
+
+    let svg = br#"<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>"#;
+    assert!(check_image(svg).is_err(), "SVG is refused");
+    assert!(
+        check_image(b"just some text, renamed to .png").is_err(),
+        "a renamed text file"
+    );
+    assert!(check_image(&png(9000, 100)).is_err(), "wider than 8000");
+    assert!(check_image(&png(0, 100)).is_err(), "no width");
+    let mut big = png(100, 100);
+    big.resize(MAX_IMAGE_BYTES + 1, 0);
+    assert!(check_image(&big).is_err(), "over 10 MB");
+    assert!(check_image(&png(100, 100)[..14]).is_err(), "cut short");
+}
+
+#[test]
+fn thumb_custom_choice() {
+    let d = tmp("thumb-choice");
+    fs::write(
+        d.join(INFO),
+        r#"{"title":"Sea","type":"video","file":"a.mp4","version":1}"#,
+    )
+    .unwrap();
+    let with = |t: &str| Edit {
+        title: "Sea".into(),
+        thumbnail: Some(t.into()),
+        ..Default::default()
+    };
+    assert!(edit_info(&d, with("image")).is_err(), "no image chosen yet");
+    assert!(save_custom_thumbnail(&d, b"not an image").is_err());
+    assert_eq!(custom_thumbnail(&d), None, "a refused image writes nothing");
+
+    save_custom_thumbnail(&d, &png(10, 10)).unwrap();
+    let jpeg = [
+        0xFF, 0xD8, 0xFF, 0xC0, 0x00, 0x11, 0x08, 0x00, 0x0A, 0x00, 0x0A, 0x03,
+    ];
+    let saved = save_custom_thumbnail(&d, &jpeg).unwrap();
+    assert_eq!(saved.file_name().unwrap(), "thumbnail-custom.jpg");
+    assert!(
+        !d.join("thumbnail-custom.png").exists(),
+        "the earlier image is replaced"
+    );
+
+    assert_eq!(
+        edit_info(&d, with("image"))
+            .unwrap()
+            .thumbnail_choice
+            .as_deref(),
+        Some("image")
+    );
+    assert_eq!(
+        read(&d).unwrap().thumb,
+        Some(saved.clone()),
+        "the card shows the chosen image"
+    );
+    assert_eq!(edit_info(&d, with("auto")).unwrap().thumbnail_choice, None);
+    assert_eq!(
+        custom_thumbnail(&d),
+        Some(saved),
+        "Automatic keeps the image for later"
+    );
+    assert!(edit_info(&d, with("frame?")).is_err());
 }

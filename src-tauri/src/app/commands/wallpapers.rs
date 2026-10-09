@@ -46,7 +46,6 @@ pub(crate) async fn edit_info(
         let w = editable(core, &id)?;
         let clip = library::edit_info(&w.dir, edit)?.clip;
         rescan(core);
-        // A new clip reloads the displays that play this wallpaper.
         if clip != w.info.clip {
             for i in 0..core.displays.len() {
                 if core.displays[i].wallpaper.as_deref() == Some(id.as_str()) {
@@ -138,7 +137,6 @@ pub(crate) fn editable(core: &Core, id: &str) -> Result<library::Wallpaper, Stri
     Ok(w)
 }
 
-/// The video file of a wallpaper, opened to the window for the trim editor's preview.
 #[tauri::command]
 pub(crate) async fn video_file(app: AppHandle, id: String) -> Result<String, String> {
     with_core(&app, move |app, core| {
@@ -152,5 +150,26 @@ pub(crate) async fn video_file(app: AppHandle, id: String) -> Result<String, Str
             }
             _ => Err("not a video file".into()),
         }
+    })
+}
+
+#[tauri::command]
+pub(crate) async fn thumbnail_image(
+    app: AppHandle,
+    request: tauri::ipc::Request<'_>,
+) -> Result<(), String> {
+    let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else {
+        return Err("send the image as raw bytes".into());
+    };
+    let id = request
+        .headers()
+        .get("id")
+        .and_then(|v| v.to_str().ok())
+        .ok_or("no wallpaper id")?
+        .to_string();
+    let bytes = bytes.clone();
+    with_core(&app, move |_, core| {
+        let w = editable(core, &id)?;
+        library::save_custom_thumbnail(&w.dir, &bytes).map(|_| ())
     })
 }

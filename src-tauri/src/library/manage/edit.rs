@@ -16,12 +16,10 @@ pub struct Edit {
     pub author: String,
     pub category: Option<String>,
     pub tags: Vec<String>,
-    /// The part of a video that plays. Missing keeps the current one, `[]` plays the whole
-    /// video, `[start, end]` in seconds plays that part.
     pub clip: Option<Vec<f64>>,
+    pub thumbnail: Option<String>,
 }
 
-/// The shortest part of a video that can loop without flickering the desktop.
 pub const MIN_CLIP: f64 = 0.5;
 
 pub(in crate::library) fn optional(s: &str) -> Option<String> {
@@ -59,6 +57,13 @@ pub fn edit_info(dir: &Path, e: Edit) -> Result<Manifest, String> {
     if tags.len() > 5 {
         return Err("use at most 5 tags".into());
     }
+    let thumbnail_choice = match e.thumbnail.as_deref() {
+        None => info.thumbnail_choice.clone(),
+        Some("auto") => None,
+        Some("image") if custom_thumbnail(dir).is_some() => Some("image".to_string()),
+        Some("image") => return Err("choose an image for the thumbnail first".into()),
+        Some(other) => return Err(format!("unknown thumbnail choice {other}")),
+    };
     let clip = match e.clip.as_deref() {
         None => info.clip,
         Some([]) => None,
@@ -75,6 +80,7 @@ pub fn edit_info(dir: &Path, e: Edit) -> Result<Manifest, String> {
     info.category = category;
     info.tags = tags;
     info.clip = clip;
+    info.thumbnail_choice = thumbnail_choice;
     info.version += 1;
     crate::core::settings::save(&dir.join(INFO), &info).map_err(|e| e.to_string())?;
     Ok(info)
