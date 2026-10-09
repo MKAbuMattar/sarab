@@ -83,7 +83,15 @@ pub(in crate::engine::wallpaper) fn create_window(
     }
     let desk = core.desktop.ok_or("desktop layer not found")?;
     let url = url_for(app, w, &core.settings.scaling)?;
-    let origin = url.origin();
+    // Not url.origin(): custom schemes (asset://, tauri:// on Linux) have opaque origins, never equal.
+    let site = |u: &tauri::Url| {
+        (
+            u.scheme().to_owned(),
+            u.host_str().map(str::to_owned),
+            u.port(),
+        )
+    };
+    let origin = site(&url);
     let any_origin = w.info.r#type == Kind::Url;
     let lbl = new_label(i);
     let win = WebviewWindowBuilder::new(app, &lbl, WebviewUrl::External(url))
@@ -95,7 +103,7 @@ pub(in crate::engine::wallpaper) fn create_window(
         .shadow(false)
         .resizable(false)
         .initialization_script(INJECT)
-        .on_navigation(move |u| any_origin || u.origin() == origin)
+        .on_navigation(move |u| any_origin || site(u) == origin)
         .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
         .on_page_load(|win, payload| {
             if payload.event() == tauri::webview::PageLoadEvent::Finished {
