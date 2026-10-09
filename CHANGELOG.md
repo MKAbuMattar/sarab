@@ -4,6 +4,10 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ## [Unreleased]
 
+### Changed
+
+- The title bar's menu and the tray menu follow Sarab's Light or Dark theme, not only the Windows setting.
+
 ## [0.0.9] - 2026-10-09
 
 ### Added
