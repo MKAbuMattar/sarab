@@ -4,15 +4,17 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ## [Unreleased]
 
-### Changed
-
-- Edit wallpaper has tabs: Details, and Part that plays for videos. A dot marks a tab with unsaved changes, and a failed save opens the tab with the problem.
-- Edit wallpaper has a Thumbnail tab: keep the automatic picture or use an image of your own (PNG, JPEG or WebP, up to 10 MB). Your image is copied into the wallpaper's folder when you save, and stays there if you switch back to automatic. It also gives web pages, apps and Linux wallpapers a thumbnail.
-- On Windows, a video's thumbnail can be any moment of it: in Part that plays, move to the moment and choose Use this frame (or press F). A marker shows it on the timeline, and the frame is saved when you save.
+## [0.0.11] - 2026-10-09
 
 ### Added
 
 - Edit wallpaper has a "Part that plays" editor for videos: drag the start and end handles, type the times, or press [ and ] while it plays. "Seam only" loops the moment the end runs into the start, the one you see over and over on the desktop. Displays playing the wallpaper switch to the new part when you save.
+- Edit wallpaper has a Thumbnail tab: keep the automatic picture or use an image of your own (PNG, JPEG or WebP, up to 10 MB). Your image is copied into the wallpaper's folder when you save, and stays there if you switch back to automatic. It also gives web pages, apps and Linux wallpapers a thumbnail.
+- On Windows, a video's thumbnail can be any moment of it: in Part that plays, move to the moment and choose Use this frame (or press F). A marker shows it on the timeline, and the frame is saved when you save.
+
+### Changed
+
+- Edit wallpaper has tabs: Details, and Part that plays for videos. A dot marks a tab with unsaved changes, and a failed save opens the tab with the problem.
 
 ### Fixed
 
@@ -157,7 +159,8 @@ First public release, for Windows 10 (1903 or later) and Windows 11.
 - Opening Sarab from the desktop or Start menu opens its window, also when it already runs in the background. Starting at sign-in stays in the tray.
 - Start with Windows, on by default: switched on once at the first launch, and it stays off if you turn it off. Uninstalling removes it.
 
-[Unreleased]: https://github.com/MKAbuMattar/sarab/compare/v0.0.10...HEAD
+[Unreleased]: https://github.com/MKAbuMattar/sarab/compare/v0.0.11...HEAD
+[0.0.11]: https://github.com/MKAbuMattar/sarab/compare/v0.0.10...v0.0.11
 [0.0.10]: https://github.com/MKAbuMattar/sarab/compare/v0.0.9...v0.0.10
 [0.0.9]: https://github.com/MKAbuMattar/sarab/compare/v0.0.8...v0.0.9
 [0.0.8]: https://github.com/MKAbuMattar/sarab/compare/v0.0.7...v0.0.8
