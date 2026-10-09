@@ -130,6 +130,7 @@ fn main() {
                 let st = h.state::<Shared>();
                 let mut core = st.lock().unwrap();
                 rescan(&mut core);
+                os::platform::menu_theme(&core.settings.theme);
                 core.desktop = os::platform::find_desktop();
                 if core.desktop.is_none() {
                     log("desktop layer (WorkerW) not found; will retry");
