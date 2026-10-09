@@ -5,7 +5,6 @@ use crate::{cli, library, os};
 
 use crate::cli::Command;
 use serde_json::{json, Value};
-use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 use tauri_plugin_autostart::ManagerExt;

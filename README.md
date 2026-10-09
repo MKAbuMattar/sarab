@@ -12,7 +12,7 @@ Download: [latest release](https://github.com/MKAbuMattar/sarab/releases/latest)
 
 ## Status
 
-Version 0.0.7, an early release for **Windows 10 (1903 or later) and Windows 11**. Website: [sarab.mkabumattar.com](https://sarab.mkabumattar.com). Linux and macOS are planned; see the [roadmap](ROADMAP.md).
+Version 0.0.10, an early release for **Windows 10 (1903 or later) and Windows 11** on x64, ARM64 and x86, with a first Linux preview. Website: [sarab.mkabumattar.com](https://sarab.mkabumattar.com). Linux is in testing and macOS is planned; see the [roadmap](ROADMAP.md).
 
 ## What it does
 
@@ -59,10 +59,12 @@ command prints its error in the terminal, and everything else is written to the 
 | `sarab volume <0-100>`                                       | Wallpaper volume (0 mutes)                                        |
 | `sarab next`                                                 | Next wallpaper in the library, on every display                   |
 | `sarab import <zip>`                                         | Import a Sarab package                                            |
-| `sarab preset <id>` | Download a 4K preset (ids are in `src-tauri/src/library/presets.json`) |
+| `sarab preset <id>` | Download a 4K preset (ids are in `src-tauri/src/data/presets.json`) |
 | `sarab check-update` / `install-update` | Check for a new version now, or install it |
 | `sarab screenshot C:/shots/desktop.png [--display N]` | Save what a display shows as a PNG (a full path) |
 | `sarab ui` / `status` / `quit` | Open the window, write `status.json`, exit |
+| `sarab help [command]` / `sarab <command> --help` | The list of commands, or one command's page with options and examples |
+| `sarab --version` | One line with Sarab, the system, the web engine, the CPU type and the update channel |
 
 ## Wallpaper packages
 

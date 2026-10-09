@@ -7,6 +7,17 @@ pub fn run(args: &[String]) -> i32 {
     let exe = std::env::current_exe()
         .map(|p| p.with_extension("exe"))
         .unwrap_or_default();
+    match cli::answer(args) {
+        Some(Ok(text)) => {
+            print!("{text}");
+            return 0;
+        }
+        Some(Err(e)) => {
+            eprintln!("sarab: {e}");
+            return 2;
+        }
+        None => {}
+    }
     match cli::parse(args) {
         Err(e) => {
             eprintln!("sarab: {e}");

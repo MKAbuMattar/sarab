@@ -228,5 +228,11 @@
   "menu.cut": "Cut",
   "menu.copy": "Copy",
   "menu.paste": "Paste",
-  "menu.selectAll": "Select all"
+  "menu.selectAll": "Select all",
+  "menu.restore": "Restore",
+  "menu.move": "Move",
+  "menu.size": "Size",
+  "menu.minimize": "Minimize",
+  "menu.maximize": "Maximize",
+  "menu.close": "Close"
 }

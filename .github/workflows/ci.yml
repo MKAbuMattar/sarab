@@ -14,8 +14,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Website-only changes skip every build: Cloudflare Pages checks the site. Skipped jobs
+  # count as passed, so the required check does not hold such a PR.
+  changes:
+    name: What changed
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - id: diff
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if files=$(git diff --name-only "$BASE" HEAD 2>/dev/null) && [ -n "$files" ]             && ! echo "$files" | grep -qv '^website/'; then
+            echo "Only the website changed:"; echo "$files"
+            echo code=false >> "$GITHUB_OUTPUT"
+          else
+            echo code=true >> "$GITHUB_OUTPUT"
+          fi
+
   windows:
     name: Windows build and checks
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: windows-latest
     # A normal run takes about 7 minutes. A runner that hangs (as in the 2026-10-05 Actions
     # outage) fails here instead of holding the PR for the default 6 hours.
@@ -78,6 +102,8 @@ jobs:
 
   windows-arch:
     name: Windows ${{ matrix.arch }} build and tests
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     strategy:
@@ -132,6 +158,8 @@ jobs:
 
   linux:
     name: Linux build and tests
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -140,7 +168,7 @@ jobs:
       - name: Tauri's Linux libraries
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libssl-dev
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev libgtk-layer-shell-dev librsvg2-dev libssl-dev
 
       - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
         with:
@@ -165,6 +193,8 @@ jobs:
 
   linux-packages:
     name: Linux packages (${{ matrix.arch }})
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -181,7 +211,7 @@ jobs:
       - name: Tauri's Linux libraries
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libssl-dev xvfb
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev libgtk-layer-shell-dev librsvg2-dev libssl-dev xvfb
 
       - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable
         with:
@@ -204,11 +234,23 @@ jobs:
           APPIMAGE_EXTRACT_AND_RUN: 1
         run: cargo tauri build --bundles deb,rpm,appimage --config '{"bundle":{"createUpdaterArtifacts":false}}'
 
+      # The Linux job tests on x64; ARM reads some system files differently.
+      - name: Test on ARM64
+        if: matrix.arch == 'arm64'
+        working-directory: src-tauri
+        run: cargo test --locked
+
       - name: A wallpaper on the X11 desktop
         if: matrix.arch == 'x64'
         run: |
-          sudo apt-get install -y openbox xdotool x11-utils dbus-x11
+          sudo apt-get install -y openbox xdotool x11-utils x11-apps dbus-x11
           bash scripts/check-linux.sh src-tauri/target/release/sarab
+
+      - name: A wallpaper on the Wayland desktop (Sway)
+        if: matrix.arch == 'x64'
+        run: |
+          sudo apt-get install -y sway grim
+          bash scripts/check-wayland.sh src-tauri/target/release/sarab
 
       - name: The AppImage starts
         env:

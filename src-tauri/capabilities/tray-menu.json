@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "tray-menu",
+  "description": "Sarab's tray menu window on Windows: it lists the items and runs one.",
+  "windows": ["tray-menu"],
+  "permissions": ["core:event:default"]
+}

@@ -37,10 +37,23 @@ fn main() {
         }
         return;
     }
+    if let Some(r) = cli::answer(&args) {
+        let (text, code) = match r {
+            Ok(t) => (t, 0),
+            Err(e) => (format!("sarab: {e}\n"), 2),
+        };
+        #[cfg(windows)]
+        os::platform::tell_terminal(text.trim_end());
+        #[cfg(not(windows))]
+        print!("{text}");
+        std::process::exit(code);
+    }
     if let Err(e) = cli::parse(&args) {
         os::platform::tell_terminal(&format!("sarab: {e}"));
         std::process::exit(2);
     }
+    #[cfg(target_os = "linux")]
+    os::platform::pick_backend();
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
             let rest: Vec<String> = argv.into_iter().skip(1).collect();
@@ -58,6 +71,10 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             state,
             clipboard_text,
+            system_menu,
+            tray_menu_items,
+            tray_menu_show,
+            tray_menu_pick,
             set_wallpaper,
             add,
             import,
@@ -130,6 +147,7 @@ fn main() {
                 let st = h.state::<Shared>();
                 let mut core = st.lock().unwrap();
                 rescan(&mut core);
+                os::platform::menu_theme(&core.settings.theme);
                 core.desktop = os::platform::find_desktop();
                 if core.desktop.is_none() {
                     log("desktop layer (WorkerW) not found; will retry");

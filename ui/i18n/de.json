@@ -228,5 +228,11 @@
   "menu.cut": "Ausschneiden",
   "menu.copy": "Kopieren",
   "menu.paste": "Einfügen",
-  "menu.selectAll": "Alles auswählen"
+  "menu.selectAll": "Alles auswählen",
+  "menu.restore": "Wiederherstellen",
+  "menu.move": "Verschieben",
+  "menu.size": "Größe ändern",
+  "menu.minimize": "Minimieren",
+  "menu.maximize": "Maximieren",
+  "menu.close": "Schließen"
 }

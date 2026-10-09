@@ -15,7 +15,7 @@ function openMenu(x, y, items, keyboard) {
         {
           type: "button",
           role: "menuitem",
-          class: it.danger ? "danger" : "",
+          class: [it.danger && "danger", it.sep && "sep"].filter(Boolean).join(" "),
           disabled: it.disabled || undefined,
           onclick: () => {
             closeMenu();

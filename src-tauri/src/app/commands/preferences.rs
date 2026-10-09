@@ -38,6 +38,9 @@ pub(crate) fn apply_settings(
     let lib_changed = new.library_dir != core.settings.library_dir;
     let fit_changed = new.scaling != core.settings.scaling;
     let span_changed = new.span != core.settings.span;
+    if new.theme != core.settings.theme {
+        os::platform::menu_theme(&new.theme);
+    }
     if let Some(w) = app.get_webview_window("main") {
         if new.theme != core.settings.theme {
             let _ = w.set_theme(theme_of(&new.theme));

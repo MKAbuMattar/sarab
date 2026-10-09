@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Sarab</title>
+    <link rel="stylesheet" href="styles/tokens.css" />
+    <link rel="stylesheet" href="styles/base/base.css" />
+    <link rel="stylesheet" href="styles/controls/fields.css" />
+    <link rel="stylesheet" href="styles/components/menu.css" />
+    <style>
+      html,
+      body {
+        height: auto;
+        background: var(--dialog);
+      }
+      body {
+        display: block;
+      }
+      .menu {
+        position: static;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="menu" id="menu" role="menu" tabindex="-1"></div>
+    <script src="scripts/core/bridge.js"></script>
+    <script src="scripts/core/dom.js"></script>
+    <script src="scripts/tray-menu.js"></script>
+  </body>
+</html>

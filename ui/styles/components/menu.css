@@ -65,3 +65,14 @@
 .menu button:disabled .keys {
   color: var(--text-3);
 }
+.menu button.sep {
+  margin-top: 5px;
+  position: relative;
+}
+.menu button.sep::before {
+  content: "";
+  position: absolute;
+  inset-inline: -4px;
+  top: -4px;
+  border-top: 1px solid var(--card-stroke-hover);
+}

@@ -4,6 +4,19 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ## [Unreleased]
 
+## [0.0.10] - 2026-10-09
+
+### Added
+
+- A first Linux preview, for x64 and ARM64: `.deb`, `.rpm`, AppImage and an Arch package with each release. Wallpapers play on X11 desktops, and on Wayland desktops with the layer-shell protocol (KDE Plasma, Sway, Hyprland, COSMIC and others); on GNOME, Sarab runs through XWayland. Wallpapers do not rest on Linux yet.
+- Text boxes have Sarab's own right-click menu: Undo, Cut, Copy, Paste and Select all.
+- `sarab help` lists every command, and `sarab help <command>` (or `sarab <command> --help`) shows its synopsis, options and examples.
+- `sarab --version` prints one line for bug reports: `sarab/0.0.10 Windows/11 build/26100 WebView2/... exe/x64 channel/stable`.
+
+### Changed
+
+- The title bar's menu (right-click the title bar, Alt+Space) and the tray menu are Sarab's own menus, in its theme and language, instead of the Windows ones.
+
 ## [0.0.9] - 2026-10-09
 
 ### Added
@@ -130,7 +143,8 @@ First public release, for Windows 10 (1903 or later) and Windows 11.
 - Opening Sarab from the desktop or Start menu opens its window, also when it already runs in the background. Starting at sign-in stays in the tray.
 - Start with Windows, on by default: switched on once at the first launch, and it stays off if you turn it off. Uninstalling removes it.
 
-[Unreleased]: https://github.com/MKAbuMattar/sarab/compare/v0.0.9...HEAD
+[Unreleased]: https://github.com/MKAbuMattar/sarab/compare/v0.0.10...HEAD
+[0.0.10]: https://github.com/MKAbuMattar/sarab/compare/v0.0.9...v0.0.10
 [0.0.9]: https://github.com/MKAbuMattar/sarab/compare/v0.0.8...v0.0.9
 [0.0.8]: https://github.com/MKAbuMattar/sarab/compare/v0.0.7...v0.0.8
 [0.0.7]: https://github.com/MKAbuMattar/sarab/compare/v0.0.6...v0.0.7
