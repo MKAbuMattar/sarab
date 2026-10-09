@@ -18,6 +18,7 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ### Fixed
 
+- The preview when you point at a video in the library played the whole file. It now plays only the part that plays, such as 0:06 to 1:21 of Earth from the space station.
 - Text in dialogs could be selected with the mouse. Chromium's own stylesheet makes modal dialogs selectable; Sarab's dialogs now behave like the rest of the window.
 
 ## [0.0.10] - 2026-10-09
