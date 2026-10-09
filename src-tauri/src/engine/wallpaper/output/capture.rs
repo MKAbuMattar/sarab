@@ -25,7 +25,7 @@ pub fn make_thumbnails(lib: &[Wallpaper]) {
     let failed = FAILED.lock().unwrap().clone();
     let todo: Vec<(PathBuf, PathBuf)> = lib
         .iter()
-        .filter(|w| !w.preset && w.thumb.is_none() && !failed.contains(&w.dir))
+        .filter(|w| !w.preset && w.auto_thumb.is_none() && !failed.contains(&w.dir))
         .filter(|w| matches!(w.info.r#type, Kind::Video | Kind::Gif | Kind::Picture))
         .filter_map(|w| match w.target() {
             Some(Target::File(f)) if f.is_file() => Some((f, w.dir.clone())),
@@ -71,7 +71,7 @@ pub(in crate::engine::wallpaper) fn capture_thumbnail(app: &AppHandle, core: &Co
     let Some(w) = d.wallpaper.as_deref().and_then(|id| core.find(id)).cloned() else {
         return;
     };
-    if w.preset || w.thumb.is_some() || !matches!(w.info.r#type, Kind::Web | Kind::Url) {
+    if w.preset || w.auto_thumb.is_some() || !matches!(w.info.r#type, Kind::Web | Kind::Url) {
         return;
     }
     let Some(win) = app.get_webview_window(lbl) else {

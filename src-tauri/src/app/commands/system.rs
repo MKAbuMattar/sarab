@@ -12,10 +12,28 @@ pub(crate) async fn state(app: AppHandle) -> Value {
             "settings": core.settings,
             "library": core.lib.iter().map(|w| {
                 let mut v = json!(w);
-                if let Some(t) = &w.thumb {
-                    if app.asset_protocol_scope().allow_file(t).is_ok() {
-                        v["thumb_url"] = json!(wallpaper::asset_url(t));
-                    }
+                let url = |p: &std::path::Path| {
+                    let at = std::fs::metadata(p)
+                        .and_then(|m| m.modified())
+                        .ok()
+                        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                        .map_or(0, |d| d.as_secs());
+                    app.asset_protocol_scope()
+                        .allow_file(p)
+                        .ok()
+                        .map(|()| format!("{}?v={at}", wallpaper::asset_url(p)))
+                };
+                if let Some(u) = w.thumb.as_deref().and_then(url) {
+                    v["thumb_url"] = json!(u);
+                }
+                if let Some(u) = w.auto_thumb.as_deref().and_then(url) {
+                    v["auto_thumb_url"] = json!(u);
+                }
+                if let Some(u) = w.custom_thumb.as_deref().and_then(url) {
+                    v["custom_thumb_url"] = json!(u);
+                }
+                if let Some(u) = w.frame_thumb.as_deref().and_then(url) {
+                    v["frame_thumb_url"] = json!(u);
                 }
                 if let (Some(library::Target::File(f)), library::Kind::Video | library::Kind::Gif) =
                     (w.target(), w.info.r#type)
@@ -26,6 +44,7 @@ pub(crate) async fn state(app: AppHandle) -> Value {
                 }
                 v
             }).collect::<Vec<_>>(),
+            "capture": cfg!(windows),
             "categories": library::CATEGORIES,
             "library_dir": wallpaper::library_dir(&core.settings),
             "manual": core.manual,

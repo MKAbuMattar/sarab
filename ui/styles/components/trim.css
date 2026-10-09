@@ -7,13 +7,6 @@ dialog.wide .content {
 .trim {
   display: grid;
   gap: 12px;
-  padding-top: 16px;
-  border-top: 1px solid var(--card-stroke);
-}
-.trim h3 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
 }
 .trim video {
   width: 100%;
@@ -23,7 +16,6 @@ dialog.wide .content {
   background: #000;
   border-radius: 6px;
 }
-/* The track always runs from 0 on the left, in Arabic too. */
 .trim .track {
   position: relative;
   height: 28px;
@@ -48,6 +40,19 @@ dialog.wide .content {
   background: var(--text);
   pointer-events: none;
 }
+.trim .frame {
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  width: 4px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: var(--text);
+  pointer-events: none;
+}
+.trim .frame[hidden] {
+  display: none;
+}
 .trim .handle {
   position: absolute;
   top: -4px;
@@ -69,7 +74,6 @@ dialog.wide .content {
   outline: 2px solid var(--text);
   outline-offset: 2px;
 }
-/* Start sits under the start of the track, in Arabic too. */
 .trim .times {
   direction: ltr;
   display: grid;

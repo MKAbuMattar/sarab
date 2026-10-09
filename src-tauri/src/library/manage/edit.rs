@@ -16,12 +16,11 @@ pub struct Edit {
     pub author: String,
     pub category: Option<String>,
     pub tags: Vec<String>,
-    /// The part of a video that plays. Missing keeps the current one, `[]` plays the whole
-    /// video, `[start, end]` in seconds plays that part.
     pub clip: Option<Vec<f64>>,
+    pub thumbnail: Option<String>,
+    pub thumbnail_time: Option<f64>,
 }
 
-/// The shortest part of a video that can loop without flickering the desktop.
 pub const MIN_CLIP: f64 = 0.5;
 
 pub(in crate::library) fn optional(s: &str) -> Option<String> {
@@ -59,6 +58,23 @@ pub fn edit_info(dir: &Path, e: Edit) -> Result<Manifest, String> {
     if tags.len() > 5 {
         return Err("use at most 5 tags".into());
     }
+    let thumbnail_choice = match e.thumbnail.as_deref() {
+        None => info.thumbnail_choice.clone(),
+        Some("auto") => None,
+        Some("image") if custom_thumbnail(dir).is_some() => Some("image".to_string()),
+        Some("image") => return Err("choose an image for the thumbnail first".into()),
+        Some("frame") if frame_thumbnail(dir).is_none() => {
+            return Err("use a frame of the video for the thumbnail first".into())
+        }
+        Some("frame") => Some("frame".to_string()),
+        Some(other) => return Err(format!("unknown thumbnail choice {other}")),
+    };
+    let thumbnail_time = match (thumbnail_choice.as_deref(), e.thumbnail_time) {
+        (Some("frame"), Some(t)) if t.is_finite() && t >= 0.0 => Some(t),
+        (Some("frame"), None) => info.thumbnail_time,
+        (Some("frame"), Some(_)) => return Err("the frame time must be 0 or more".into()),
+        _ => info.thumbnail_time,
+    };
     let clip = match e.clip.as_deref() {
         None => info.clip,
         Some([]) => None,
@@ -75,6 +91,8 @@ pub fn edit_info(dir: &Path, e: Edit) -> Result<Manifest, String> {
     info.category = category;
     info.tags = tags;
     info.clip = clip;
+    info.thumbnail_choice = thumbnail_choice;
+    info.thumbnail_time = thumbnail_time;
     info.version += 1;
     crate::core::settings::save(&dir.join(INFO), &info).map_err(|e| e.to_string())?;
     Ok(info)

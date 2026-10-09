@@ -1,0 +1,73 @@
+.thumbs {
+  display: grid;
+  gap: 12px;
+}
+.thumbs .cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.thumbs .cards.three {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+.thumb-card {
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--card-stroke);
+  border-radius: 8px;
+  background: var(--card);
+}
+.thumb-card:has(input:checked) {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.thumb-card:has(input:disabled) {
+  color: var(--text-3);
+}
+.thumb-card .pic {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--subtle-hover);
+}
+.thumb-card .pic img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.thumb-card .pic .icon {
+  font-size: 28px;
+  color: var(--text-2);
+}
+.thumb-card > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.thumb-card input {
+  accent-color: var(--accent);
+}
+.thumbs .row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.thumbs .said {
+  margin: 0;
+}
+.thumbs .picker {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+@media (forced-colors: active) {
+  .thumb-card:has(input:checked) {
+    border-color: Highlight;
+  }
+}

@@ -98,3 +98,41 @@ pub fn shrink_png(src: &std::path::Path, dest: &std::path::Path, max: u32) -> Re
     };
     run().map_err(|e| e.to_string())
 }
+
+pub fn crop_png(
+    src: &std::path::Path,
+    dest: &std::path::Path,
+    rect: [u32; 4],
+    max: u32,
+) -> Result<(), String> {
+    use windows::core::Interface;
+    use windows::Win32::Foundation::GENERIC_READ;
+    use windows::Win32::Graphics::Imaging::{WICDecodeMetadataCacheOnDemand, WICRect};
+    let run = || -> windows::core::Result<()> {
+        unsafe {
+            let _ = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
+            let f = wic()?;
+            let d = f.CreateDecoderFromFilename(
+                &HSTRING::from(src.as_os_str()),
+                None,
+                GENERIC_READ,
+                WICDecodeMetadataCacheOnDemand,
+            )?;
+            let frame = d.GetFrame(0)?;
+            let (mut w, mut h) = (0, 0);
+            frame.GetSize(&mut w, &mut h)?;
+            let x = rect[0].min(w.saturating_sub(1));
+            let y = rect[1].min(h.saturating_sub(1));
+            let r = WICRect {
+                X: x as i32,
+                Y: y as i32,
+                Width: rect[2].min(w - x).max(1) as i32,
+                Height: rect[3].min(h - y).max(1) as i32,
+            };
+            let clip = f.CreateBitmapClipper()?;
+            clip.Initialize(&frame, &r)?;
+            save_png(&f, &clip.cast()?, dest, max)
+        }
+    };
+    run().map_err(|e| e.to_string())
+}
