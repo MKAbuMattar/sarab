@@ -4,6 +4,8 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ## [Unreleased]
 
+## [0.0.12] - 2026-10-10
+
 ### Added
 
 - Customize has a Playback section for every wallpaper, so videos no longer say they have no settings: fit on this display, speed from 0.5x to 2x, its own volume instead of the main one, and the playlist this display changes to. Speed and volume work for the 4K presets too.
@@ -177,7 +179,8 @@ First public release, for Windows 10 (1903 or later) and Windows 11.
 - Opening Sarab from the desktop or Start menu opens its window, also when it already runs in the background. Starting at sign-in stays in the tray.
 - Start with Windows, on by default: switched on once at the first launch, and it stays off if you turn it off. Uninstalling removes it.
 
-[Unreleased]: https://github.com/MKAbuMattar/sarab/compare/v0.0.11...HEAD
+[Unreleased]: https://github.com/MKAbuMattar/sarab/compare/v0.0.12...HEAD
+[0.0.12]: https://github.com/MKAbuMattar/sarab/compare/v0.0.11...v0.0.12
 [0.0.11]: https://github.com/MKAbuMattar/sarab/compare/v0.0.10...v0.0.11
 [0.0.10]: https://github.com/MKAbuMattar/sarab/compare/v0.0.9...v0.0.10
 [0.0.9]: https://github.com/MKAbuMattar/sarab/compare/v0.0.8...v0.0.9
