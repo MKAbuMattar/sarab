@@ -261,5 +261,15 @@
   "menu.size": "الحجم",
   "menu.minimize": "تصغير",
   "menu.maximize": "تكبير",
-  "menu.close": "إغلاق"
+  "menu.close": "إغلاق",
+  "settings.pauseGpu": "إيقاف مؤقت عندما تُبقي تطبيقات أخرى بطاقة الرسومات فوق",
+  "settings.pauseMemory": "إيقاف مؤقت عندما يتجاوز استخدام الذاكرة",
+  "settings.pauseNetwork": "إيقاف مؤقت عندما تكون الشبكة مشغولة بأكثر من",
+  "settings.pauseNetworkDesc": "التنزيل والرفع معًا، بالميغابت في الثانية.",
+  "settings.pauseVm": "إيقاف مؤقت داخل جهاز افتراضي",
+  "settings.pauseVmDesc": "غالبًا ما ترسم الأجهزة الافتراضية دون بطاقة رسومات، فتكلّف الخلفية أكثر فيها.",
+  "reason.gpu_busy": "في استراحة: تطبيقات أخرى تُبقي بطاقة الرسومات مشغولة",
+  "reason.memory_busy": "في استراحة: الذاكرة شبه ممتلئة",
+  "reason.network_busy": "في استراحة: الشبكة مشغولة",
+  "reason.virtual_machine": "في استراحة: سراب يعمل داخل جهاز افتراضي"
 }

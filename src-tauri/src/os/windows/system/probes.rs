@@ -143,7 +143,7 @@ pub fn signals(mons: &[Monitor]) -> Signals {
         foreground_app,
         desktop_focused,
         covered,
-        cpu_busy: false,
+        ..Default::default()
     }
 }
 

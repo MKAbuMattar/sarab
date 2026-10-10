@@ -261,5 +261,15 @@
   "menu.size": "Tamanho",
   "menu.minimize": "Minimizar",
   "menu.maximize": "Maximizar",
-  "menu.close": "Fechar"
+  "menu.close": "Fechar",
+  "settings.pauseGpu": "Pausar enquanto outros apps mantêm a placa de vídeo acima de",
+  "settings.pauseMemory": "Pausar enquanto o uso de memória está acima de",
+  "settings.pauseNetwork": "Pausar enquanto a rede está mais ocupada que",
+  "settings.pauseNetworkDesc": "Downloads e uploads juntos, em megabits por segundo.",
+  "settings.pauseVm": "Pausar dentro de uma máquina virtual",
+  "settings.pauseVmDesc": "Máquinas virtuais costumam desenhar sem placa de vídeo, então um papel de parede custa mais nelas.",
+  "reason.gpu_busy": "Em pausa: outros apps mantêm a placa de vídeo ocupada",
+  "reason.memory_busy": "Em pausa: a memória está quase cheia",
+  "reason.network_busy": "Em pausa: a rede está ocupada",
+  "reason.virtual_machine": "Em pausa: o Sarab está rodando em uma máquina virtual"
 }

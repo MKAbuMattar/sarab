@@ -23,6 +23,7 @@ pub fn tick(app: &AppHandle, core: &mut Core) {
     let mut s = os::signals(&mons);
     s.manual = core.manual;
     s.cpu_busy = cpu_busy(core);
+    other_load(core, &mut s);
     let decisions = pause::decide(&s, &core.settings);
     let changed = s != core.signals
         || decisions

@@ -261,5 +261,15 @@
   "menu.size": "Größe ändern",
   "menu.minimize": "Minimieren",
   "menu.maximize": "Maximieren",
-  "menu.close": "Schließen"
+  "menu.close": "Schließen",
+  "settings.pauseGpu": "Anhalten, solange andere Apps die Grafikkarte auslasten über",
+  "settings.pauseMemory": "Anhalten, solange die Speicherauslastung liegt über",
+  "settings.pauseNetwork": "Anhalten, solange das Netzwerk stärker ausgelastet ist als",
+  "settings.pauseNetworkDesc": "Downloads und Uploads zusammen, in Megabit pro Sekunde.",
+  "settings.pauseVm": "In einer virtuellen Maschine anhalten",
+  "settings.pauseVmDesc": "Virtuelle Maschinen zeichnen oft ohne Grafikkarte, deshalb kostet ein Hintergrund dort mehr.",
+  "reason.gpu_busy": "Pause: Andere Apps lasten die Grafikkarte aus",
+  "reason.memory_busy": "Pause: Der Arbeitsspeicher ist fast voll",
+  "reason.network_busy": "Pause: Das Netzwerk ist ausgelastet",
+  "reason.virtual_machine": "Pause: Sarab läuft in einer virtuellen Maschine"
 }

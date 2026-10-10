@@ -261,5 +261,15 @@
   "menu.size": "Taille",
   "menu.minimize": "Réduire",
   "menu.maximize": "Agrandir",
-  "menu.close": "Fermer"
+  "menu.close": "Fermer",
+  "settings.pauseGpu": "Suspendre quand d’autres apps chargent la carte graphique au-delà de",
+  "settings.pauseMemory": "Suspendre quand la mémoire utilisée dépasse",
+  "settings.pauseNetwork": "Suspendre quand le réseau est plus chargé que",
+  "settings.pauseNetworkDesc": "Téléchargements et envois cumulés, en mégabits par seconde.",
+  "settings.pauseVm": "Suspendre dans une machine virtuelle",
+  "settings.pauseVmDesc": "Les machines virtuelles dessinent souvent sans carte graphique : un fond d’écran y coûte plus cher.",
+  "reason.gpu_busy": "En pause : d’autres apps occupent la carte graphique",
+  "reason.memory_busy": "En pause : la mémoire est presque pleine",
+  "reason.network_busy": "En pause : le réseau est chargé",
+  "reason.virtual_machine": "En pause : Sarab tourne dans une machine virtuelle"
 }

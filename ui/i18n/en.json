@@ -261,5 +261,15 @@
   "menu.size": "Size",
   "menu.minimize": "Minimize",
   "menu.maximize": "Maximize",
-  "menu.close": "Close"
+  "menu.close": "Close",
+  "settings.pauseGpu": "Pause while other apps keep the graphics card over",
+  "settings.pauseMemory": "Pause while memory use is over",
+  "settings.pauseNetwork": "Pause while the network is busier than",
+  "settings.pauseNetworkDesc": "Downloads and uploads together, in megabits per second.",
+  "settings.pauseVm": "Pause inside a virtual machine",
+  "settings.pauseVmDesc": "Virtual machines often draw without a graphics card, so a wallpaper costs more there.",
+  "reason.gpu_busy": "Resting: other apps keep the graphics card busy",
+  "reason.memory_busy": "Resting: memory is nearly full",
+  "reason.network_busy": "Resting: the network is busy",
+  "reason.virtual_machine": "Resting: Sarab is running in a virtual machine"
 }

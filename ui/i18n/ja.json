@@ -261,5 +261,15 @@
   "menu.size": "サイズ変更",
   "menu.minimize": "最小化",
   "menu.maximize": "最大化",
-  "menu.close": "閉じる"
+  "menu.close": "閉じる",
+  "settings.pauseGpu": "他のアプリがグラフィックス カードを次の値以上に使っている間は一時停止",
+  "settings.pauseMemory": "メモリ使用量が次の値以上の間は一時停止",
+  "settings.pauseNetwork": "ネットワークが次の値より混雑している間は一時停止",
+  "settings.pauseNetworkDesc": "ダウンロードとアップロードの合計 (メガビット毎秒)。",
+  "settings.pauseVm": "仮想マシン内では一時停止する",
+  "settings.pauseVmDesc": "仮想マシンはグラフィックス カードなしで描画することが多く、壁紙の負荷が高くなります。",
+  "reason.gpu_busy": "休止中: 他のアプリがグラフィックス カードを使用中",
+  "reason.memory_busy": "休止中: メモリがほぼいっぱいです",
+  "reason.network_busy": "休止中: ネットワークが混雑しています",
+  "reason.virtual_machine": "休止中: Sarab は仮想マシンで実行されています"
 }

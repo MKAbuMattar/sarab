@@ -261,5 +261,15 @@
   "menu.size": "Boyut",
   "menu.minimize": "Simge durumuna küçült",
   "menu.maximize": "Ekranı kapla",
-  "menu.close": "Kapat"
+  "menu.close": "Kapat",
+  "settings.pauseGpu": "Diğer uygulamalar ekran kartını şu değerin üstünde tutarken duraklat",
+  "settings.pauseMemory": "Bellek kullanımı şu değerin üstündeyken duraklat",
+  "settings.pauseNetwork": "Ağ şu değerden daha meşgulken duraklat",
+  "settings.pauseNetworkDesc": "İndirme ve yükleme birlikte, saniyede megabit olarak.",
+  "settings.pauseVm": "Sanal makine içinde duraklat",
+  "settings.pauseVmDesc": "Sanal makineler çoğu zaman ekran kartı olmadan çizer; bu yüzden duvar kâğıdı orada daha pahalıya gelir.",
+  "reason.gpu_busy": "Dinleniyor: diğer uygulamalar ekran kartını meşgul ediyor",
+  "reason.memory_busy": "Dinleniyor: bellek neredeyse dolu",
+  "reason.network_busy": "Dinleniyor: ağ meşgul",
+  "reason.virtual_machine": "Dinleniyor: Sarab sanal makinede çalışıyor"
 }

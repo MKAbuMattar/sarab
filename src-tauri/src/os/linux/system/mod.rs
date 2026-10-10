@@ -8,3 +8,5 @@ mod processes;
 pub use processes::*;
 mod sysinfo;
 pub use sysinfo::*;
+mod gpu;
+pub use gpu::*;

@@ -261,5 +261,15 @@
   "menu.size": "大小",
   "menu.minimize": "最小化",
   "menu.maximize": "最大化",
-  "menu.close": "关闭"
+  "menu.close": "关闭",
+  "settings.pauseGpu": "其他应用让显卡占用超过此值时暂停",
+  "settings.pauseMemory": "内存占用超过此值时暂停",
+  "settings.pauseNetwork": "网络占用超过此值时暂停",
+  "settings.pauseNetworkDesc": "下载和上传合计，单位为每秒兆比特。",
+  "settings.pauseVm": "在虚拟机中暂停",
+  "settings.pauseVmDesc": "虚拟机通常没有显卡参与绘制，壁纸在其中的开销更大。",
+  "reason.gpu_busy": "休息中：其他应用正占用显卡",
+  "reason.memory_busy": "休息中：内存快满了",
+  "reason.network_busy": "休息中：网络繁忙",
+  "reason.virtual_machine": "休息中：Sarab 正在虚拟机中运行"
 }
