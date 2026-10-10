@@ -91,7 +91,7 @@ jobs:
           '{"bundle":{"createUpdaterArtifacts":false}}' | Set-Content ci.conf.json
           cargo tauri build --config ci.conf.json
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           # Upload the installer itself, not a zip of it. Needs exactly one file;
           # the artifact is named after it, for example Sarab_0.0.3_x64-setup.exe.
@@ -149,7 +149,7 @@ jobs:
           '{"bundle":{"createUpdaterArtifacts":false}}' | Set-Content ci.conf.json
           cargo tauri build --target ${{ matrix.target }} --config ci.conf.json
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           archive: false
           path: src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*-setup.exe
@@ -265,21 +265,21 @@ jobs:
           echo "exit $code"
           test "$code" -eq 124
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           archive: false
           path: src-tauri/target/release/bundle/deb/*.deb
           if-no-files-found: error
           retention-days: 14
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           archive: false
           path: src-tauri/target/release/bundle/rpm/*.rpm
           if-no-files-found: error
           retention-days: 14
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           archive: false
           path: src-tauri/target/release/bundle/appimage/*.AppImage
@@ -353,7 +353,7 @@ jobs:
           su builder -c 'cd ~/pkg && makepkg --noconfirm --nodeps'
           pacman -U --noconfirm /home/builder/pkg/*.pkg.tar.zst
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: matrix.distro == 'Arch Linux'
         with:
           archive: false
