@@ -4,6 +4,23 @@ All notable changes to Sarab are listed here. The format follows [Keep a Changel
 
 ## [Unreleased]
 
+### Added
+
+- Customize has a Playback section for every wallpaper, so videos no longer say they have no settings: fit on this display, speed from 0.5x to 2x, its own volume instead of the main one, and the playlist this display changes to. Speed and volume work for the 4K presets too.
+- Change at set times: a list of times, each with a wallpaper, such as a day wallpaper from 07:00 and a night one from 19:00. The last time of the day holds after midnight.
+- Changing every few minutes can draw from a tag or a folder as well as a category. New videos, GIFs and pictures in that folder join the library on the next change.
+- Each display can change to wallpapers from its own playlist, picked on the display bar or in Customize.
+- Pausing when other apps keep the graphics card busy, when memory is nearly full, when the network is busier than a limit, or inside a virtual machine. All four are off until you turn them on.
+- A still of the wallpaper on the lock screen, off until you turn it on. Sarab captures the first display and sets it as the lock screen picture, and redoes it when the wallpaper changes.
+- Settings can be exported to `sarab-settings.json` in Downloads and imported on another PC, from About or with `sarab settings export|import <file>`.
+- Web wallpapers can use Wallpaper Engine's media API: the song's title, artist and album, the cover art and its colours, whether it plays, and its position. `sarabNowPlaying` also gains `State`, `Position` and `Duration`.
+- Linux: deleting moves the wallpaper to the trash; update notices are desktop notifications with Install and Later; picture wallpapers become the system wallpaper on GNOME and KDE Plasma, or show in Sarab's own window elsewhere; a frame from the timeline can be the thumbnail, and videos, pictures and GIFs get thumbnails; app wallpapers work on X11, including `.AppImage` and other executables; and one wallpaper can span every display on Wayland.
+
+### Fixed
+
+- At larger Windows text sizes, lines of text drew on top of each other and some buttons ran off the side of their card.
+- Customize showed Restore defaults for wallpapers with no settings of their own.
+
 ## [0.0.11] - 2026-10-09
 
 ### Added

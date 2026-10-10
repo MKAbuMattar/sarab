@@ -18,7 +18,8 @@ Version 0.0.11, an early release for **Windows 10 (1903 or later) and Windows 11
 
 - **Wallpaper types:** video (mp4, webm, mov and more), GIF, web page (a folder with `index.html`), web address, picture.
 - **Every display:** one wallpaper on all displays, or a different one on each. The same video on several displays plays in step.
-- **Pauses itself:** when an app covers a display, on battery, in energy saver, when locked, during remote desktop, or for apps you list. A paused wallpaper freezes on its last frame, and the window says why it paused.
+- **Pauses itself:** when an app covers a display, on battery, in energy saver, when locked, during remote desktop, for apps you list, and if you choose, when the CPU, graphics card, memory or network is busy, or inside a virtual machine. A paused wallpaper freezes on its last frame, and the window says why it paused.
+- **Playlists:** change every few minutes from a category, a tag or a folder, a different playlist on each display, or change at set times of day.
 - **Cheap when paused:** about 0.005 CPU cores on the test machine with two web wallpapers, measured by `scripts/check.ps1 budget`.
 - **Looks like Windows 11:** light and dark themes, Acrylic or Mica backdrop, ten languages with Arabic right to left.
 - **4K presets:** public-domain NASA Earth videos, downloaded only when you choose **Get** and checked against a pinned SHA-256 before use.
@@ -57,11 +58,12 @@ command prints its error in the terminal, and everything else is written to the 
 | `sarab pause` / `play` / `resume` / `toggle`                 | Manual pause, play regardless of rules, back to automatic, toggle |
 | `sarab prop <key>=<value> [--display N]`                     | Set a value from the wallpaper's `properties.json`                |
 | `sarab volume <0-100>`                                       | Wallpaper volume (0 mutes)                                        |
-| `sarab next`                                                 | Next wallpaper in the library, on every display                   |
+| `sarab next`                                                 | Next wallpaper from each display's playlist                       |
 | `sarab import <zip>`                                         | Import a Sarab package                                            |
 | `sarab preset <id>` | Download a 4K preset (ids are in `src-tauri/src/data/presets.json`) |
 | `sarab check-update` / `install-update` | Check for a new version now, or install it |
 | `sarab screenshot C:/shots/desktop.png [--display N]` | Save what a display shows as a PNG (a full path) |
+| `sarab settings export <file>` / `import <file>` | Save every setting to a JSON file, or load one (a full path) |
 | `sarab ui` / `status` / `quit` | Open the window, write `status.json`, exit |
 | `sarab help [command]` / `sarab <command> --help` | The list of commands, or one command's page with options and examples |
 | `sarab --version` | One line with Sarab, the system, the web engine, the CPU type and the update channel |
@@ -91,6 +93,8 @@ window.sarabPlaybackChanged = ({ paused }) => {
   /* stop timers while paused */
 };
 ```
+
+With `"api": ["nowplaying"]` in `sarab.json`, a page also gets the song that is playing, through `window.sarabNowPlaying(track)` (`Title`, `Artist`, `AlbumTitle`, `AlbumArtist`, `Thumbnail`, `State`, `Position`, `Duration`) or Wallpaper Engine's `wallpaperRegisterMedia*Listener` functions.
 
 Web wallpapers run in an isolated WebView2 window with no access to Sarab's commands. Only the files inside the package are reachable.
 
