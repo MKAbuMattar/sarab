@@ -45,7 +45,14 @@ pub fn apply(app: &AppHandle, core: &mut Core, i: usize, id: &str) -> Result<(),
                 core.save_restore();
             }
         }
-        os::set_picture(&core.displays[i].mon, &f.to_string_lossy()).map_err(|e| e.to_string())
+        os::set_picture(&core.displays[i].mon, &f.to_string_lossy())
+            .map_err(|e| e.to_string())
+            .or_else(|e| {
+                log(format!(
+                    "system wallpaper: {e}; showing the picture in a window"
+                ));
+                create_window(app, core, i, &w)
+            })
     } else {
         create_window(app, core, i, &w)
     };
@@ -68,7 +75,7 @@ pub fn apply(app: &AppHandle, core: &mut Core, i: usize, id: &str) -> Result<(),
 }
 
 pub(in crate::engine::wallpaper) fn wallpaper_rect(core: &Core, i: usize) -> RECT {
-    if core.settings.span {
+    if core.settings.span && !os::span_per_output() {
         span_rect(&core.displays.iter().map(|d| d.mon.rect).collect::<Vec<_>>())
     } else {
         core.displays[i].mon.rect
@@ -105,6 +112,13 @@ pub(in crate::engine::wallpaper) fn create_window(
     let origin = site(&url);
     let any_origin = w.info.r#type == Kind::Url;
     let lbl = new_label(i);
+    let rects: Vec<RECT> = core.displays.iter().map(|d| d.mon.rect).collect();
+    let part = match slice(&rects, i) {
+        Some(s) if core.settings.span && os::span_per_output() => {
+            format!("window.__sarabSlice={};", json!(s))
+        }
+        _ => String::new(),
+    };
     let win = WebviewWindowBuilder::new(app, &lbl, WebviewUrl::External(url))
         .title(format!("sarab-wp-{i}"))
         .decorations(false)
@@ -113,6 +127,7 @@ pub(in crate::engine::wallpaper) fn create_window(
         .focused(false)
         .shadow(false)
         .resizable(false)
+        .initialization_script(part)
         .initialization_script(INJECT)
         .on_navigation(move |u| any_origin || site(u) == origin)
         .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)

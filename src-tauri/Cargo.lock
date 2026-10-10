@@ -3228,9 +3228,11 @@ dependencies = [
  "tauri-plugin-autostart",
  "tauri-plugin-single-instance",
  "tauri-plugin-updater",
+ "webkit2gtk",
  "webview2-com",
  "windows",
  "windows-version 0.100.0",
+ "x11-dl",
  "zip 8.6.0",
 ]
 

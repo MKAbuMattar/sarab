@@ -71,7 +71,12 @@ pub(in crate::engine::wallpaper) fn capture_thumbnail(app: &AppHandle, core: &Co
     let Some(w) = d.wallpaper.as_deref().and_then(|id| core.find(id)).cloned() else {
         return;
     };
-    if w.preset || w.auto_thumb.is_some() || !matches!(w.info.r#type, Kind::Web | Kind::Url) {
+    let captured = match w.info.r#type {
+        Kind::Web | Kind::Url => true,
+        Kind::Video => cfg!(not(windows)),
+        _ => false,
+    };
+    if w.preset || w.auto_thumb.is_some() || !captured {
         return;
     }
     let Some(win) = app.get_webview_window(lbl) else {

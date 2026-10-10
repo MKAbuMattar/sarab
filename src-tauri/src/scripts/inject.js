@@ -313,3 +313,23 @@
     if (!running) requestAnimationFrame(tick);
   };
 })();
+
+(() => {
+  const s = window.__sarabSlice;
+  if (!Array.isArray(s) || s.length !== 4) return;
+  const [x, y, w, h] = s;
+  const place = () => {
+    const root = document.documentElement;
+    if (!root) return false;
+    Object.assign(root.style, {
+      position: "fixed",
+      left: `${-x}px`,
+      top: `${-y}px`,
+      width: `${w}px`,
+      height: `${h}px`,
+      overflow: "hidden",
+    });
+    return true;
+  };
+  if (!place()) document.addEventListener("DOMContentLoaded", place, { once: true });
+})();

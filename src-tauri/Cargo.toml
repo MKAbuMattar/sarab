@@ -29,6 +29,9 @@ gdk = "0.18"
 glib = "0.18"
 gtk = "0.18"
 gtk-layer-shell = { version = "0.8", features = ["v0_5"] }
+# Already in the tree through Tauri's WebKitGTK and tao; named here to call them directly.
+webkit2gtk = "2.0.2"
+x11-dl = "2.21.0"
 
 [target.'cfg(windows)'.dependencies]
 webview2-com = "0.39.1"

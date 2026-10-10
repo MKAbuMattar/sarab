@@ -63,8 +63,6 @@ pub fn attach(_d: &Desktop, hwnd: HWND, r: RECT) -> Result<(), String> {
 }
 
 /// A layer-shell surface on the background layer, filling one output.
-// ponytail: a wallpaper spanned across displays shows on the first display only;
-// one layer surface per output, each showing its slice, if spanning matters on Wayland.
 fn layer(win: &gtk::Window, r: RECT) {
     if !win.is_layer_window() {
         if win.is_realized() {
@@ -98,3 +96,7 @@ pub fn show(hwnd: HWND, visible: bool) {
 }
 
 pub fn refresh_desktop(_d: Option<&Desktop>) {}
+
+pub fn span_per_output() -> bool {
+    on_wayland()
+}

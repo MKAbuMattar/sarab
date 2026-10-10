@@ -312,3 +312,17 @@ fn playlist_time_slots() {
     assert_eq!(minutes("7:5"), Some(425));
     assert_eq!(minutes("24:00"), None);
 }
+
+#[test]
+fn span_slice_per_output() {
+    let r = |left, top, right, bottom| RECT {
+        left,
+        top,
+        right,
+        bottom,
+    };
+    let rects = [r(0, 0, 1920, 1080), r(-1080, 200, 0, 2120)];
+    assert_eq!(slice(&rects, 0), Some([1080, 0, 3000, 2120]));
+    assert_eq!(slice(&rects, 1), Some([0, 200, 3000, 2120]));
+    assert_eq!(slice(&rects, 2), None);
+}
