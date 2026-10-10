@@ -1,6 +1,6 @@
 .card {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   column-gap: 16px;
   min-height: 68px;
@@ -12,13 +12,13 @@
 }
 .card > .icon {
   font-size: 20px;
-  width: 20px;
+  width: 1em;
 }
 .card .title {
-  line-height: 20px;
+  line-height: 1.43;
 }
 .card.stack {
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   row-gap: 10px;
 }
 .card.stack > textarea {

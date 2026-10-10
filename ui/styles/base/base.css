@@ -42,7 +42,7 @@ body {
   height: 100%;
   color: var(--text);
   font:
-    14px/20px "Segoe UI Variable Text",
+    14px/1.43 "Segoe UI Variable Text",
     "Segoe UI Variable",
     "Segoe UI",
     system-ui,

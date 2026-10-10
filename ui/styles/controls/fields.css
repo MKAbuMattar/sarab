@@ -69,3 +69,6 @@ textarea {
   width: 100%;
   resize: vertical;
 }
+button[hidden] {
+  display: none;
+}
