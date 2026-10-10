@@ -500,7 +500,8 @@ Add-Type -AssemblyName System.Windows.Forms
     Set-Content "$probe/x.txt" "an old $($word.ToUpper()) manifest"
     Assert (@(Hits $probe).Count -eq 1) 'scan cannot find a planted hit'
     Remove-Item $probe -Recurse -Force
-    $found = @(Hits $root)
+    # The roadmap may name it, since importing that format is planned for 0.2.
+    $found = @(Hits $root | Where-Object { $_ -ne (Join-Path $root 'ROADMAP.md') })
     Assert ($found.Count -eq 0) "old app name still in: $($found -join ', ')"
     $n = @(Get-ChildItem $root -Recurse -File | Where-Object { $_.FullName -notmatch $skip }).Count
     Write-Host "scanned $n files"
