@@ -276,5 +276,16 @@
   "about.settingsFileDesc": "Dışa aktar tüm ayarları İndirilenler klasörüne kaydeder. İçe aktar başka bir bilgisayardan gelen dosyayı yükler.",
   "about.import": "İçe aktar",
   "settings.lockScreen": "Kilit ekranında duvar kâğıdının durağan bir karesini göster",
-  "settings.lockScreenDesc": "Kilit ekranı hareketli duvar kâğıdı oynatamaz; bu yüzden Sarab ilk ekranın bir resmini koyar. Duvar kâğıdı değişince o da değişir."
+  "settings.lockScreenDesc": "Kilit ekranı hareketli duvar kâğıdı oynatamaz; bu yüzden Sarab ilk ekranın bir resmini koyar. Duvar kâğıdı değişince o da değişir.",
+  "playlist.same": "Tüm ekranlarla aynı",
+  "playlist.tag": "Etiket: {name}",
+  "playlist.folder": "Klasör: {name}",
+  "playlist.pickFolder": "Bir klasör…",
+  "displays.playlist": "Şuradaki duvar kâğıtlarına geçer",
+  "settings.schedule": "Belirli saatlerde değiştir",
+  "settings.scheduleDesc": "Örneğin 07:00’den itibaren gündüz, 19:00’dan itibaren gece duvar kâğıdı. Tüm ekranlar değişir.",
+  "schedule.add": "Saat ekle",
+  "schedule.at": "Başlangıç",
+  "schedule.wallpaper": "Duvar kâğıdı",
+  "schedule.remove": "Bu saati kaldır"
 }

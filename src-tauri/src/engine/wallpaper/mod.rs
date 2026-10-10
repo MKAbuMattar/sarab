@@ -81,6 +81,7 @@ pub struct Core {
     pub now_playing: Option<crate::engine::feeds::NowPlaying>,
     pub volume_now: u8,
     pub changed_at: std::time::Instant,
+    pub slot: Option<(String, String)>,
 }
 
 pub type Shared = Mutex<Core>;
@@ -119,6 +120,7 @@ impl Core {
             screensaver: None,
             audio_to: Default::default(),
             changed_at: std::time::Instant::now(),
+            slot: None,
         }
     }
     pub fn find(&self, id: &str) -> Option<&Wallpaper> {

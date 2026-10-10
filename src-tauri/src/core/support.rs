@@ -132,13 +132,24 @@ mod tests {
             ..Settings::default()
         };
         let got = import_settings(&std::fs::read_to_string(&file).unwrap(), &here).unwrap();
-        assert_eq!((got.fps, got.pause_cpu, got.language.as_str()), (60, 80, "ar"));
+        assert_eq!(
+            (got.fps, got.pause_cpu, got.language.as_str()),
+            (60, 80, "ar")
+        );
         assert_eq!(got.app_pause, ["blender.exe"]);
-        assert_eq!(got.library_dir, Some(d.clone()), "an existing folder is kept");
+        assert_eq!(
+            got.library_dir,
+            Some(d.clone()),
+            "an existing folder is kept"
+        );
         assert!(got.autostart_set, "this PC's autostart record is kept");
-        let moved = import_settings(r#"{"fps":15,"library_dir":"Z:/nowhere/at/all"}"#, &here).unwrap();
+        let moved =
+            import_settings(r#"{"fps":15,"library_dir":"Z:/nowhere/at/all"}"#, &here).unwrap();
         assert_eq!(moved.fps, 15);
-        assert_eq!(moved.library_dir, here.library_dir, "a missing folder falls back");
+        assert_eq!(
+            moved.library_dir, here.library_dir,
+            "a missing folder falls back"
+        );
         assert!(import_settings("not json", &here).is_err());
         assert!(import_settings("[1,2]", &here).is_err());
         assert!(import_settings(r#"{"name":"a package"}"#, &here).is_err());

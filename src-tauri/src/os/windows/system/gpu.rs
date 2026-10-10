@@ -37,8 +37,13 @@ impl GpuMeter {
                 return None;
             }
             let (mut size, mut count) = (0u32, 0u32);
-            if PdhGetFormattedCounterArrayW(self.counter, PDH_FMT_DOUBLE, &mut size, &mut count, None)
-                != PDH_MORE_DATA
+            if PdhGetFormattedCounterArrayW(
+                self.counter,
+                PDH_FMT_DOUBLE,
+                &mut size,
+                &mut count,
+                None,
+            ) != PDH_MORE_DATA
             {
                 return None;
             }

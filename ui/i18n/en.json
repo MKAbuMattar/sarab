@@ -276,5 +276,16 @@
   "about.settingsFileDesc": "Export saves every setting to Downloads. Import loads a file from another PC.",
   "about.import": "Import",
   "settings.lockScreen": "Show a still of the wallpaper on the lock screen",
-  "settings.lockScreenDesc": "The lock screen cannot play a moving wallpaper, so Sarab sets a picture of the first display. It changes when the wallpaper does."
+  "settings.lockScreenDesc": "The lock screen cannot play a moving wallpaper, so Sarab sets a picture of the first display. It changes when the wallpaper does.",
+  "playlist.same": "Same as all displays",
+  "playlist.tag": "Tag: {name}",
+  "playlist.folder": "Folder: {name}",
+  "playlist.pickFolder": "A folder…",
+  "displays.playlist": "Changes to wallpapers from",
+  "settings.schedule": "Change at set times",
+  "settings.scheduleDesc": "For example a day wallpaper from 07:00 and a night one from 19:00. Every display changes.",
+  "schedule.add": "Add a time",
+  "schedule.at": "From",
+  "schedule.wallpaper": "Wallpaper",
+  "schedule.remove": "Remove this time"
 }

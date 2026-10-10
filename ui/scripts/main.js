@@ -79,6 +79,11 @@ $("#settings").addEventListener("change", async (e) => {
   if (e.target.id === "autostart")
     return run(() => invoke("autostart", { enable: e.target.checked }));
   if (e.target.name === "language") await loadLanguage(e.target.value);
+  if (
+    e.target.name === "cycle_category" &&
+    (await chooseSource(e.target, state.settings.cycle_category)) === null
+  )
+    return;
   await run(() => invoke("save_settings", { new: readSettings() }));
 });
 

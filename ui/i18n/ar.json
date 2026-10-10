@@ -276,5 +276,16 @@
   "about.settingsFileDesc": "يحفظ التصدير كل الإعدادات في مجلد التنزيلات، ويحمّل الاستيراد ملفًا من جهاز آخر.",
   "about.import": "استيراد",
   "settings.lockScreen": "عرض لقطة ثابتة من الخلفية على شاشة القفل",
-  "settings.lockScreenDesc": "لا تستطيع شاشة القفل تشغيل خلفية متحركة، لذا يضع سراب صورة من الشاشة الأولى، وتتغير حين تتغير الخلفية."
+  "settings.lockScreenDesc": "لا تستطيع شاشة القفل تشغيل خلفية متحركة، لذا يضع سراب صورة من الشاشة الأولى، وتتغير حين تتغير الخلفية.",
+  "playlist.same": "مثل كل الشاشات",
+  "playlist.tag": "وسم: {name}",
+  "playlist.folder": "مجلد: {name}",
+  "playlist.pickFolder": "مجلد…",
+  "displays.playlist": "تتغير إلى خلفيات من",
+  "settings.schedule": "التغيير في أوقات محددة",
+  "settings.scheduleDesc": "مثلًا خلفية للنهار من 07:00 وأخرى لليل من 19:00. تتغير كل الشاشات.",
+  "schedule.add": "إضافة وقت",
+  "schedule.at": "من",
+  "schedule.wallpaper": "الخلفية",
+  "schedule.remove": "إزالة هذا الوقت"
 }

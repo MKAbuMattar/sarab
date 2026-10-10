@@ -276,5 +276,16 @@
   "about.settingsFileDesc": "导出会把所有设置保存到“下载”文件夹，导入会加载来自另一台电脑的文件。",
   "about.import": "导入",
   "settings.lockScreen": "在锁屏上显示壁纸的静态画面",
-  "settings.lockScreenDesc": "锁屏无法播放动态壁纸，因此 Sarab 会设置第一个显示器的画面，壁纸更换时随之更新。"
+  "settings.lockScreenDesc": "锁屏无法播放动态壁纸，因此 Sarab 会设置第一个显示器的画面，壁纸更换时随之更新。",
+  "playlist.same": "与所有显示器相同",
+  "playlist.tag": "标签：{name}",
+  "playlist.folder": "文件夹：{name}",
+  "playlist.pickFolder": "选择文件夹…",
+  "displays.playlist": "切换到以下来源的壁纸",
+  "settings.schedule": "在设定时间更换",
+  "settings.scheduleDesc": "例如 07:00 起使用白天壁纸，19:00 起使用夜晚壁纸。所有显示器都会更换。",
+  "schedule.add": "添加时间",
+  "schedule.at": "开始时间",
+  "schedule.wallpaper": "壁纸",
+  "schedule.remove": "删除此时间"
 }

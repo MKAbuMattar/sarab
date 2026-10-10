@@ -1,0 +1,38 @@
+.card.stack > .slots,
+.card.stack > .slots-add {
+  grid-column: 2;
+}
+.slots:empty {
+  display: none;
+}
+.slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-block-end: 6px;
+}
+.slot > .combo {
+  flex: 1;
+  min-inline-size: 0;
+}
+input[type="time"] {
+  font: inherit;
+  color: var(--text);
+  color-scheme: inherit;
+  min-height: 32px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--control-stroke);
+  border-bottom-color: var(--control-stroke-bottom);
+  background: var(--control);
+}
+input[type="time"]:focus {
+  outline: none;
+  background: var(--control-input);
+  border-bottom: 2px solid var(--accent);
+}
+#detail .playlist {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}

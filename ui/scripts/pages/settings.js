@@ -31,7 +31,11 @@ function readSettings() {
     lock_screen: f.lock_screen.checked,
     cycle_minutes: Number(f.cycle_minutes.value),
     cycle_order: f.cycle_order.value,
-    cycle_category: f.cycle_category.value,
+    cycle_category:
+      f.cycle_category.value === PICK_FOLDER
+        ? state.settings.cycle_category
+        : f.cycle_category.value,
+    schedule: readSchedule(),
     volume: Number(f.volume.value),
     app_pause: lines(f.app_pause.value),
     app_play: lines(f.app_play.value),

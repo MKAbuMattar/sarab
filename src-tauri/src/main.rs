@@ -91,6 +91,7 @@ fn main() {
             reset_settings,
             export_logs,
             export_settings,
+            pick_playlist_folder,
             import_settings,
             autostart,
             check_update,

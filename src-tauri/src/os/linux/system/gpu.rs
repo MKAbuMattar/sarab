@@ -23,7 +23,12 @@ impl GpuMeter {
 pub fn virtual_machine() -> bool {
     static VM: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
     *VM.get_or_init(|| {
-        let read = |f: &str| std::fs::read_to_string(format!("/sys/class/dmi/id/{f}")).unwrap_or_default();
-        crate::core::pause::is_vm_vendor(&format!("{} {}", read("sys_vendor"), read("product_name")))
+        let read =
+            |f: &str| std::fs::read_to_string(format!("/sys/class/dmi/id/{f}")).unwrap_or_default();
+        crate::core::pause::is_vm_vendor(&format!(
+            "{} {}",
+            read("sys_vendor"),
+            read("product_name")
+        ))
     })
 }

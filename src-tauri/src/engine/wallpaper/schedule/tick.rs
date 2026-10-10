@@ -63,6 +63,7 @@ pub fn tick(app: &AppHandle, core: &mut Core) {
         push_volume(app, core, v);
     }
     core.ticks += 1;
+    run_schedule(app, core);
     let playing = core.displays.iter().any(|d| d.wallpaper.is_some());
     let resting = core.displays.iter().any(|d| d.state != State::Play);
     if cycle_due(

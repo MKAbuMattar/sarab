@@ -45,6 +45,7 @@ pub(crate) async fn state(app: AppHandle) -> Value {
                 v
             }).collect::<Vec<_>>(),
             "capture": cfg!(windows),
+            "pick_folder": cfg!(windows),
             "categories": library::CATEGORIES,
             "library_dir": wallpaper::library_dir(&core.settings),
             "manual": core.manual,

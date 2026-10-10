@@ -276,5 +276,16 @@
   "about.settingsFileDesc": "エクスポートはすべての設定を [ダウンロード] に保存します。インポートは別の PC のファイルを読み込みます。",
   "about.import": "インポート",
   "settings.lockScreen": "ロック画面に壁紙の静止画を表示する",
-  "settings.lockScreenDesc": "ロック画面では動く壁紙を再生できないため、Sarab は最初のディスプレイの画像を設定します。壁紙を変えると更新されます。"
+  "settings.lockScreenDesc": "ロック画面では動く壁紙を再生できないため、Sarab は最初のディスプレイの画像を設定します。壁紙を変えると更新されます。",
+  "playlist.same": "すべてのディスプレイと同じ",
+  "playlist.tag": "タグ: {name}",
+  "playlist.folder": "フォルダー: {name}",
+  "playlist.pickFolder": "フォルダーを選ぶ…",
+  "displays.playlist": "切り替え先の壁紙",
+  "settings.schedule": "決まった時刻に切り替える",
+  "settings.scheduleDesc": "たとえば 07:00 から昼の壁紙、19:00 から夜の壁紙。すべてのディスプレイが切り替わります。",
+  "schedule.add": "時刻を追加",
+  "schedule.at": "開始時刻",
+  "schedule.wallpaper": "壁紙",
+  "schedule.remove": "この時刻を削除"
 }

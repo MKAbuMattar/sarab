@@ -113,10 +113,31 @@ function renderDetail() {
     d.wallpaper
       ? btn("", "", t("library.customize"), () => openProps(idx))
       : "",
+    playlistPicker(d),
     d.wallpaper
       ? btn("subtle", "", t("displays.close"), () =>
           run(() => invoke("close", { display: idx })),
         )
       : "",
+  );
+}
+
+function playlistPicker(d) {
+  if (state.settings.span) return "";
+  const current = state.settings.display_playlists?.[d.key] || "";
+  const pick = el("select", {
+    "aria-label": t("displays.playlist"),
+    "data-same": "true",
+  });
+  playlistOptions(pick, current, true);
+  pick.addEventListener("change", async () => {
+    const v = await chooseSource(pick, current);
+    if (v !== null) await setDisplayPlaylist(d.key, v);
+  });
+  return el(
+    "label",
+    { class: "playlist" },
+    el("span", { class: "caption" }, t("displays.playlist")),
+    pick,
   );
 }

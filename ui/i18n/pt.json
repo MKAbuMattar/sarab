@@ -276,5 +276,16 @@
   "about.settingsFileDesc": "Exportar salva todas as configurações em Downloads. Importar carrega um arquivo de outro PC.",
   "about.import": "Importar",
   "settings.lockScreen": "Mostrar uma imagem parada do papel de parede na tela de bloqueio",
-  "settings.lockScreenDesc": "A tela de bloqueio não reproduz papel de parede animado, então o Sarab coloca uma imagem da primeira tela. Ela muda quando o papel de parede muda."
+  "settings.lockScreenDesc": "A tela de bloqueio não reproduz papel de parede animado, então o Sarab coloca uma imagem da primeira tela. Ela muda quando o papel de parede muda.",
+  "playlist.same": "Igual a todas as telas",
+  "playlist.tag": "Etiqueta: {name}",
+  "playlist.folder": "Pasta: {name}",
+  "playlist.pickFolder": "Uma pasta…",
+  "displays.playlist": "Muda para papéis de parede de",
+  "settings.schedule": "Mudar em horários definidos",
+  "settings.scheduleDesc": "Por exemplo, um papel de parede de dia a partir das 07:00 e um de noite a partir das 19:00. Todas as telas mudam.",
+  "schedule.add": "Adicionar horário",
+  "schedule.at": "A partir de",
+  "schedule.wallpaper": "Papel de parede",
+  "schedule.remove": "Remover este horário"
 }

@@ -276,5 +276,16 @@
   "about.settingsFileDesc": "Exportar guarda toda la configuración en Descargas. Importar carga un archivo de otro PC.",
   "about.import": "Importar",
   "settings.lockScreen": "Mostrar una imagen fija del fondo en la pantalla de bloqueo",
-  "settings.lockScreenDesc": "La pantalla de bloqueo no puede reproducir un fondo animado, así que Sarab pone una imagen de la primera pantalla. Cambia cuando cambia el fondo."
+  "settings.lockScreenDesc": "La pantalla de bloqueo no puede reproducir un fondo animado, así que Sarab pone una imagen de la primera pantalla. Cambia cuando cambia el fondo.",
+  "playlist.same": "Igual que todas las pantallas",
+  "playlist.tag": "Etiqueta: {name}",
+  "playlist.folder": "Carpeta: {name}",
+  "playlist.pickFolder": "Una carpeta…",
+  "displays.playlist": "Cambia a fondos de",
+  "settings.schedule": "Cambiar a horas fijas",
+  "settings.scheduleDesc": "Por ejemplo, un fondo de día desde las 07:00 y otro de noche desde las 19:00. Cambian todas las pantallas.",
+  "schedule.add": "Añadir una hora",
+  "schedule.at": "Desde",
+  "schedule.wallpaper": "Fondo",
+  "schedule.remove": "Quitar esta hora"
 }

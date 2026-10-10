@@ -26,6 +26,7 @@
     <link rel="stylesheet" href="styles/base/media.css" />
     <link rel="stylesheet" href="styles/controls/combo.css" />
     <link rel="stylesheet" href="styles/pages/about.css" />
+    <link rel="stylesheet" href="styles/components/slots.css" />
   </head>
   <body>
     <nav aria-label="Sarab">
@@ -351,6 +352,21 @@
             ><span class="title" data-t="settings.cycleFrom"></span>
             <select name="cycle_category"></select
           ></label>
+          <div class="card stack">
+            <i class="icon" aria-hidden="true">&#xE823;</i
+            ><span
+              ><span class="title" data-t="settings.schedule"></span><br /><span
+                class="caption"
+                data-t="settings.scheduleDesc"
+              ></span
+            ></span>
+            <div id="schedule" class="slots"></div>
+            <span class="slots-add"
+              ><button type="button" id="add-slot">
+                <i class="icon" aria-hidden="true">&#xE710;</i
+                ><span data-t="schedule.add"></span></button
+            ></span>
+          </div>
 
           <h2 data-t="settings.performance"></h2>
           <label class="card"
@@ -620,63 +636,107 @@
         <div class="content">
           <h2 id="edit-title" data-t="edit.title"></h2>
           <div class="tabs" role="tablist" aria-labelledby="edit-title">
-            <button type="button" role="tab" id="edit-tab-details" aria-controls="edit-panel-details" aria-selected="true">
+            <button
+              type="button"
+              role="tab"
+              id="edit-tab-details"
+              aria-controls="edit-panel-details"
+              aria-selected="true"
+            >
               <span data-t="edit.details"></span>
-              <span class="dirty" hidden><span class="sr-only" data-t="edit.unsaved"></span></span>
+              <span class="dirty" hidden
+                ><span class="sr-only" data-t="edit.unsaved"></span
+              ></span>
             </button>
-            <button type="button" role="tab" id="edit-tab-part" aria-controls="edit-panel-part" aria-selected="false" tabindex="-1">
+            <button
+              type="button"
+              role="tab"
+              id="edit-tab-part"
+              aria-controls="edit-panel-part"
+              aria-selected="false"
+              tabindex="-1"
+            >
               <span data-t="trim.title"></span>
-              <span class="dirty" hidden><span class="sr-only" data-t="edit.unsaved"></span></span>
+              <span class="dirty" hidden
+                ><span class="sr-only" data-t="edit.unsaved"></span
+              ></span>
             </button>
-            <button type="button" role="tab" id="edit-tab-thumb" aria-controls="edit-panel-thumb" aria-selected="false" tabindex="-1" hidden>
+            <button
+              type="button"
+              role="tab"
+              id="edit-tab-thumb"
+              aria-controls="edit-panel-thumb"
+              aria-selected="false"
+              tabindex="-1"
+              hidden
+            >
               <span data-t="edit.thumbnail"></span>
-              <span class="dirty" hidden><span class="sr-only" data-t="edit.unsaved"></span></span>
+              <span class="dirty" hidden
+                ><span class="sr-only" data-t="edit.unsaved"></span
+              ></span>
             </button>
           </div>
-          <div class="panel" role="tabpanel" id="edit-panel-details" aria-labelledby="edit-tab-details">
-          <label
-            ><span data-t="edit.name"></span
-            ><input
-              type="text"
-              name="title"
-              maxlength="100"
-              required
-              dir="auto"
-          /></label>
-          <label
-            ><span data-t="edit.description"></span
-            ><textarea
-              name="description"
-              rows="3"
-              maxlength="1000"
-              dir="auto"
-            ></textarea>
-          </label>
-          <label
-            ><span data-t="edit.author"></span
-            ><input type="text" name="author" maxlength="100" dir="auto"
-          /></label>
-          <label
-            ><span data-t="edit.category"></span
-            ><select name="category"></select
-          ></label>
-          <label
-            ><span data-t="edit.tags"></span
-            ><input
-              type="text"
-              name="tags"
-              dir="auto"
-              aria-describedby="edit-tags-hint" /><span
-              id="edit-tags-hint"
-              class="caption"
-              data-t="edit.tagsHint"
-            ></span
-          ></label>
+          <div
+            class="panel"
+            role="tabpanel"
+            id="edit-panel-details"
+            aria-labelledby="edit-tab-details"
+          >
+            <label
+              ><span data-t="edit.name"></span
+              ><input
+                type="text"
+                name="title"
+                maxlength="100"
+                required
+                dir="auto"
+            /></label>
+            <label
+              ><span data-t="edit.description"></span
+              ><textarea
+                name="description"
+                rows="3"
+                maxlength="1000"
+                dir="auto"
+              ></textarea>
+            </label>
+            <label
+              ><span data-t="edit.author"></span
+              ><input type="text" name="author" maxlength="100" dir="auto"
+            /></label>
+            <label
+              ><span data-t="edit.category"></span
+              ><select name="category"></select
+            ></label>
+            <label
+              ><span data-t="edit.tags"></span
+              ><input
+                type="text"
+                name="tags"
+                dir="auto"
+                aria-describedby="edit-tags-hint" /><span
+                id="edit-tags-hint"
+                class="caption"
+                data-t="edit.tagsHint"
+              ></span
+            ></label>
           </div>
-          <div class="panel" role="tabpanel" id="edit-panel-part" aria-labelledby="edit-tab-part" hidden>
+          <div
+            class="panel"
+            role="tabpanel"
+            id="edit-panel-part"
+            aria-labelledby="edit-tab-part"
+            hidden
+          >
             <div id="trim-slot"></div>
           </div>
-          <div class="panel" role="tabpanel" id="edit-panel-thumb" aria-labelledby="edit-tab-thumb" hidden></div>
+          <div
+            class="panel"
+            role="tabpanel"
+            id="edit-panel-thumb"
+            aria-labelledby="edit-tab-thumb"
+            hidden
+          ></div>
           <p
             id="edit-error"
             class="caption danger-text"
@@ -752,6 +812,7 @@
     <script src="scripts/pages/about.js"></script>
     <script src="scripts/pages/presets.js"></script>
     <script src="scripts/pages/settings.js"></script>
+    <script src="scripts/pages/playlists.js"></script>
     <script src="scripts/core/render.js"></script>
     <script src="scripts/main.js"></script>
   </body>

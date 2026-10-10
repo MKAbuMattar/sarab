@@ -52,11 +52,8 @@ function render() {
   f.lock_screen.checked = s.lock_screen;
   f.cycle_minutes.value = String(s.cycle_minutes || 0);
   f.cycle_order.value = s.cycle_order || "order";
-  f.cycle_category.replaceChildren(
-    el("option", { value: "all" }, t("library.allCategories")),
-    ...state.categories.map((c) => el("option", { value: c }, categoryName(c))),
-  );
-  f.cycle_category.value = s.cycle_category || "all";
+  playlistOptions(f.cycle_category, s.cycle_category || "all", false);
+  renderSchedule();
   f.cycle_order.disabled = f.cycle_category.disabled = !s.cycle_minutes;
   f.volume.value = s.volume;
   fill(f.volume);

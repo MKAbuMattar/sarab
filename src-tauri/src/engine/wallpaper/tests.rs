@@ -229,3 +229,86 @@ fn one_thumbnail_capture_per_wallpaper() {
     assert!(claim_capture(&dir), "free again once done");
     release_capture(&dir);
 }
+
+fn playlist_wp(kind: Kind, file: &str, category: Option<&str>, tags: &[&str]) -> Wallpaper {
+    Wallpaper {
+        id: file.into(),
+        dir: PathBuf::from("lib").join(file),
+        info: library::Manifest {
+            r#type: kind,
+            file: Some(file.into()),
+            external: true,
+            category: category.map(Into::into),
+            tags: tags.iter().map(|t| t.to_string()).collect(),
+            ..Default::default()
+        },
+        kind: "video",
+        has_props: false,
+        preset: false,
+        added: 0,
+        thumb: None,
+        auto_thumb: None,
+        custom_thumb: None,
+        frame_thumb: None,
+        too_new: false,
+    }
+}
+
+#[test]
+fn playlist_sources() {
+    let sea = playlist_wp(
+        Kind::Video,
+        "C:\\Walls\\Sea\\waves.mp4",
+        Some("Nature"),
+        &["calm", "Blue"],
+    );
+    let city = playlist_wp(Kind::Video, "C:\\Walls\\City.mp4", None, &["night"]);
+    let app = playlist_wp(Kind::App, "C:\\Walls\\game.exe", Some("Nature"), &["calm"]);
+    assert!(in_source(&sea, "all") && in_source(&city, ""));
+    assert!(!in_source(&app, "all"), "apps never join a playlist");
+    assert!(in_source(&sea, "Nature") && !in_source(&city, "Nature"));
+    assert!(in_source(&sea, "tag:blue"), "tags match in any case");
+    assert!(!in_source(&city, "tag:calm"));
+    assert!(
+        in_source(&sea, "folder:c:/walls"),
+        "a file in a subfolder counts"
+    );
+    assert!(in_source(&city, "folder:C:\\Walls\\"));
+    assert!(!in_source(&city, "folder:C:\\Walls\\Sea"));
+    assert!(
+        !in_source(&city, "folder:C:\\Wall"),
+        "a longer name is another folder"
+    );
+}
+
+#[test]
+fn playlist_time_slots() {
+    use crate::core::settings::Slot;
+    let slot = |at: &str, w: &str| Slot {
+        at: at.into(),
+        wallpaper: w.into(),
+    };
+    let day_night = [slot("07:00", "day"), slot("19:30", "night")];
+    assert_eq!(slot_now(&day_night, 7 * 60), Some(0));
+    assert_eq!(slot_now(&day_night, 12 * 60), Some(0));
+    assert_eq!(slot_now(&day_night, 19 * 60 + 30), Some(1));
+    assert_eq!(
+        slot_now(&day_night, 3 * 60),
+        Some(1),
+        "after midnight the night slot holds"
+    );
+    assert_eq!(slot_now(&[], 600), None);
+    assert_eq!(
+        slot_now(&[slot("25:00", "x"), slot("08:00", "")], 600),
+        None,
+        "a bad time or an empty wallpaper is skipped"
+    );
+    assert_eq!(
+        slot_now(&[slot("08:00", "a"), slot("08:00", "b")], 600),
+        Some(0),
+        "the first of a tie"
+    );
+    assert_eq!(minutes("23:59"), Some(1439));
+    assert_eq!(minutes("7:5"), Some(425));
+    assert_eq!(minutes("24:00"), None);
+}

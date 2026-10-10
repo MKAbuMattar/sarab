@@ -5,6 +5,13 @@ use std::{
     path::{Path, PathBuf},
 };
 
+#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq)]
+#[serde(default)]
+pub struct Slot {
+    pub at: String,
+    pub wallpaper: String,
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(default)]
 pub struct Settings {
@@ -43,6 +50,8 @@ pub struct Settings {
     pub pause_network: u32,
     pub pause_vm: bool,
     pub lock_screen: bool,
+    pub schedule: Vec<Slot>,
+    pub display_playlists: BTreeMap<String, String>,
 }
 
 impl Default for Settings {
@@ -87,6 +96,8 @@ impl Default for Settings {
             pause_network: 0,
             pause_vm: false,
             lock_screen: false,
+            schedule: vec![],
+            display_playlists: BTreeMap::new(),
         }
     }
 }

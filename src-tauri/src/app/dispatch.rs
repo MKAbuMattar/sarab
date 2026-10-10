@@ -114,7 +114,10 @@ pub(crate) fn run_command(app: &AppHandle, core: &mut Core, cmd: Command) -> Res
         Command::SettingsExport(path) => {
             let path = std::path::PathBuf::from(path);
             if !path.is_absolute() {
-                return Err("give settings export a full path, for example C:/backup/sarab-settings.json".into());
+                return Err(
+                    "give settings export a full path, for example C:/backup/sarab-settings.json"
+                        .into(),
+                );
             }
             crate::core::settings::save(&path, &core.settings).map_err(|e| e.to_string())?;
         }

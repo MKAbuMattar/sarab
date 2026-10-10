@@ -11,12 +11,15 @@ pub fn get_picture(_m: &Monitor) -> Option<String> {
 
 pub(in crate::os::linux) fn gnome_settings(schema: &str, key: &str) -> Option<gtk::gio::Settings> {
     let found = gtk::gio::SettingsSchemaSource::default()?.lookup(schema, true)?;
-    found
-        .has_key(key)
-        .then(|| gtk::gio::Settings::new(schema))
+    found.has_key(key).then(|| gtk::gio::Settings::new(schema))
 }
 
-pub(in crate::os::linux) fn kde_config(file: &str, groups: &[&str], key: &str, value: &str) -> bool {
+pub(in crate::os::linux) fn kde_config(
+    file: &str,
+    groups: &[&str],
+    key: &str,
+    value: &str,
+) -> bool {
     let mut args = vec!["--file", file];
     for g in groups {
         args.extend(["--group", g]);
@@ -33,7 +36,8 @@ pub(in crate::os::linux) fn kde_config(file: &str, groups: &[&str], key: &str, v
 pub fn set_lock_screen(path: &Path) -> Result<(), String> {
     let uri = gtk::gio::File::for_path(path).uri().to_string();
     if let Some(s) = gnome_settings("org.gnome.desktop.screensaver", "picture-uri") {
-        s.set_string("picture-uri", &uri).map_err(|e| e.to_string())?;
+        s.set_string("picture-uri", &uri)
+            .map_err(|e| e.to_string())?;
         gtk::gio::Settings::sync();
         return Ok(());
     }

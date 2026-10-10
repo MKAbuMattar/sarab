@@ -276,5 +276,16 @@
   "about.settingsFileDesc": "„Exportieren“ speichert alle Einstellungen unter „Downloads“. „Importieren“ lädt eine Datei von einem anderen PC.",
   "about.import": "Importieren",
   "settings.lockScreen": "Ein Standbild des Hintergrunds auf dem Sperrbildschirm zeigen",
-  "settings.lockScreenDesc": "Der Sperrbildschirm kann keinen bewegten Hintergrund abspielen, also setzt Sarab ein Bild des ersten Bildschirms. Es wechselt mit dem Hintergrund."
+  "settings.lockScreenDesc": "Der Sperrbildschirm kann keinen bewegten Hintergrund abspielen, also setzt Sarab ein Bild des ersten Bildschirms. Es wechselt mit dem Hintergrund.",
+  "playlist.same": "Wie alle Bildschirme",
+  "playlist.tag": "Schlagwort: {name}",
+  "playlist.folder": "Ordner: {name}",
+  "playlist.pickFolder": "Ein Ordner …",
+  "displays.playlist": "Wechselt zu Hintergründen aus",
+  "settings.schedule": "Zu festen Uhrzeiten wechseln",
+  "settings.scheduleDesc": "Zum Beispiel ein Taghintergrund ab 07:00 und ein Nachthintergrund ab 19:00. Alle Bildschirme wechseln.",
+  "schedule.add": "Uhrzeit hinzufügen",
+  "schedule.at": "Ab",
+  "schedule.wallpaper": "Hintergrund",
+  "schedule.remove": "Diese Uhrzeit entfernen"
 }
