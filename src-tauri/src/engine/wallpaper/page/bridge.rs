@@ -101,6 +101,11 @@ pub fn on_loaded(app: &AppHandle, core: &mut Core, lbl: &str) {
     let a = app.clone();
     std::thread::spawn(move || {
         std::thread::sleep(std::time::Duration::from_secs(4));
-        later(&a, move |app, core| capture_thumbnail(app, core, &lbl));
+        later(&a, move |app, core| {
+            capture_thumbnail(app, core, &lbl);
+            if core.displays.first().and_then(|d| d.label.as_deref()) == Some(lbl.as_str()) {
+                refresh_lock_screen(app, core);
+            }
+        });
     });
 }

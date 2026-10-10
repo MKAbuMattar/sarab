@@ -274,5 +274,7 @@
   "reason.virtual_machine": "Em pausa: o Sarab está rodando em uma máquina virtual",
   "about.settingsFile": "Arquivo de configurações",
   "about.settingsFileDesc": "Exportar salva todas as configurações em Downloads. Importar carrega um arquivo de outro PC.",
-  "about.import": "Importar"
+  "about.import": "Importar",
+  "settings.lockScreen": "Mostrar uma imagem parada do papel de parede na tela de bloqueio",
+  "settings.lockScreenDesc": "A tela de bloqueio não reproduz papel de parede animado, então o Sarab coloca uma imagem da primeira tela. Ela muda quando o papel de parede muda."
 }

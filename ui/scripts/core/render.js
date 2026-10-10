@@ -49,6 +49,7 @@ function render() {
   f.span.checked = s.span;
   f.mouse_input.checked = s.mouse_input;
   f.keep_frame_on_quit.checked = s.keep_frame_on_quit;
+  f.lock_screen.checked = s.lock_screen;
   f.cycle_minutes.value = String(s.cycle_minutes || 0);
   f.cycle_order.value = s.cycle_order || "order";
   f.cycle_category.replaceChildren(

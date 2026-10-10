@@ -39,3 +39,13 @@ pub fn set_picture(m: &Monitor, path: &str) -> windows::core::Result<()> {
         api.SetWallpaper(PCWSTR(id.0), &HSTRING::from(path))
     }
 }
+
+pub fn set_lock_screen(path: &std::path::Path) -> Result<(), String> {
+    use windows::Storage::StorageFile;
+    use windows::System::UserProfile::LockScreen;
+    (|| -> windows::core::Result<()> {
+        let file = StorageFile::GetFileFromPathAsync(&HSTRING::from(path.as_os_str()))?.join()?;
+        LockScreen::SetImageFileAsync(&file)?.join()
+    })()
+    .map_err(|e| format!("lock screen: {e}"))
+}

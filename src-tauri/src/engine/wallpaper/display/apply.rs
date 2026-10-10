@@ -54,6 +54,9 @@ pub fn apply(app: &AppHandle, core: &mut Core, i: usize, id: &str) -> Result<(),
             core.displays[i].wallpaper = Some(w.id.clone());
             core.layout.insert(key, w.id.clone());
             core.save_layout();
+            if i == 0 && w.info.r#type == Kind::Picture {
+                refresh_lock_screen(app, core);
+            }
         }
         Err(e) => {
             core.displays[i].error = Some(e.clone());

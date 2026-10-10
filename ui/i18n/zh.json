@@ -274,5 +274,7 @@
   "reason.virtual_machine": "休息中：Sarab 正在虚拟机中运行",
   "about.settingsFile": "设置文件",
   "about.settingsFileDesc": "导出会把所有设置保存到“下载”文件夹，导入会加载来自另一台电脑的文件。",
-  "about.import": "导入"
+  "about.import": "导入",
+  "settings.lockScreen": "在锁屏上显示壁纸的静态画面",
+  "settings.lockScreenDesc": "锁屏无法播放动态壁纸，因此 Sarab 会设置第一个显示器的画面，壁纸更换时随之更新。"
 }

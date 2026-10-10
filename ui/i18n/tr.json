@@ -274,5 +274,7 @@
   "reason.virtual_machine": "Dinleniyor: Sarab sanal makinede çalışıyor",
   "about.settingsFile": "Ayar dosyası",
   "about.settingsFileDesc": "Dışa aktar tüm ayarları İndirilenler klasörüne kaydeder. İçe aktar başka bir bilgisayardan gelen dosyayı yükler.",
-  "about.import": "İçe aktar"
+  "about.import": "İçe aktar",
+  "settings.lockScreen": "Kilit ekranında duvar kâğıdının durağan bir karesini göster",
+  "settings.lockScreenDesc": "Kilit ekranı hareketli duvar kâğıdı oynatamaz; bu yüzden Sarab ilk ekranın bir resmini koyar. Duvar kâğıdı değişince o da değişir."
 }

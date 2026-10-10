@@ -274,5 +274,7 @@
   "reason.virtual_machine": "Pause: Sarab läuft in einer virtuellen Maschine",
   "about.settingsFile": "Einstellungsdatei",
   "about.settingsFileDesc": "„Exportieren“ speichert alle Einstellungen unter „Downloads“. „Importieren“ lädt eine Datei von einem anderen PC.",
-  "about.import": "Importieren"
+  "about.import": "Importieren",
+  "settings.lockScreen": "Ein Standbild des Hintergrunds auf dem Sperrbildschirm zeigen",
+  "settings.lockScreenDesc": "Der Sperrbildschirm kann keinen bewegten Hintergrund abspielen, also setzt Sarab ein Bild des ersten Bildschirms. Es wechselt mit dem Hintergrund."
 }

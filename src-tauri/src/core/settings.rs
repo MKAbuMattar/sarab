@@ -42,6 +42,7 @@ pub struct Settings {
     pub pause_memory: u8,
     pub pause_network: u32,
     pub pause_vm: bool,
+    pub lock_screen: bool,
 }
 
 impl Default for Settings {
@@ -85,6 +86,7 @@ impl Default for Settings {
             pause_memory: 0,
             pause_network: 0,
             pause_vm: false,
+            lock_screen: false,
         }
     }
 }

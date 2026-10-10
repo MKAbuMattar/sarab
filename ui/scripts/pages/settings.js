@@ -28,6 +28,7 @@ function readSettings() {
     span: f.span.checked,
     mouse_input: f.mouse_input.checked,
     keep_frame_on_quit: f.keep_frame_on_quit.checked,
+    lock_screen: f.lock_screen.checked,
     cycle_minutes: Number(f.cycle_minutes.value),
     cycle_order: f.cycle_order.value,
     cycle_category: f.cycle_category.value,

@@ -59,6 +59,7 @@ pub(crate) fn apply_settings(
     let lib_changed = new.library_dir != core.settings.library_dir;
     let fit_changed = new.scaling != core.settings.scaling;
     let span_changed = new.span != core.settings.span;
+    let lock_on = new.lock_screen && !core.settings.lock_screen;
     if new.theme != core.settings.theme {
         os::platform::menu_theme(&new.theme);
     }
@@ -96,6 +97,9 @@ pub(crate) fn apply_settings(
                 let _ = wallpaper::apply(app, core, i, &id);
             }
         }
+    }
+    if lock_on {
+        wallpaper::refresh_lock_screen(app, core);
     }
     wallpaper::set_volume(app, core, vol);
     wallpaper::set_fps(app, core);

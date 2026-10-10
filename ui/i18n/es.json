@@ -274,5 +274,7 @@
   "reason.virtual_machine": "En reposo: Sarab se ejecuta en una máquina virtual",
   "about.settingsFile": "Archivo de configuración",
   "about.settingsFileDesc": "Exportar guarda toda la configuración en Descargas. Importar carga un archivo de otro PC.",
-  "about.import": "Importar"
+  "about.import": "Importar",
+  "settings.lockScreen": "Mostrar una imagen fija del fondo en la pantalla de bloqueo",
+  "settings.lockScreenDesc": "La pantalla de bloqueo no puede reproducir un fondo animado, así que Sarab pone una imagen de la primera pantalla. Cambia cuando cambia el fondo."
 }

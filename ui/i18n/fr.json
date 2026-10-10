@@ -274,5 +274,7 @@
   "reason.virtual_machine": "En pause : Sarab tourne dans une machine virtuelle",
   "about.settingsFile": "Fichier de paramètres",
   "about.settingsFileDesc": "Exporter enregistre tous les paramètres dans Téléchargements. Importer charge un fichier venu d’un autre PC.",
-  "about.import": "Importer"
+  "about.import": "Importer",
+  "settings.lockScreen": "Afficher une image fixe du fond d’écran sur l’écran de verrouillage",
+  "settings.lockScreenDesc": "L’écran de verrouillage ne peut pas lire un fond animé : Sarab y met une image du premier écran, qui change avec le fond."
 }
