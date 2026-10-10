@@ -271,5 +271,8 @@
   "reason.gpu_busy": "En reposo: otras apps mantienen ocupada la tarjeta gráfica",
   "reason.memory_busy": "En reposo: la memoria está casi llena",
   "reason.network_busy": "En reposo: la red está ocupada",
-  "reason.virtual_machine": "En reposo: Sarab se ejecuta en una máquina virtual"
+  "reason.virtual_machine": "En reposo: Sarab se ejecuta en una máquina virtual",
+  "about.settingsFile": "Archivo de configuración",
+  "about.settingsFileDesc": "Exportar guarda toda la configuración en Descargas. Importar carga un archivo de otro PC.",
+  "about.import": "Importar"
 }

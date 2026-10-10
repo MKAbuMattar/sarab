@@ -271,5 +271,8 @@
   "reason.gpu_busy": "En pause : d’autres apps occupent la carte graphique",
   "reason.memory_busy": "En pause : la mémoire est presque pleine",
   "reason.network_busy": "En pause : le réseau est chargé",
-  "reason.virtual_machine": "En pause : Sarab tourne dans une machine virtuelle"
+  "reason.virtual_machine": "En pause : Sarab tourne dans une machine virtuelle",
+  "about.settingsFile": "Fichier de paramètres",
+  "about.settingsFileDesc": "Exporter enregistre tous les paramètres dans Téléchargements. Importer charge un fichier venu d’un autre PC.",
+  "about.import": "Importer"
 }

@@ -111,6 +111,18 @@ pub(crate) fn run_command(app: &AppHandle, core: &mut Core, cmd: Command) -> Res
             }
             wallpaper::screenshot(app, core, display.unwrap_or(0), path)?;
         }
+        Command::SettingsExport(path) => {
+            let path = std::path::PathBuf::from(path);
+            if !path.is_absolute() {
+                return Err("give settings export a full path, for example C:/backup/sarab-settings.json".into());
+            }
+            crate::core::settings::save(&path, &core.settings).map_err(|e| e.to_string())?;
+        }
+        Command::SettingsImport(path) => {
+            let json = std::fs::read_to_string(&path).map_err(|e| format!("{path}: {e}"))?;
+            let new = support::import_settings(&json, &core.settings)?;
+            apply_settings(app, core, new)?;
+        }
         Command::InstallUpdate => {
             let a = app.clone();
             tauri::async_runtime::spawn(async move { update::install(&a).await });

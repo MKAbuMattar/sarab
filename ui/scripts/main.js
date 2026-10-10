@@ -30,6 +30,19 @@ $("#move-library").addEventListener("click", () =>
 $("#export-logs").addEventListener("click", () =>
   run(() => invoke("export_logs")),
 );
+$("#export-settings").addEventListener("click", () =>
+  run(() => invoke("export_settings")),
+);
+$("#import-settings").addEventListener("click", () => $("#settings-file").click());
+$("#settings-file").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  const json = await file.text();
+  await run(() => invoke("import_settings", { json }));
+  await loadLanguage(state.settings.language || "en");
+  render();
+});
 $("#reset-settings").addEventListener("click", async () => {
   const ok = await ask({
     title: t("about.resetTitle"),

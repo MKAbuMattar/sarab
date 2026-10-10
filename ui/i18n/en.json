@@ -271,5 +271,8 @@
   "reason.gpu_busy": "Resting: other apps keep the graphics card busy",
   "reason.memory_busy": "Resting: memory is nearly full",
   "reason.network_busy": "Resting: the network is busy",
-  "reason.virtual_machine": "Resting: Sarab is running in a virtual machine"
+  "reason.virtual_machine": "Resting: Sarab is running in a virtual machine",
+  "about.settingsFile": "Settings file",
+  "about.settingsFileDesc": "Export saves every setting to Downloads. Import loads a file from another PC.",
+  "about.import": "Import"
 }

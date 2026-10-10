@@ -271,5 +271,8 @@
   "reason.gpu_busy": "Пауза: другие приложения загружают видеокарту",
   "reason.memory_busy": "Пауза: память почти заполнена",
   "reason.network_busy": "Пауза: сеть загружена",
-  "reason.virtual_machine": "Пауза: Sarab работает в виртуальной машине"
+  "reason.virtual_machine": "Пауза: Sarab работает в виртуальной машине",
+  "about.settingsFile": "Файл параметров",
+  "about.settingsFileDesc": "Экспорт сохраняет все параметры в папку «Загрузки». Импорт загружает файл с другого ПК.",
+  "about.import": "Импорт"
 }

@@ -271,5 +271,8 @@
   "reason.gpu_busy": "休止中: 他のアプリがグラフィックス カードを使用中",
   "reason.memory_busy": "休止中: メモリがほぼいっぱいです",
   "reason.network_busy": "休止中: ネットワークが混雑しています",
-  "reason.virtual_machine": "休止中: Sarab は仮想マシンで実行されています"
+  "reason.virtual_machine": "休止中: Sarab は仮想マシンで実行されています",
+  "about.settingsFile": "設定ファイル",
+  "about.settingsFileDesc": "エクスポートはすべての設定を [ダウンロード] に保存します。インポートは別の PC のファイルを読み込みます。",
+  "about.import": "インポート"
 }

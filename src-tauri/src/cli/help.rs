@@ -128,6 +128,18 @@ const DOCS: &[Doc] = &[
         examples: &[("Capture the first display", "sarab screenshot C:\\shots\\desk.png")],
     },
     Doc {
+        name: "settings",
+        synopsis: "sarab settings export <file.json> | sarab settings import <file.json>",
+        summary: "Save or load Sarab's settings",
+        about: "export writes every setting to a JSON file; give a full path. import reads one back and \
+                applies it at once. A library folder that does not exist on this PC is left as it is.",
+        options: &[],
+        examples: &[
+            ("Back up your settings", "sarab settings export C:\\backup\\sarab-settings.json"),
+            ("Load them on another PC", "sarab settings import D:\\sarab-settings.json"),
+        ],
+    },
+    Doc {
         name: "ui",
         synopsis: "sarab ui",
         summary: "Open the Sarab window",
@@ -266,7 +278,7 @@ mod tests {
             // Every documented command is one the parser knows.
             if !matches!(
                 d.name,
-                "set" | "prop" | "volume" | "import" | "preset" | "screenshot"
+                "set" | "prop" | "volume" | "import" | "preset" | "screenshot" | "settings"
             ) {
                 assert!(
                     crate::cli::parse(&a(d.name)).unwrap().is_some(),

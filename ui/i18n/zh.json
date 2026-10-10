@@ -271,5 +271,8 @@
   "reason.gpu_busy": "休息中：其他应用正占用显卡",
   "reason.memory_busy": "休息中：内存快满了",
   "reason.network_busy": "休息中：网络繁忙",
-  "reason.virtual_machine": "休息中：Sarab 正在虚拟机中运行"
+  "reason.virtual_machine": "休息中：Sarab 正在虚拟机中运行",
+  "about.settingsFile": "设置文件",
+  "about.settingsFileDesc": "导出会把所有设置保存到“下载”文件夹，导入会加载来自另一台电脑的文件。",
+  "about.import": "导入"
 }

@@ -90,6 +90,8 @@ fn main() {
             save_settings,
             reset_settings,
             export_logs,
+            export_settings,
+            import_settings,
             autostart,
             check_update,
             install_update,

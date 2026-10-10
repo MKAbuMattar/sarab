@@ -25,6 +25,27 @@ pub(crate) async fn export_logs() -> Result<String, String> {
 }
 
 #[tauri::command]
+pub(crate) async fn export_settings(app: AppHandle) -> Result<String, String> {
+    let file = with_core(&app, |_, core| {
+        support::export_settings(&core.settings, &support::downloads())
+    })
+    .map_err(|e| e.to_string())?;
+    let _ = std::process::Command::new("explorer.exe")
+        .arg(format!("/select,{}", file.display()))
+        .spawn();
+    Ok(file.display().to_string())
+}
+
+#[tauri::command]
+pub(crate) async fn import_settings(app: AppHandle, json: String) -> Result<(), String> {
+    with_core(&app, move |app, core| {
+        let new = support::import_settings(&json, &core.settings)?;
+        log("settings imported from a file");
+        apply_settings(app, core, new)
+    })
+}
+
+#[tauri::command]
 pub(crate) async fn autostart(app: AppHandle, enable: bool) -> Result<(), String> {
     let al = app.autolaunch();
     if enable { al.enable() } else { al.disable() }.map_err(|e| e.to_string())

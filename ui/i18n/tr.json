@@ -271,5 +271,8 @@
   "reason.gpu_busy": "Dinleniyor: diğer uygulamalar ekran kartını meşgul ediyor",
   "reason.memory_busy": "Dinleniyor: bellek neredeyse dolu",
   "reason.network_busy": "Dinleniyor: ağ meşgul",
-  "reason.virtual_machine": "Dinleniyor: Sarab sanal makinede çalışıyor"
+  "reason.virtual_machine": "Dinleniyor: Sarab sanal makinede çalışıyor",
+  "about.settingsFile": "Ayar dosyası",
+  "about.settingsFileDesc": "Dışa aktar tüm ayarları İndirilenler klasörüne kaydeder. İçe aktar başka bir bilgisayardan gelen dosyayı yükler.",
+  "about.import": "İçe aktar"
 }

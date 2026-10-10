@@ -271,5 +271,8 @@
   "reason.gpu_busy": "Pause: Andere Apps lasten die Grafikkarte aus",
   "reason.memory_busy": "Pause: Der Arbeitsspeicher ist fast voll",
   "reason.network_busy": "Pause: Das Netzwerk ist ausgelastet",
-  "reason.virtual_machine": "Pause: Sarab läuft in einer virtuellen Maschine"
+  "reason.virtual_machine": "Pause: Sarab läuft in einer virtuellen Maschine",
+  "about.settingsFile": "Einstellungsdatei",
+  "about.settingsFileDesc": "„Exportieren“ speichert alle Einstellungen unter „Downloads“. „Importieren“ lädt eine Datei von einem anderen PC.",
+  "about.import": "Importieren"
 }
