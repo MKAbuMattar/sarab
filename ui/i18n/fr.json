@@ -22,7 +22,7 @@
   "pause.button": "Tout suspendre",
   "pause.resume": "Reprendre",
   "props.title": "Personnaliser",
-  "props.none": "Ce fond d'écran n'a aucun paramètre.",
+  "props.none": "Il n’a aucun paramètre propre.",
   "props.close": "Terminé",
   "settings.title": "Paramètres",
   "settings.pauseFullscreen": "Suspendre quand une application couvre l'écran",
@@ -287,5 +287,12 @@
   "schedule.add": "Ajouter une heure",
   "schedule.at": "À partir de",
   "schedule.wallpaper": "Fond d’écran",
-  "schedule.remove": "Retirer cette heure"
+  "schedule.remove": "Retirer cette heure",
+  "props.playback": "Lecture",
+  "props.own": "Paramètres propres au fond d’écran",
+  "props.fit": "Ajustement",
+  "props.speed": "Vitesse",
+  "props.speedNormal": "Normale",
+  "props.ownVolume": "Son propre volume, au lieu du volume général",
+  "props.volume": "Volume"
 }

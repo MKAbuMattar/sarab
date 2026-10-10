@@ -57,7 +57,13 @@ pub(crate) fn apply_settings(
     new: settings::Settings,
 ) -> Result<(), String> {
     let lib_changed = new.library_dir != core.settings.library_dir;
-    let fit_changed = new.scaling != core.settings.scaling;
+    let fits = |s: &settings::Settings| -> Vec<String> {
+        core.displays
+            .iter()
+            .map(|d| wallpaper::fit_for(s, &d.mon.key))
+            .collect()
+    };
+    let (old_fits, new_fits) = (fits(&core.settings), fits(&new));
     let span_changed = new.span != core.settings.span;
     let lock_on = new.lock_screen && !core.settings.lock_screen;
     if new.theme != core.settings.theme {
@@ -86,8 +92,8 @@ pub(crate) fn apply_settings(
             }
         }
     }
-    if fit_changed && !span_changed {
-        for i in 0..core.displays.len() {
+    if !span_changed {
+        for i in (0..core.displays.len()).filter(|&i| old_fits.get(i) != new_fits.get(i)) {
             let id = core.displays[i].wallpaper.clone();
             let kind = id
                 .as_deref()

@@ -22,7 +22,7 @@
   "pause.button": "全部暂停",
   "pause.resume": "继续",
   "props.title": "自定义",
-  "props.none": "此壁纸没有设置项。",
+  "props.none": "它没有自己的设置项。",
   "props.close": "完成",
   "settings.title": "设置",
   "settings.pauseFullscreen": "应用遮挡显示器时暂停",
@@ -287,5 +287,12 @@
   "schedule.add": "添加时间",
   "schedule.at": "开始时间",
   "schedule.wallpaper": "壁纸",
-  "schedule.remove": "删除此时间"
+  "schedule.remove": "删除此时间",
+  "props.playback": "播放",
+  "props.own": "壁纸自身的设置",
+  "props.fit": "适应方式",
+  "props.speed": "播放速度",
+  "props.speedNormal": "正常",
+  "props.ownVolume": "使用自己的音量，而不是总音量",
+  "props.volume": "音量"
 }

@@ -22,7 +22,7 @@
   "pause.button": "Приостановить все",
   "pause.resume": "Продолжить",
   "props.title": "Настройка",
-  "props.none": "У этих обоев нет настроек.",
+  "props.none": "Собственных настроек нет.",
   "props.close": "Готово",
   "settings.title": "Параметры",
   "settings.pauseFullscreen": "Приостанавливать, когда приложение закрывает дисплей",
@@ -287,5 +287,12 @@
   "schedule.add": "Добавить время",
   "schedule.at": "С",
   "schedule.wallpaper": "Обои",
-  "schedule.remove": "Удалить это время"
+  "schedule.remove": "Удалить это время",
+  "props.playback": "Воспроизведение",
+  "props.own": "Собственные настройки обоев",
+  "props.fit": "Масштаб",
+  "props.speed": "Скорость",
+  "props.speedNormal": "Обычная",
+  "props.ownVolume": "Своя громкость вместо общей",
+  "props.volume": "Громкость"
 }

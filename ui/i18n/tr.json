@@ -22,7 +22,7 @@
   "pause.button": "Tümünü duraklat",
   "pause.resume": "Sürdür",
   "props.title": "Özelleştir",
-  "props.none": "Bu duvar kâğıdının ayarı yok.",
+  "props.none": "Kendine ait ayarı yok.",
   "props.close": "Bitti",
   "settings.title": "Ayarlar",
   "settings.pauseFullscreen": "Bir uygulama ekranı kapladığında duraklat",
@@ -287,5 +287,12 @@
   "schedule.add": "Saat ekle",
   "schedule.at": "Başlangıç",
   "schedule.wallpaper": "Duvar kâğıdı",
-  "schedule.remove": "Bu saati kaldır"
+  "schedule.remove": "Bu saati kaldır",
+  "props.playback": "Oynatma",
+  "props.own": "Duvar kâğıdının kendi ayarları",
+  "props.fit": "Sığdırma",
+  "props.speed": "Hız",
+  "props.speedNormal": "Normal",
+  "props.ownVolume": "Genel ses yerine kendi ses düzeyi",
+  "props.volume": "Ses düzeyi"
 }

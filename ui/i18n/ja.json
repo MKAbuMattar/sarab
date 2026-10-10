@@ -22,7 +22,7 @@
   "pause.button": "すべて一時停止",
   "pause.resume": "再開",
   "props.title": "カスタマイズ",
-  "props.none": "この壁紙には設定がありません。",
+  "props.none": "この壁紙独自の設定はありません。",
   "props.close": "完了",
   "settings.title": "設定",
   "settings.pauseFullscreen": "アプリがディスプレイを覆ったら一時停止する",
@@ -287,5 +287,12 @@
   "schedule.add": "時刻を追加",
   "schedule.at": "開始時刻",
   "schedule.wallpaper": "壁紙",
-  "schedule.remove": "この時刻を削除"
+  "schedule.remove": "この時刻を削除",
+  "props.playback": "再生",
+  "props.own": "壁紙独自の設定",
+  "props.fit": "サイズ調整",
+  "props.speed": "再生速度",
+  "props.speedNormal": "標準",
+  "props.ownVolume": "全体の音量ではなく独自の音量を使う",
+  "props.volume": "音量"
 }

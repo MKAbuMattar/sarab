@@ -88,8 +88,10 @@ pub fn on_loaded(app: &AppHandle, core: &mut Core, lbl: &str) {
         return;
     };
     let _ = win.eval(format!(
-        "window.__sarab&&(__sarab.setFps({}),__sarab.volume({}))",
-        core.settings.fps, core.volume_now
+        "window.__sarab&&(__sarab.setFps({}),__sarab.volume({}),__sarab.rate({}))",
+        core.settings.fps,
+        page_volume(core, &core.displays[i]),
+        page_rate(core, &core.displays[i])
     ));
     if let Some(w) = core.find(&id).cloned() {
         push_props(&win, &w, &core.displays[i].mon.key);

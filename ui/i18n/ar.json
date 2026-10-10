@@ -22,7 +22,7 @@
   "pause.button": "إيقاف الكل مؤقتًا",
   "pause.resume": "استئناف",
   "props.title": "تخصيص",
-  "props.none": "لا توجد إعدادات لهذه الخلفية.",
+  "props.none": "لا توجد لها إعدادات خاصة بها.",
   "props.close": "تم",
   "settings.title": "الإعدادات",
   "settings.pauseFullscreen": "إيقاف مؤقت عندما يغطي تطبيق الشاشة",
@@ -287,5 +287,12 @@
   "schedule.add": "إضافة وقت",
   "schedule.at": "من",
   "schedule.wallpaper": "الخلفية",
-  "schedule.remove": "إزالة هذا الوقت"
+  "schedule.remove": "إزالة هذا الوقت",
+  "props.playback": "التشغيل",
+  "props.own": "إعدادات الخلفية الخاصة",
+  "props.fit": "الملاءمة",
+  "props.speed": "السرعة",
+  "props.speedNormal": "عادية",
+  "props.ownVolume": "مستوى صوت خاص بها بدل المستوى العام",
+  "props.volume": "مستوى الصوت"
 }

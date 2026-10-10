@@ -75,6 +75,14 @@ pub(in crate::engine::wallpaper) fn wallpaper_rect(core: &Core, i: usize) -> REC
     }
 }
 
+pub fn fit_for(s: &Settings, key: &str) -> String {
+    s.display_fit
+        .get(key)
+        .filter(|f| !f.is_empty())
+        .unwrap_or(&s.scaling)
+        .clone()
+}
+
 pub(in crate::engine::wallpaper) fn create_window(
     app: &AppHandle,
     core: &mut Core,
@@ -85,7 +93,7 @@ pub(in crate::engine::wallpaper) fn create_window(
         return start_app(app, core, i, w);
     }
     let desk = core.desktop.ok_or("desktop layer not found")?;
-    let url = url_for(app, w, &core.settings.scaling)?;
+    let url = url_for(app, w, &fit_for(&core.settings, &core.displays[i].mon.key))?;
     // Not url.origin(): custom schemes (asset://, tauri:// on Linux) have opaque origins, never equal.
     let site = |u: &tauri::Url| {
         (

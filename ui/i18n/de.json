@@ -22,7 +22,7 @@
   "pause.button": "Alle anhalten",
   "pause.resume": "Fortsetzen",
   "props.title": "Anpassen",
-  "props.none": "Dieses Hintergrundbild hat keine Einstellungen.",
+  "props.none": "Er hat keine eigenen Einstellungen.",
   "props.close": "Fertig",
   "settings.title": "Einstellungen",
   "settings.pauseFullscreen": "Anhalten, wenn eine App den Bildschirm verdeckt",
@@ -287,5 +287,12 @@
   "schedule.add": "Uhrzeit hinzufügen",
   "schedule.at": "Ab",
   "schedule.wallpaper": "Hintergrund",
-  "schedule.remove": "Diese Uhrzeit entfernen"
+  "schedule.remove": "Diese Uhrzeit entfernen",
+  "props.playback": "Wiedergabe",
+  "props.own": "Eigene Einstellungen des Hintergrunds",
+  "props.fit": "Anpassung",
+  "props.speed": "Geschwindigkeit",
+  "props.speedNormal": "Normal",
+  "props.ownVolume": "Eigene Lautstärke statt der allgemeinen",
+  "props.volume": "Lautstärke"
 }

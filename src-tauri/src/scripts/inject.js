@@ -6,7 +6,8 @@
     last = 0,
     scheduled = false,
     nextId = 0,
-    frames = 0;
+    frames = 0,
+    rate = 1;
   let pending = new Map();
   const resumeMedia = new Set();
   let style = null;
@@ -97,29 +98,36 @@
       window.__sarabVolume = v;
       window.__sarabHooks?.volume?.(v);
     },
+    rate(r) {
+      rate = r > 0 ? r : 1;
+      media().forEach((m) => {
+        m.playbackRate = rate;
+      });
+    },
     time() {
       const v = document.querySelector("video");
       const hook = window.__sarabHooks?.time?.();
       if (hook !== undefined) return hook;
       if (!v || v.paused) return null;
-      v.playbackRate = 1;
-      return { t: v.currentTime, at: now(), d: v.duration || 0 };
+      v.playbackRate = rate;
+      return { t: v.currentTime, at: now(), d: v.duration || 0, r: rate };
     },
     follow(lead) {
       if (window.__sarabHooks?.follow) return window.__sarabHooks.follow(lead);
       const v = document.querySelector("video");
       if (!v || !lead || v.paused) return;
-      let target = lead.t + (now() - lead.at) / 1000;
+      let target = lead.t + ((now() - lead.at) / 1000) * (lead.r || 1);
       if (lead.d) target %= lead.d;
       let drift = v.currentTime - target;
       if (lead.d)
         drift = (((drift % lead.d) + lead.d * 1.5) % lead.d) - lead.d / 2;
       if (Math.abs(drift) > 0.5) {
         v.currentTime = target;
-        v.playbackRate = 1;
+        v.playbackRate = rate;
       } else {
         v.playbackRate =
-          Math.abs(drift) < 0.002 ? 1 : Math.min(1.1, Math.max(0.9, 1 - drift));
+          rate *
+          (Math.abs(drift) < 0.002 ? 1 : Math.min(1.1, Math.max(0.9, 1 - drift)));
       }
     },
     status() {

@@ -22,7 +22,7 @@
   "pause.button": "Pausar tudo",
   "pause.resume": "Retomar",
   "props.title": "Personalizar",
-  "props.none": "Esta tela de fundo não tem configurações.",
+  "props.none": "Ele não tem configurações próprias.",
   "props.close": "Concluído",
   "settings.title": "Configurações",
   "settings.pauseFullscreen": "Pausar quando um aplicativo cobrir a tela",
@@ -287,5 +287,12 @@
   "schedule.add": "Adicionar horário",
   "schedule.at": "A partir de",
   "schedule.wallpaper": "Papel de parede",
-  "schedule.remove": "Remover este horário"
+  "schedule.remove": "Remover este horário",
+  "props.playback": "Reprodução",
+  "props.own": "Configurações próprias do papel de parede",
+  "props.fit": "Ajuste",
+  "props.speed": "Velocidade",
+  "props.speedNormal": "Normal",
+  "props.ownVolume": "Volume próprio, em vez do geral",
+  "props.volume": "Volume"
 }

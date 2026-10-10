@@ -82,6 +82,7 @@ pub struct Core {
     pub volume_now: u8,
     pub changed_at: std::time::Instant,
     pub slot: Option<(String, String)>,
+    pub muted: bool,
 }
 
 pub type Shared = Mutex<Core>;
@@ -121,6 +122,7 @@ impl Core {
             audio_to: Default::default(),
             changed_at: std::time::Instant::now(),
             slot: None,
+            muted: false,
         }
     }
     pub fn find(&self, id: &str) -> Option<&Wallpaper> {

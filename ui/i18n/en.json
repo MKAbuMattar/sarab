@@ -22,7 +22,7 @@
   "pause.button": "Pause all",
   "pause.resume": "Resume",
   "props.title": "Customize",
-  "props.none": "This wallpaper has no settings.",
+  "props.none": "It has no settings of its own.",
   "props.close": "Done",
   "settings.title": "Settings",
   "settings.pauseFullscreen": "Pause when an app covers the display",
@@ -287,5 +287,12 @@
   "schedule.add": "Add a time",
   "schedule.at": "From",
   "schedule.wallpaper": "Wallpaper",
-  "schedule.remove": "Remove this time"
+  "schedule.remove": "Remove this time",
+  "props.playback": "Playback",
+  "props.own": "The wallpaper's own settings",
+  "props.fit": "Fit",
+  "props.speed": "Speed",
+  "props.speedNormal": "Normal",
+  "props.ownVolume": "Its own volume, instead of the main one",
+  "props.volume": "Volume"
 }

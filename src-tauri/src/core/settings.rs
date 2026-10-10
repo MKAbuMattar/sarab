@@ -52,6 +52,9 @@ pub struct Settings {
     pub lock_screen: bool,
     pub schedule: Vec<Slot>,
     pub display_playlists: BTreeMap<String, String>,
+    pub display_fit: BTreeMap<String, String>,
+    pub wallpaper_speed: BTreeMap<String, f64>,
+    pub wallpaper_volume: BTreeMap<String, u8>,
 }
 
 impl Default for Settings {
@@ -98,6 +101,9 @@ impl Default for Settings {
             lock_screen: false,
             schedule: vec![],
             display_playlists: BTreeMap::new(),
+            display_fit: BTreeMap::new(),
+            wallpaper_speed: BTreeMap::new(),
+            wallpaper_volume: BTreeMap::new(),
         }
     }
 }

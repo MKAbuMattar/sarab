@@ -22,7 +22,7 @@
   "pause.button": "Pausar todo",
   "pause.resume": "Reanudar",
   "props.title": "Personalizar",
-  "props.none": "Este fondo no tiene opciones.",
+  "props.none": "No tiene opciones propias.",
   "props.close": "Listo",
   "settings.title": "Configuración",
   "settings.pauseFullscreen": "Pausar cuando una aplicación cubra la pantalla",
@@ -287,5 +287,12 @@
   "schedule.add": "Añadir una hora",
   "schedule.at": "Desde",
   "schedule.wallpaper": "Fondo",
-  "schedule.remove": "Quitar esta hora"
+  "schedule.remove": "Quitar esta hora",
+  "props.playback": "Reproducción",
+  "props.own": "Opciones propias del fondo",
+  "props.fit": "Ajuste",
+  "props.speed": "Velocidad",
+  "props.speedNormal": "Normal",
+  "props.ownVolume": "Su propio volumen, en vez del general",
+  "props.volume": "Volumen"
 }
