@@ -32,7 +32,7 @@ impl Drop for AppProcess {
 }
 
 pub fn launch_app(exe: &Path, args: &[&str]) -> Result<AppProcess, String> {
-    if gdk::Display::default().is_some_and(|d| d.type_().name() == "GdkWaylandDisplay") {
+    if on_wayland() {
         return Err("app wallpapers need an X11 session".into());
     }
     let child = std::process::Command::new(exe)

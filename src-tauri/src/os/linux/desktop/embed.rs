@@ -10,7 +10,7 @@ pub struct Desktop {
     pub raised: bool,
 }
 
-fn on_wayland() -> bool {
+pub(in crate::os::linux) fn on_wayland() -> bool {
     gdk::Display::default().is_some_and(|d| d.type_().name() == "GdkWaylandDisplay")
 }
 
