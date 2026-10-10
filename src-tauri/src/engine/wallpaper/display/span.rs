@@ -21,5 +21,16 @@ pub(in crate::engine::wallpaper) fn span_state(decisions: &[(State, Reason)]) ->
 }
 
 pub(in crate::engine::wallpaper) fn spanned(core: &Core, i: usize) -> bool {
-    core.settings.span && i > 0
+    core.settings.span && i > 0 && !os::span_per_output()
+}
+
+pub(in crate::engine::wallpaper) fn slice(rects: &[RECT], i: usize) -> Option<[i32; 4]> {
+    let all = span_rect(rects);
+    let r = rects.get(i)?;
+    Some([
+        r.left - all.left,
+        r.top - all.top,
+        all.right - all.left,
+        all.bottom - all.top,
+    ])
 }

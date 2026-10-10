@@ -39,3 +39,6 @@ input[type="range"]:hover::-webkit-slider-thumb {
 input[type="range"]:active::-webkit-slider-thumb {
   background: radial-gradient(circle, var(--accent) 0 5px, var(--dialog) 6px);
 }
+input[type="range"]:disabled {
+  opacity: 0.4;
+}

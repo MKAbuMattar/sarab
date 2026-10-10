@@ -65,6 +65,17 @@ pub(crate) async fn details(app: AppHandle, id: String) -> Result<library::Detai
 }
 
 #[tauri::command]
+pub(crate) async fn pick_playlist_folder(app: AppHandle) -> Result<Option<String>, String> {
+    let owner = with_core(&app, |app, _| {
+        app.get_webview_window("main")
+            .and_then(|w| os::platform::handle(&w))
+            .map(|h| h.0 as isize)
+    });
+    let owner = owner.map(|h| os::platform::HWND(h as *mut _));
+    Ok(os::platform::pick_folder(owner, None).map(|p| p.to_string_lossy().into_owned()))
+}
+
+#[tauri::command]
 pub(crate) async fn move_library(app: AppHandle) -> Result<Option<String>, String> {
     let (old, owner) = with_core(&app, |app, core| {
         let owner = app

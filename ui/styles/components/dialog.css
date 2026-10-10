@@ -20,9 +20,22 @@ dialog .content {
 dialog h2 {
   margin: 0;
   font-size: 20px;
-  line-height: 28px;
+  line-height: 1.4;
 }
 dialog label {
   display: grid;
   gap: 6px;
+}
+#props-body {
+  display: grid;
+  gap: 12px;
+}
+#props-body h3 {
+  margin-block: 4px 0;
+  margin-inline: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+#props-body h3:first-child {
+  margin-block-start: 0;
 }

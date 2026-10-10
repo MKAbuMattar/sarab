@@ -25,6 +25,27 @@ pub(crate) async fn export_logs() -> Result<String, String> {
 }
 
 #[tauri::command]
+pub(crate) async fn export_settings(app: AppHandle) -> Result<String, String> {
+    let file = with_core(&app, |_, core| {
+        support::export_settings(&core.settings, &support::downloads())
+    })
+    .map_err(|e| e.to_string())?;
+    let _ = std::process::Command::new("explorer.exe")
+        .arg(format!("/select,{}", file.display()))
+        .spawn();
+    Ok(file.display().to_string())
+}
+
+#[tauri::command]
+pub(crate) async fn import_settings(app: AppHandle, json: String) -> Result<(), String> {
+    with_core(&app, move |app, core| {
+        let new = support::import_settings(&json, &core.settings)?;
+        log("settings imported from a file");
+        apply_settings(app, core, new)
+    })
+}
+
+#[tauri::command]
 pub(crate) async fn autostart(app: AppHandle, enable: bool) -> Result<(), String> {
     let al = app.autolaunch();
     if enable { al.enable() } else { al.disable() }.map_err(|e| e.to_string())
@@ -36,8 +57,15 @@ pub(crate) fn apply_settings(
     new: settings::Settings,
 ) -> Result<(), String> {
     let lib_changed = new.library_dir != core.settings.library_dir;
-    let fit_changed = new.scaling != core.settings.scaling;
+    let fits = |s: &settings::Settings| -> Vec<String> {
+        core.displays
+            .iter()
+            .map(|d| wallpaper::fit_for(s, &d.mon.key))
+            .collect()
+    };
+    let (old_fits, new_fits) = (fits(&core.settings), fits(&new));
     let span_changed = new.span != core.settings.span;
+    let lock_on = new.lock_screen && !core.settings.lock_screen;
     if new.theme != core.settings.theme {
         os::platform::menu_theme(&new.theme);
     }
@@ -64,8 +92,8 @@ pub(crate) fn apply_settings(
             }
         }
     }
-    if fit_changed && !span_changed {
-        for i in 0..core.displays.len() {
+    if !span_changed {
+        for i in (0..core.displays.len()).filter(|&i| old_fits.get(i) != new_fits.get(i)) {
             let id = core.displays[i].wallpaper.clone();
             let kind = id
                 .as_deref()
@@ -75,6 +103,9 @@ pub(crate) fn apply_settings(
                 let _ = wallpaper::apply(app, core, i, &id);
             }
         }
+    }
+    if lock_on {
+        wallpaper::refresh_lock_screen(app, core);
     }
     wallpaper::set_volume(app, core, vol);
     wallpaper::set_fps(app, core);

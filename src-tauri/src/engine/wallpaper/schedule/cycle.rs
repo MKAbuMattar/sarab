@@ -23,25 +23,39 @@ pub(in crate::engine::wallpaper) fn pick_next(
 }
 
 pub fn next(app: &AppHandle, core: &mut Core) -> Result<(), String> {
-    let cur = core.displays.first().and_then(|d| d.wallpaper.clone());
-    let s = &core.settings;
-    let ids: Vec<String> = core
-        .lib
-        .iter()
-        .filter(|w| {
-            s.cycle_category == "all" || w.info.category.as_deref() == Some(&s.cycle_category)
-        })
-        .filter(|w| w.info.r#type != Kind::App)
-        .map(|w| w.id.clone())
-        .collect();
     let seed = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_or(0, |d| d.as_nanos() as u64);
-    let Some(next) = pick_next(&ids, cur.as_deref(), s.cycle_order == "random", seed) else {
-        return Err("no wallpaper to change to".into());
+    let random = core.settings.cycle_order == "random";
+    let count = if core.settings.span {
+        core.displays.len().min(1)
+    } else {
+        core.displays.len()
     };
-    for i in 0..core.displays.len() {
-        apply(app, core, i, &next)?;
+    let mut picks = vec![];
+    for i in 0..count {
+        let source = source_for(core, i);
+        add_folder(core, &source);
+        let ids: Vec<String> = core
+            .lib
+            .iter()
+            .filter(|w| in_source(w, &source))
+            .map(|w| w.id.clone())
+            .collect();
+        let cur = core.displays[i].wallpaper.clone();
+        if let Some(id) = pick_next(&ids, cur.as_deref(), random, seed) {
+            picks.push((i, id));
+        }
+    }
+    if picks.is_empty() {
+        return Err("no wallpaper to change to".into());
+    }
+    if core.settings.span {
+        let id = picks[0].1.clone();
+        picks = (0..core.displays.len()).map(|i| (i, id.clone())).collect();
+    }
+    for (i, id) in picks {
+        apply(app, core, i, &id)?;
     }
     core.changed_at = std::time::Instant::now();
     Ok(())

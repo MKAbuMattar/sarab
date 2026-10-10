@@ -4,6 +4,17 @@ pub fn kind_for(target: &str) -> Option<Kind> {
     if target.starts_with("http://") || target.starts_with("https://") {
         return Some(Kind::Url);
     }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let p = Path::new(target);
+        let runnable = p
+            .metadata()
+            .is_ok_and(|m| m.is_file() && m.permissions().mode() & 0o111 != 0);
+        if runnable && p.extension().is_none() {
+            return Some(Kind::App);
+        }
+    }
     let ext = Path::new(target)
         .extension()?
         .to_str()?
@@ -16,6 +27,8 @@ pub fn kind_for(target: &str) -> Option<Kind> {
         "jpg" | "jpeg" | "png" | "bmp" | "webp" | "jfif" | "tif" | "tiff" => Kind::Picture,
         "html" | "htm" => Kind::Web,
         "exe" => Kind::App,
+        #[cfg(unix)]
+        "appimage" => Kind::App,
         _ => return None,
     })
 }

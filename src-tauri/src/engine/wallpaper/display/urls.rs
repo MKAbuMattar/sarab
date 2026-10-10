@@ -96,14 +96,14 @@ pub(in crate::engine::wallpaper) fn url_for(
         w.info.r#type,
     ) {
         (Target::Url(u), _) => rewrite_url(&u),
-        (Target::File(f), k @ (Kind::Video | Kind::Gif)) => {
+        (Target::File(f), k @ (Kind::Video | Kind::Gif | Kind::Picture)) => {
             if !f.is_file() {
                 return Err(format!("missing file {}", f.display()));
             }
             scope.allow_file(&f).map_err(|e| e.to_string())?;
             player_url(
                 &asset_url(&f),
-                if k == Kind::Gif { "gif" } else { "video" },
+                if k == Kind::Video { "video" } else { "gif" },
                 fit,
                 w.info.clip,
             )

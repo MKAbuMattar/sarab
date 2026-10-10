@@ -19,6 +19,10 @@ pub struct Signals {
     pub desktop_focused: bool,
     pub covered: Vec<bool>,
     pub cpu_busy: bool,
+    pub gpu_busy: bool,
+    pub memory_busy: bool,
+    pub network_busy: bool,
+    pub virtual_machine: bool,
 }
 
 #[derive(Default)]
@@ -70,6 +74,27 @@ pub enum Reason {
     PowerSaver,
     Focus,
     Busy,
+    GpuBusy,
+    MemoryBusy,
+    NetworkBusy,
+    VirtualMachine,
+}
+
+pub fn is_vm_vendor(dmi: &str) -> bool {
+    let d = dmi.to_lowercase();
+    [
+        "vmware",
+        "virtualbox",
+        "qemu",
+        "kvm",
+        "xen",
+        "parallels",
+        "bochs",
+        "bhyve",
+        "virtual machine",
+    ]
+    .iter()
+    .any(|v| d.contains(v))
 }
 
 pub fn decide(s: &Signals, r: &Settings) -> Vec<(State, Reason)> {
@@ -104,6 +129,14 @@ pub fn decide(s: &Signals, r: &Settings) -> Vec<(State, Reason)> {
         Some(Reason::PowerSaver)
     } else if s.cpu_busy {
         Some(Reason::Busy)
+    } else if s.gpu_busy {
+        Some(Reason::GpuBusy)
+    } else if s.memory_busy {
+        Some(Reason::MemoryBusy)
+    } else if s.network_busy {
+        Some(Reason::NetworkBusy)
+    } else if s.virtual_machine && r.pause_vm {
+        Some(Reason::VirtualMachine)
     } else if r.pause_focus && !s.desktop_focused {
         Some(Reason::Focus)
     } else {
@@ -175,6 +208,60 @@ mod tests {
             decide(&busy, &Settings::default()),
             vec![(Frozen, Reason::Busy)]
         );
+    }
+
+    #[test]
+    fn pause_on_gpu_memory_network_and_vm() {
+        let d = Settings::default();
+        let vm_rule = Settings {
+            pause_vm: true,
+            ..Settings::default()
+        };
+        let why = |s: Signals, r: &Settings| decide(&s, r);
+        let one = |f: fn(&mut Signals)| {
+            let mut s = sig(&[false]);
+            f(&mut s);
+            s
+        };
+        assert_eq!(
+            why(one(|s| s.gpu_busy = true), &d),
+            vec![(Frozen, Reason::GpuBusy)]
+        );
+        assert_eq!(
+            why(one(|s| s.memory_busy = true), &d),
+            vec![(Frozen, Reason::MemoryBusy)]
+        );
+        assert_eq!(
+            why(one(|s| s.network_busy = true), &d),
+            vec![(Frozen, Reason::NetworkBusy)]
+        );
+        assert_eq!(
+            why(one(|s| s.virtual_machine = true), &d),
+            vec![(Play, Reason::None)],
+            "a virtual machine plays unless the rule is on"
+        );
+        assert_eq!(
+            why(one(|s| s.virtual_machine = true), &vm_rule),
+            vec![(Frozen, Reason::VirtualMachine)]
+        );
+        assert_eq!(
+            why(
+                one(|s| {
+                    s.gpu_busy = true;
+                    s.covered = vec![true];
+                }),
+                &d
+            ),
+            vec![(Covered, Reason::Covered)],
+            "cover still wins on its display"
+        );
+        assert!(is_vm_vendor("innotek GmbH VirtualBox"));
+        assert!(is_vm_vendor("Microsoft Corporation Virtual Machine"));
+        assert!(is_vm_vendor("QEMU Standard PC (Q35 + ICH9, 2009)"));
+        assert!(is_vm_vendor("VMware, Inc. VMware20,1"));
+        assert!(!is_vm_vendor("LENOVO 21HM"));
+        assert!(!is_vm_vendor("Microsoft Corporation Surface Laptop 7"));
+        assert!(!is_vm_vendor(""));
     }
 
     #[test]

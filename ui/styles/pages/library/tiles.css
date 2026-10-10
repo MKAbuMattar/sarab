@@ -101,7 +101,7 @@ button.icon-only {
   padding: 0 8px;
   border-radius: 10px;
   font-size: 12px;
-  line-height: 20px;
+  line-height: 1.667;
   font-weight: 600;
   color: #ffffff;
 }

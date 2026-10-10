@@ -30,6 +30,19 @@ $("#move-library").addEventListener("click", () =>
 $("#export-logs").addEventListener("click", () =>
   run(() => invoke("export_logs")),
 );
+$("#export-settings").addEventListener("click", () =>
+  run(() => invoke("export_settings")),
+);
+$("#import-settings").addEventListener("click", () => $("#settings-file").click());
+$("#settings-file").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  const json = await file.text();
+  await run(() => invoke("import_settings", { json }));
+  await loadLanguage(state.settings.language || "en");
+  render();
+});
 $("#reset-settings").addEventListener("click", async () => {
   const ok = await ask({
     title: t("about.resetTitle"),
@@ -66,6 +79,11 @@ $("#settings").addEventListener("change", async (e) => {
   if (e.target.id === "autostart")
     return run(() => invoke("autostart", { enable: e.target.checked }));
   if (e.target.name === "language") await loadLanguage(e.target.value);
+  if (
+    e.target.name === "cycle_category" &&
+    (await chooseSource(e.target, state.settings.cycle_category)) === null
+  )
+    return;
   await run(() => invoke("save_settings", { new: readSettings() }));
 });
 

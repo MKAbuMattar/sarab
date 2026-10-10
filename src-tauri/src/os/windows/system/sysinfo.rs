@@ -89,3 +89,8 @@ pub fn total_ram() -> u64 {
     };
     unsafe { GlobalMemoryStatusEx(&mut m) }.map_or(0, |_| m.ullTotalPhys)
 }
+
+pub fn local_minutes() -> u32 {
+    let t = unsafe { windows::Win32::System::SystemInformation::GetLocalTime() };
+    u32::from(t.wHour) * 60 + u32::from(t.wMinute)
+}

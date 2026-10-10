@@ -203,3 +203,15 @@ pub fn refresh_desktop(d: Option<&Desktop>) {
         let _ = SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, None, SPIF_UPDATEINIFILE);
     }
 }
+
+pub fn attach_app(d: &Desktop, hwnd: HWND, r: RECT) -> windows::core::Result<()> {
+    attach(d, hwnd, r)
+}
+
+pub fn show_app(hwnd: HWND, visible: bool) {
+    show(hwnd, visible)
+}
+
+pub fn span_per_output() -> bool {
+    false
+}

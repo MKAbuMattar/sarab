@@ -26,6 +26,7 @@
     <link rel="stylesheet" href="styles/base/media.css" />
     <link rel="stylesheet" href="styles/controls/combo.css" />
     <link rel="stylesheet" href="styles/pages/about.css" />
+    <link rel="stylesheet" href="styles/components/slots.css" />
   </head>
   <body>
     <nav aria-label="Sarab">
@@ -215,6 +216,42 @@
             </select></label
           >
           <label class="card"
+            ><i class="icon" aria-hidden="true">&#xE7F4;</i
+            ><span class="title" data-t="settings.pauseGpu"></span>
+            <select name="pause_gpu">
+              <option value="0" data-t="cycle.never"></option>
+              <option value="70">70%</option>
+              <option value="80">80%</option>
+              <option value="90">90%</option>
+            </select></label
+          >
+          <label class="card"
+            ><i class="icon" aria-hidden="true">&#xE964;</i
+            ><span class="title" data-t="settings.pauseMemory"></span>
+            <select name="pause_memory">
+              <option value="0" data-t="cycle.never"></option>
+              <option value="80">80%</option>
+              <option value="90">90%</option>
+              <option value="95">95%</option>
+            </select></label
+          >
+          <label class="card"
+            ><i class="icon" aria-hidden="true">&#xE839;</i
+            ><span
+              ><span class="title" data-t="settings.pauseNetwork"></span
+              ><br /><span
+                class="caption"
+                data-t="settings.pauseNetworkDesc"
+              ></span
+            ></span>
+            <select name="pause_network">
+              <option value="0" data-t="cycle.never"></option>
+              <option value="10">10 Mbit/s</option>
+              <option value="50">50 Mbit/s</option>
+              <option value="100">100 Mbit/s</option>
+            </select></label
+          >
+          <label class="card"
             ><i class="icon" aria-hidden="true">&#xEBA7;</i
             ><span class="title" data-t="settings.pauseBattery"></span
             ><input class="switch" type="checkbox" name="pause_battery"
@@ -228,6 +265,15 @@
             ><i class="icon" aria-hidden="true">&#xE8AF;</i
             ><span class="title" data-t="settings.pauseRemote"></span
             ><input class="switch" type="checkbox" name="pause_remote"
+          /></label>
+          <label class="card"
+            ><i class="icon" aria-hidden="true">&#xE977;</i
+            ><span
+              ><span class="title" data-t="settings.pauseVm"></span><br /><span
+                class="caption"
+                data-t="settings.pauseVmDesc"
+              ></span></span
+            ><input class="switch" type="checkbox" name="pause_vm"
           /></label>
 
           <h2 data-t="settings.wallpapers"></h2>
@@ -249,6 +295,16 @@
                 data-t="settings.keepFrameDesc"
               ></span></span
             ><input class="switch" type="checkbox" name="keep_frame_on_quit"
+          /></label>
+          <label class="card"
+            ><i class="icon" aria-hidden="true">&#xEE3F;</i
+            ><span
+              ><span class="title" data-t="settings.lockScreen"></span
+              ><br /><span
+                class="caption"
+                data-t="settings.lockScreenDesc"
+              ></span></span
+            ><input class="switch" type="checkbox" name="lock_screen"
           /></label>
           <label class="card"
             ><i class="icon" aria-hidden="true">&#xE962;</i
@@ -296,6 +352,21 @@
             ><span class="title" data-t="settings.cycleFrom"></span>
             <select name="cycle_category"></select
           ></label>
+          <div class="card stack">
+            <i class="icon" aria-hidden="true">&#xE823;</i
+            ><span
+              ><span class="title" data-t="settings.schedule"></span><br /><span
+                class="caption"
+                data-t="settings.scheduleDesc"
+              ></span
+            ></span>
+            <div id="schedule" class="slots"></div>
+            <span class="slots-add"
+              ><button type="button" id="add-slot">
+                <i class="icon" aria-hidden="true">&#xE710;</i
+                ><span data-t="schedule.add"></span></button
+            ></span>
+          </div>
 
           <h2 data-t="settings.performance"></h2>
           <label class="card"
@@ -514,6 +585,25 @@
           </button>
         </div>
         <div class="card">
+          <i class="icon" aria-hidden="true">&#xE713;</i
+          ><span
+            ><span class="title" data-t="about.settingsFile"></span><br /><span
+              class="caption"
+              data-t="about.settingsFileDesc"
+            ></span></span
+          ><span class="row"
+            ><button type="button" id="export-settings">
+              <span data-t="about.export"></span></button
+            ><button type="button" id="import-settings">
+              <span data-t="about.import"></span></button
+            ><input
+              type="file"
+              id="settings-file"
+              accept=".json,application/json"
+              hidden
+          /></span>
+        </div>
+        <div class="card">
           <i class="icon" aria-hidden="true">&#xE777;</i
           ><span
             ><span class="title" data-t="about.reset"></span><br /><span
@@ -546,63 +636,107 @@
         <div class="content">
           <h2 id="edit-title" data-t="edit.title"></h2>
           <div class="tabs" role="tablist" aria-labelledby="edit-title">
-            <button type="button" role="tab" id="edit-tab-details" aria-controls="edit-panel-details" aria-selected="true">
+            <button
+              type="button"
+              role="tab"
+              id="edit-tab-details"
+              aria-controls="edit-panel-details"
+              aria-selected="true"
+            >
               <span data-t="edit.details"></span>
-              <span class="dirty" hidden><span class="sr-only" data-t="edit.unsaved"></span></span>
+              <span class="dirty" hidden
+                ><span class="sr-only" data-t="edit.unsaved"></span
+              ></span>
             </button>
-            <button type="button" role="tab" id="edit-tab-part" aria-controls="edit-panel-part" aria-selected="false" tabindex="-1">
+            <button
+              type="button"
+              role="tab"
+              id="edit-tab-part"
+              aria-controls="edit-panel-part"
+              aria-selected="false"
+              tabindex="-1"
+            >
               <span data-t="trim.title"></span>
-              <span class="dirty" hidden><span class="sr-only" data-t="edit.unsaved"></span></span>
+              <span class="dirty" hidden
+                ><span class="sr-only" data-t="edit.unsaved"></span
+              ></span>
             </button>
-            <button type="button" role="tab" id="edit-tab-thumb" aria-controls="edit-panel-thumb" aria-selected="false" tabindex="-1" hidden>
+            <button
+              type="button"
+              role="tab"
+              id="edit-tab-thumb"
+              aria-controls="edit-panel-thumb"
+              aria-selected="false"
+              tabindex="-1"
+              hidden
+            >
               <span data-t="edit.thumbnail"></span>
-              <span class="dirty" hidden><span class="sr-only" data-t="edit.unsaved"></span></span>
+              <span class="dirty" hidden
+                ><span class="sr-only" data-t="edit.unsaved"></span
+              ></span>
             </button>
           </div>
-          <div class="panel" role="tabpanel" id="edit-panel-details" aria-labelledby="edit-tab-details">
-          <label
-            ><span data-t="edit.name"></span
-            ><input
-              type="text"
-              name="title"
-              maxlength="100"
-              required
-              dir="auto"
-          /></label>
-          <label
-            ><span data-t="edit.description"></span
-            ><textarea
-              name="description"
-              rows="3"
-              maxlength="1000"
-              dir="auto"
-            ></textarea>
-          </label>
-          <label
-            ><span data-t="edit.author"></span
-            ><input type="text" name="author" maxlength="100" dir="auto"
-          /></label>
-          <label
-            ><span data-t="edit.category"></span
-            ><select name="category"></select
-          ></label>
-          <label
-            ><span data-t="edit.tags"></span
-            ><input
-              type="text"
-              name="tags"
-              dir="auto"
-              aria-describedby="edit-tags-hint" /><span
-              id="edit-tags-hint"
-              class="caption"
-              data-t="edit.tagsHint"
-            ></span
-          ></label>
+          <div
+            class="panel"
+            role="tabpanel"
+            id="edit-panel-details"
+            aria-labelledby="edit-tab-details"
+          >
+            <label
+              ><span data-t="edit.name"></span
+              ><input
+                type="text"
+                name="title"
+                maxlength="100"
+                required
+                dir="auto"
+            /></label>
+            <label
+              ><span data-t="edit.description"></span
+              ><textarea
+                name="description"
+                rows="3"
+                maxlength="1000"
+                dir="auto"
+              ></textarea>
+            </label>
+            <label
+              ><span data-t="edit.author"></span
+              ><input type="text" name="author" maxlength="100" dir="auto"
+            /></label>
+            <label
+              ><span data-t="edit.category"></span
+              ><select name="category"></select
+            ></label>
+            <label
+              ><span data-t="edit.tags"></span
+              ><input
+                type="text"
+                name="tags"
+                dir="auto"
+                aria-describedby="edit-tags-hint" /><span
+                id="edit-tags-hint"
+                class="caption"
+                data-t="edit.tagsHint"
+              ></span
+            ></label>
           </div>
-          <div class="panel" role="tabpanel" id="edit-panel-part" aria-labelledby="edit-tab-part" hidden>
+          <div
+            class="panel"
+            role="tabpanel"
+            id="edit-panel-part"
+            aria-labelledby="edit-tab-part"
+            hidden
+          >
             <div id="trim-slot"></div>
           </div>
-          <div class="panel" role="tabpanel" id="edit-panel-thumb" aria-labelledby="edit-tab-thumb" hidden></div>
+          <div
+            class="panel"
+            role="tabpanel"
+            id="edit-panel-thumb"
+            aria-labelledby="edit-tab-thumb"
+            hidden
+          ></div>
           <p
             id="edit-error"
             class="caption danger-text"
@@ -678,6 +812,7 @@
     <script src="scripts/pages/about.js"></script>
     <script src="scripts/pages/presets.js"></script>
     <script src="scripts/pages/settings.js"></script>
+    <script src="scripts/pages/playlists.js"></script>
     <script src="scripts/core/render.js"></script>
     <script src="scripts/main.js"></script>
   </body>

@@ -23,6 +23,7 @@ pub fn tick(app: &AppHandle, core: &mut Core) {
     let mut s = os::signals(&mons);
     s.manual = core.manual;
     s.cpu_busy = cpu_busy(core);
+    other_load(core, &mut s);
     let decisions = pause::decide(&s, &core.settings);
     let changed = s != core.signals
         || decisions
@@ -52,16 +53,21 @@ pub fn tick(app: &AppHandle, core: &mut Core) {
     let ss_soon = core.settings.screensaver_minutes > 0
         && core.screensaver.is_none()
         && u64::from(os::last_input().0) >= u64::from(core.settings.screensaver_minutes) * 60_000;
-    let others = ((core.settings.audio_mute_others && core.settings.volume > 0) || ss_soon)
-        && os::other_audio_playing();
+    let audible =
+        core.settings.volume > 0 || core.settings.wallpaper_volume.values().any(|v| *v > 0);
+    let others =
+        ((core.settings.audio_mute_others && audible) || ss_soon) && os::other_audio_playing();
     run_screensaver(app, core, others);
     let v = effective_volume(&core.settings, core.signals.desktop_focused, others);
-    if v != core.volume_now {
+    let muted = audio_muted(&core.settings, core.signals.desktop_focused, others);
+    if v != core.volume_now || muted != core.muted {
         log(format!("volume {} -> {v} (audio rules)", core.volume_now));
         core.volume_now = v;
-        push_volume(app, core, v);
+        core.muted = muted;
+        push_volume(app, core);
     }
     core.ticks += 1;
+    run_schedule(app, core);
     let playing = core.displays.iter().any(|d| d.wallpaper.is_some());
     let resting = core.displays.iter().any(|d| d.state != State::Play);
     if cycle_due(

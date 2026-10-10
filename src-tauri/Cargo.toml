@@ -29,6 +29,9 @@ gdk = "0.18"
 glib = "0.18"
 gtk = "0.18"
 gtk-layer-shell = { version = "0.8", features = ["v0_5"] }
+# Already in the tree through Tauri's WebKitGTK and tao; named here to call them directly.
+webkit2gtk = "2.0.2"
+x11-dl = "2.21.0"
 
 [target.'cfg(windows)'.dependencies]
 webview2-com = "0.39.1"
@@ -37,11 +40,11 @@ windows = { version = "0.62.2", features = [
   "Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_UI_Shell", "Win32_Graphics_Gdi",
   "Win32_Graphics_Dwm", "Win32_System_Com", "Win32_System_Power", "Win32_System_Threading", "Win32_System_JobObjects", "Win32_Security",
   "Win32_System_RemoteDesktop", "Win32_System_StationsAndDesktops", "Win32_System_SystemServices", "Win32_System_SystemInformation",
-  "Win32_Media_Audio", "Win32_Media_Audio_Endpoints", "Win32_System_Diagnostics_ToolHelp",
+  "Win32_Media_Audio", "Win32_Media_Audio_Endpoints", "Win32_System_Diagnostics_ToolHelp", "Win32_System_Performance",
   "Win32_System_Com_StructuredStorage", "Win32_System_Variant",
   "Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis", "Win32_System_Registry", "Win32_System_Console", "Win32_System_DataExchange", "Win32_System_Memory", "Win32_System_LibraryLoader",
   "Media_Control", "Foundation", "Storage_Streams", "Win32_Graphics_Imaging", "Win32_UI_Input_KeyboardAndMouse",
-  "UI_Notifications", "Data_Xml_Dom",
+  "UI_Notifications", "Data_Xml_Dom", "Storage", "System_UserProfile",
 ] }
 
 [profile.release]

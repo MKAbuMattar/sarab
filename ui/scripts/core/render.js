@@ -24,11 +24,15 @@ function render() {
     "pause_battery",
     "pause_power_saver",
     "pause_remote",
+    "pause_vm",
   ])
     f[k].checked = s[k];
   f.per_display.disabled = !s.pause_fullscreen;
   f.fps.value = String(s.fps);
   f.pause_cpu.value = String(s.pause_cpu || 0);
+  f.pause_gpu.value = String(s.pause_gpu || 0);
+  f.pause_memory.value = String(s.pause_memory || 0);
+  f.pause_network.value = String(s.pause_network || 0);
   f.audio_mute_others.checked = s.audio_mute_others;
   f.audio_desktop_only.checked = s.audio_desktop_only;
   f.unload_minutes.value = String(s.unload_minutes ?? 0);
@@ -45,13 +49,11 @@ function render() {
   f.span.checked = s.span;
   f.mouse_input.checked = s.mouse_input;
   f.keep_frame_on_quit.checked = s.keep_frame_on_quit;
+  f.lock_screen.checked = s.lock_screen;
   f.cycle_minutes.value = String(s.cycle_minutes || 0);
   f.cycle_order.value = s.cycle_order || "order";
-  f.cycle_category.replaceChildren(
-    el("option", { value: "all" }, t("library.allCategories")),
-    ...state.categories.map((c) => el("option", { value: c }, categoryName(c))),
-  );
-  f.cycle_category.value = s.cycle_category || "all";
+  playlistOptions(f.cycle_category, s.cycle_category || "all", false);
+  renderSchedule();
   f.cycle_order.disabled = f.cycle_category.disabled = !s.cycle_minutes;
   f.volume.value = s.volume;
   fill(f.volume);

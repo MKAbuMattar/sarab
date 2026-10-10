@@ -120,7 +120,7 @@ The host calls these functions if the page defines them:
 | `sarabPlaybackChanged(state)` | `{paused: bool}` | Pause/resume |
 | `sarabAudio(arr)` (Phase 4) | 128 floats, 0..1 | ~30 Hz while playing, `webaudio` only |
 | `sarabSystemInfo(info)` (Phase 4) | `NameCpu, NameGpu, CurrentCpu, CurrentRamAvail, TotalRam, CurrentNetDown, CurrentNetUp` | 1 Hz, only if the package opts in |
-| `sarabNowPlaying(track)` (Phase 4) | `Title, Artist, AlbumTitle, Thumbnail (base64), …` | On track change, only if the package opts in |
+| `sarabNowPlaying(track)` (Phase 4) | `Title, Artist, AlbumTitle, AlbumArtist, Thumbnail (base64), State, Position, Duration` | On track or playback change and every 10 s, only if the package opts in. Wallpaper Engine's `wallpaperRegisterMedia*Listener` functions get the same data |
 
 
 `properties.json` controls: `slider`, `textbox`, `dropdown`, `folderDropdown`, `button`, `label`, `color`, `checkbox`. The settings UI renders these; changed values are saved per wallpaper per display.

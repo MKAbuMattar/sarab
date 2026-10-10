@@ -10,3 +10,5 @@ mod unload;
 pub(in crate::engine::wallpaper) use unload::*;
 mod cpu;
 pub(in crate::engine::wallpaper) use cpu::*;
+mod playlist;
+pub(in crate::engine::wallpaper) use playlist::*;

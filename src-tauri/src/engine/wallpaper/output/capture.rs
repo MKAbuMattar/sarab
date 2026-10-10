@@ -71,7 +71,9 @@ pub(in crate::engine::wallpaper) fn capture_thumbnail(app: &AppHandle, core: &Co
     let Some(w) = d.wallpaper.as_deref().and_then(|id| core.find(id)).cloned() else {
         return;
     };
-    if w.preset || w.auto_thumb.is_some() || !matches!(w.info.r#type, Kind::Web | Kind::Url) {
+    let captured = matches!(w.info.r#type, Kind::Web | Kind::Url)
+        || (cfg!(not(windows)) && w.info.r#type == Kind::Video);
+    if w.preset || w.auto_thumb.is_some() || !captured {
         return;
     }
     let Some(win) = app.get_webview_window(lbl) else {
@@ -137,6 +139,42 @@ pub fn keep_frames_then_exit(app: &AppHandle, core: &Core) {
     std::thread::spawn(move || {
         std::thread::sleep(std::time::Duration::from_secs(4));
         a.exit(0);
+    });
+}
+
+pub fn refresh_lock_screen(app: &AppHandle, core: &Core) {
+    if !core.settings.lock_screen {
+        return;
+    }
+    let Some(d) = core.displays.first() else {
+        return;
+    };
+    let Some(w) = d.wallpaper.as_deref().and_then(|id| core.find(id)) else {
+        return;
+    };
+    let set = |path: PathBuf| {
+        std::thread::spawn(move || match os::set_lock_screen(&path) {
+            Ok(()) => log(format!("lock screen shows {}", path.display())),
+            Err(e) => log(e),
+        });
+    };
+    if w.info.r#type == Kind::Picture {
+        if let Some(Target::File(f)) = w.target() {
+            set(f);
+        }
+        return;
+    }
+    let Some(win) = window(app, d) else {
+        return;
+    };
+    let path = cfg("lockscreen.png");
+    let file = path.clone();
+    capture_png(&win, path, move |ok| {
+        if ok {
+            set(file);
+        } else {
+            log("lock screen: could not capture the wallpaper");
+        }
     });
 }
 

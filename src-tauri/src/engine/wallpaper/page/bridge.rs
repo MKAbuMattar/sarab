@@ -88,8 +88,10 @@ pub fn on_loaded(app: &AppHandle, core: &mut Core, lbl: &str) {
         return;
     };
     let _ = win.eval(format!(
-        "window.__sarab&&(__sarab.setFps({}),__sarab.volume({}))",
-        core.settings.fps, core.volume_now
+        "window.__sarab&&(__sarab.setFps({}),__sarab.volume({}),__sarab.rate({}))",
+        core.settings.fps,
+        page_volume(core, &core.displays[i]),
+        page_rate(core, &core.displays[i])
     ));
     if let Some(w) = core.find(&id).cloned() {
         push_props(&win, &w, &core.displays[i].mon.key);
@@ -101,6 +103,11 @@ pub fn on_loaded(app: &AppHandle, core: &mut Core, lbl: &str) {
     let a = app.clone();
     std::thread::spawn(move || {
         std::thread::sleep(std::time::Duration::from_secs(4));
-        later(&a, move |app, core| capture_thumbnail(app, core, &lbl));
+        later(&a, move |app, core| {
+            capture_thumbnail(app, core, &lbl);
+            if core.displays.first().and_then(|d| d.label.as_deref()) == Some(lbl.as_str()) {
+                refresh_lock_screen(app, core);
+            }
+        });
     });
 }

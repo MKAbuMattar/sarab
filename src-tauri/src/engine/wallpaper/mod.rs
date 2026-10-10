@@ -71,11 +71,18 @@ pub struct Core {
     pub mouse_on: Option<std::sync::Arc<std::sync::atomic::AtomicBool>>,
     pub cpu_prev: Option<(u64, u64, u64)>,
     pub cpu_gate: pause::CpuGate,
+    pub gpu: Option<os::GpuMeter>,
+    pub gpu_gate: pause::CpuGate,
+    pub memory_gate: pause::CpuGate,
+    pub network_gate: pause::CpuGate,
+    pub net_prev: Option<(u64, std::time::Instant)>,
     pub audio: Option<crate::engine::audio::Feed>,
     pub audio_to: std::sync::Arc<Mutex<Vec<String>>>,
     pub now_playing: Option<crate::engine::feeds::NowPlaying>,
     pub volume_now: u8,
     pub changed_at: std::time::Instant,
+    pub slot: Option<(String, String)>,
+    pub muted: bool,
 }
 
 pub type Shared = Mutex<Core>;
@@ -104,11 +111,18 @@ impl Core {
             audio: None,
             cpu_prev: None,
             cpu_gate: Default::default(),
+            gpu: None,
+            gpu_gate: Default::default(),
+            memory_gate: Default::default(),
+            network_gate: Default::default(),
+            net_prev: None,
             mouse_targets: Default::default(),
             mouse_on: None,
             screensaver: None,
             audio_to: Default::default(),
             changed_at: std::time::Instant::now(),
+            slot: None,
+            muted: false,
         }
     }
     pub fn find(&self, id: &str) -> Option<&Wallpaper> {

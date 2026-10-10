@@ -32,9 +32,11 @@ pub enum Command {
         path: String,
         display: Option<usize>,
     },
+    SettingsExport(String),
+    SettingsImport(String),
 }
 
-pub const USAGE: &str = "usage: sarab [help | --version | set <file|folder|url> | close | pause | play | resume | toggle | prop <key>=<value> | volume <0-100> | next | import <zip> | ui | status | preset <id> | check-update | install-update | screenshot <file.png> | quit] [--display N]";
+pub const USAGE: &str = "usage: sarab [help | --version | set <file|folder|url> | close | pause | play | resume | toggle | prop <key>=<value> | volume <0-100> | next | import <zip> | ui | status | preset <id> | check-update | install-update | screenshot <file.png> | settings export|import <file> | quit] [--display N]";
 
 /// One line in the style of `aws --version`: name/version pairs for a bug report.
 pub fn version_line() -> String {
@@ -130,6 +132,11 @@ pub fn parse(args: &[String]) -> Result<Option<Command>, String> {
             path: arg(1)?,
             display,
         },
+        Some("settings") => match arg(1)?.as_str() {
+            "export" => Command::SettingsExport(arg(2)?),
+            "import" => Command::SettingsImport(arg(2)?),
+            _ => return Err("settings needs export or import, then a file".into()),
+        },
         Some(other) => return Err(format!("unknown command: {other}\n{USAGE}")),
     };
     Ok(Some(cmd))
@@ -198,5 +205,16 @@ mod tests {
             }))
         );
         assert!(p("screenshot").is_err());
+        assert_eq!(
+            p("settings export C:/s.json"),
+            Ok(Some(SettingsExport("C:/s.json".into())))
+        );
+        assert_eq!(
+            p("settings import C:/s.json"),
+            Ok(Some(SettingsImport("C:/s.json".into())))
+        );
+        assert!(p("settings").is_err());
+        assert!(p("settings swap C:/s.json").is_err());
+        assert!(p("settings import").is_err());
     }
 }

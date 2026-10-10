@@ -265,3 +265,13 @@ fn released_waits_for_the_writer() {
     ));
     let _ = std::fs::remove_file(&p);
 }
+
+#[test]
+fn gpu_instances_name_their_process() {
+    assert_eq!(
+        gpu_instance_pid("pid_1234_luid_0x00000000_0x0000C8F2_phys_0_eng_0_engtype_3D"),
+        Some(1234)
+    );
+    assert_eq!(gpu_instance_pid("luid_0x0_phys_0"), None);
+    assert_eq!(gpu_instance_pid("pid_x_luid"), None);
+}

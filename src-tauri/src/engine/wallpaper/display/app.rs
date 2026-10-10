@@ -45,9 +45,9 @@ pub(in crate::engine::wallpaper) fn attach_app(core: &mut Core, i: usize, pid: u
         return;
     };
     let h = os::HWND(hwnd as _);
-    match os::attach(&desk, h, wallpaper_rect(core, i)) {
+    match os::attach_app(&desk, h, wallpaper_rect(core, i)) {
         Ok(()) => {
-            os::show(h, true);
+            os::show_app(h, true);
             if let Some(p) = core.displays[i].app.as_mut() {
                 p.hwnd = Some(hwnd);
             }

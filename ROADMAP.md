@@ -9,18 +9,21 @@ The order comes from a comparison with Lively, Sucrose and Wallpaper Engine in O
 Windows 10 (1903 or later) and 11, on x64, ARM64 and x86:
 
 - Video, GIF, web page, web address, YouTube, picture and app wallpapers under the desktop icons, on every display, or one wallpaper stretched across them all.
-- Automatic resting (covered display, battery, energy saver, lock, screensaver, remote desktop, busy CPU, app rules) that freezes in place and says why.
+- Automatic resting (covered display, battery, energy saver, lock, screensaver, remote desktop, app rules, and if you choose, a busy CPU, graphics card, memory or network, or a virtual machine) that freezes in place and says why.
 - Video kept in step across displays.
 - A library with categories, tags, search and thumbnails; Wallpaper Engine import; Sarab packages to export and share.
 - An editor for each wallpaper: details, the part of a video that plays, and the thumbnail (automatic, your own image, or a frame from the video).
-- Changing wallpaper every few minutes, in order or at random; a screensaver of your own.
-- Web wallpapers can read sound levels, system information and the song that is playing, and follow the mouse. Wallpaper Engine's sound listener and user properties work too.
+- Changing wallpaper every few minutes from a category, tag or folder, in order or at random, with a different playlist on each display; changing at set times of day; a screensaver of your own.
+- Customize for every wallpaper: fit on each display, speed, its own volume and its playlist.
+- A still of the wallpaper on the lock screen, and settings you can export and import.
+- Web wallpapers can read sound levels, system information and the song that is playing, and follow the mouse. Wallpaper Engine's sound listener, media API and user properties work too.
 - A Windows 11 style window in light and dark, Acrylic or Mica, with Sarab's own menus, in ten languages, Arabic right to left.
 - A command line (`sarab set`, `pause`, `next`, `status` and more), a per-user installer, and signed, consent-only updates.
 
 Linux, on x64 and ARM64:
 
-- Wallpapers on X11, and on Wayland desktops with layer-shell (KDE Plasma, Sway, Hyprland, COSMIC and others).
+- Wallpapers on X11, and on Wayland desktops with layer-shell (KDE Plasma, Sway, Hyprland, COSMIC and others), one wallpaper spanned across displays on both.
+- Picture wallpapers as the system wallpaper on GNOME and KDE Plasma, the trash for deleting, desktop notifications for updates, thumbnails and frames, and app wallpapers on X11.
 - `.deb`, `.rpm`, AppImage and an Arch package in every release.
 
 ## Next: 0.1, Linux keeps its promise
@@ -53,20 +56,12 @@ Lively has a large free catalog that only runs on Windows. Sarab can open it on 
 - Flathub, if its sandbox allows a desktop-level window and logind. If it does not, the reason is written down here.
 - The Arch package on the AUR.
 - `winget` (submitted, waiting for Microsoft's review).
-- Then a look at downloads by system before choosing what follows: more Linux work, or playlists.
+- Then a look at downloads by system before choosing what follows.
 
 ## Later
 
-In rough order, after 0.3:
-
-- One wallpaper stretched across displays on Wayland (it shows on the first display only for now).
-- Linux frame thumbnails, picture wallpapers set as the system wallpaper, the trash for deleting, notifications, and app wallpapers.
-- Playlists by time of day, from a folder or tag, and a different playlist on each display.
-- A still image of the current wallpaper on the lock screen. Neither Windows nor Lively nor Wallpaper Engine can show a moving one there.
-- Pausing when the graphics card, memory or network is busy, or inside a virtual machine.
-- Export and import of Sarab's settings.
-- Wallpaper Engine's media API (song title, artist and cover art), when someone asks for it.
-- Screen reader testing with NVDA and JAWS, and layout checks at 200% text size.
+- Screen reader testing with NVDA and JAWS. Every control has a name and pages hold at 200% text (checked in the real window), but nobody has walked through Sarab with a screen reader yet.
+- Fullscreen pausing on Wayland, once there is a way that works on more than one compositor.
 
 ## macOS
 
@@ -82,7 +77,7 @@ These exist in other wallpaper apps. Sarab leaves them out on purpose.
 
 - **An online store or gallery.** It needs hosting, moderation, abuse reports and copyright takedowns, which one maintainer cannot carry. Sarab packages can be shared as files, and Lively import (0.2) opens an existing catalog.
 - **A scene editor** like Wallpaper Engine's. It is a second product. Web wallpapers cover animation, and the Customize panel covers settings.
-- **Unity, Godot and emulator wallpapers.** App wallpapers cover them on Windows.
+- **Unity, Godot and emulator wallpapers.** App wallpapers cover them on Windows and X11.
 - **A choice of video players** (mpv, VLC). One built-in player keeps the download small and the idle cost low.
 - **Taskbar colouring.** Lively does it through TranslucentTB, a separate app made for it.
 - **Discord status, telemetry, ads and a premium tier.** Sarab collects no data about you and stays free.
