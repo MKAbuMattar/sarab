@@ -46,14 +46,19 @@ pub(in crate::engine::wallpaper) fn push_now_playing(app: &AppHandle, core: &mut
         .get_or_insert_with(crate::engine::feeds::NowPlaying::start);
     n.wanted.store(true, Ordering::Relaxed);
     let latest = n.latest.lock().unwrap().clone();
-    if n.sent.as_ref() == Some(&latest) && !core.ticks.is_multiple_of(10) {
+    let same = match (&n.sent, &latest) {
+        (Some(Some(a)), Some(b)) => a.same_song(b),
+        (Some(None), None) => true,
+        _ => false,
+    };
+    if same && !core.ticks.is_multiple_of(10) {
         return;
     }
     n.sent = Some(latest.clone());
     let v = serde_json::to_value(&latest).unwrap_or(Value::Null);
     for i in to {
         if let Some(win) = window(app, &core.displays[i]) {
-            call(&win, "sarabNowPlaying", std::slice::from_ref(&v));
+            call(&win, "__sarabMedia", std::slice::from_ref(&v));
         }
     }
 }

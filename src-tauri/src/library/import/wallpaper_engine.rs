@@ -55,8 +55,8 @@ pub fn convert(dir: &Path) -> Result<Converted, String> {
                 .collect()
         })
         .unwrap_or_default();
-    let api = if kind == Kind::Web && uses_audio(dir) {
-        vec!["audio".to_string()]
+    let api = if kind == Kind::Web {
+        uses_apis(dir)
     } else {
         vec![]
     };
@@ -85,20 +85,25 @@ fn inside(dir: &Path, rel: &str) -> bool {
         && dir.join(rel).is_file()
 }
 
-fn uses_audio(dir: &Path) -> bool {
-    fn walk(d: &Path, depth: u8, left: &mut u32) -> bool {
+const API_CALLS: [(&[u8], &str); 2] = [
+    (b"wallpaperRegisterAudioListener", "audio"),
+    (b"wallpaperRegisterMedia", "nowplaying"),
+];
+
+fn uses_apis(dir: &Path) -> Vec<String> {
+    fn walk(d: &Path, depth: u8, left: &mut u32, found: &mut [bool]) {
         let Ok(rd) = fs::read_dir(d) else {
-            return false;
+            return;
         };
         for e in rd.flatten() {
-            if *left == 0 {
-                return false;
+            if *left == 0 || found.iter().all(|f| *f) {
+                return;
             }
             *left -= 1;
             let p = e.path();
             if p.is_dir() {
-                if depth < 4 && walk(&p, depth + 1, left) {
-                    return true;
+                if depth < 4 {
+                    walk(&p, depth + 1, left, found);
                 }
                 continue;
             }
@@ -107,19 +112,24 @@ fn uses_audio(dir: &Path) -> bool {
                 .and_then(|x| x.to_str())
                 .is_some_and(|x| matches!(x.to_ascii_lowercase().as_str(), "js" | "html" | "htm"));
             let small = e.metadata().is_ok_and(|m| m.len() < 8 << 20);
-            if script
-                && small
-                && fs::read(&p).is_ok_and(|b| {
-                    b.windows(30)
-                        .any(|w| w == b"wallpaperRegisterAudioListener")
-                })
-            {
-                return true;
+            if !(script && small) {
+                continue;
+            }
+            if let Ok(b) = fs::read(&p) {
+                for (seen, (needle, _)) in found.iter_mut().zip(API_CALLS) {
+                    *seen |= b.windows(needle.len()).any(|w| w == needle);
+                }
             }
         }
-        false
     }
-    walk(dir, 0, &mut 1000)
+    let mut found = [false; API_CALLS.len()];
+    walk(dir, 0, &mut 1000, &mut found);
+    API_CALLS
+        .iter()
+        .zip(found)
+        .filter(|(_, f)| *f)
+        .map(|((_, api), _)| api.to_string())
+        .collect()
 }
 
 fn properties(we: &Map<String, Value>) -> Map<String, Value> {
@@ -271,7 +281,7 @@ mod tests {
         );
         fs::write(
             d.join("index.html"),
-            "<script>wallpaperRegisterAudioListener(f => {})</script>",
+            "<script>wallpaperRegisterAudioListener(f => {}); wallpaperRegisterMediaPropertiesListener(p => {})</script>",
         )
         .unwrap();
         fs::write(d.join("preview.gif"), "GIF").unwrap();
@@ -282,8 +292,8 @@ mod tests {
         assert_eq!(c.info.tags, ["abstract", "relaxing"]);
         assert_eq!(
             c.info.api,
-            ["audio"],
-            "the page registers an audio listener"
+            ["audio", "nowplaying"],
+            "the page registers audio and media listeners"
         );
         let keys: Vec<&str> = c.props.keys().map(String::as_str).collect();
         assert_eq!(

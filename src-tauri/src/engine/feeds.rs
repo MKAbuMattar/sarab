@@ -64,6 +64,21 @@ pub struct Track {
     pub album_title: String,
     pub album_artist: String,
     pub thumbnail: String,
+    pub state: String,
+    pub position: f64,
+    pub duration: f64,
+}
+
+impl Track {
+    pub fn same_song(&self, other: &Track) -> bool {
+        Track {
+            position: 0.0,
+            ..self.clone()
+        } == Track {
+            position: 0.0,
+            ..other.clone()
+        }
+    }
 }
 
 fn base64(bytes: &[u8]) -> String {
@@ -85,7 +100,8 @@ fn base64(bytes: &[u8]) -> String {
 }
 
 pub fn read_track() -> Option<Track> {
-    let (title, artist, album_title, album_artist, art) = os::now_playing()?;
+    let m = os::now_playing()?;
+    let art = m.art;
     let thumbnail = if art.is_empty() {
         String::new()
     } else {
@@ -97,11 +113,14 @@ pub fn read_track() -> Option<Track> {
         format!("data:image/{kind};base64,{}", base64(&art))
     };
     Some(Track {
-        title,
-        artist,
-        album_title,
-        album_artist,
+        title: m.title,
+        artist: m.artist,
+        album_title: m.album_title,
+        album_artist: m.album_artist,
         thumbnail,
+        state: m.state.into(),
+        position: m.position,
+        duration: m.duration,
     })
 }
 
@@ -144,10 +163,32 @@ mod tests {
         assert_eq!(base64(b"foo"), "Zm9v");
         assert_eq!(base64(b"foobar"), "Zm9vYmFy");
         let json = serde_json::to_value(Track::default()).unwrap();
-        for k in ["Title", "Artist", "AlbumTitle", "AlbumArtist", "Thumbnail"] {
+        for k in [
+            "Title",
+            "Artist",
+            "AlbumTitle",
+            "AlbumArtist",
+            "Thumbnail",
+            "State",
+            "Position",
+            "Duration",
+        ] {
             assert!(json.get(k).is_some(), "{k}");
         }
         let _ = read_track();
+        let a = Track {
+            title: "A".into(),
+            position: 10.0,
+            ..Track::default()
+        };
+        assert!(a.same_song(&Track {
+            position: 12.0,
+            ..a.clone()
+        }));
+        assert!(!a.same_song(&Track {
+            state: "paused".into(),
+            ..a.clone()
+        }));
     }
 
     #[test]

@@ -1,3 +1,3 @@
-pub fn now_playing() -> Option<(String, String, String, String, Vec<u8>)> {
+pub fn now_playing() -> Option<crate::os::Media> {
     None
 }
