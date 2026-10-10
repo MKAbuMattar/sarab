@@ -58,7 +58,7 @@ jobs:
         working-directory: src-tauri
         run: cargo test --locked --target ${{ matrix.target }}
 
-      - uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # v2.87.22
+      - uses: taiki-e/install-action@f7e5d7c961414b23f5b25b2da9294395d08513ad # v2.87.26
         with:
           tool: cargo-binstall
 
@@ -73,7 +73,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: cargo tauri build --target ${{ matrix.target }}
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: installer-${{ matrix.arch }}
           path: |
@@ -114,7 +114,7 @@ jobs:
         working-directory: src-tauri
         run: cargo test --locked
 
-      - uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # v2.87.22
+      - uses: taiki-e/install-action@f7e5d7c961414b23f5b25b2da9294395d08513ad # v2.87.26
         with:
           tool: cargo-binstall
 
@@ -128,7 +128,7 @@ jobs:
           APPIMAGE_EXTRACT_AND_RUN: 1
         run: cargo tauri build --bundles deb,rpm,appimage --config '{"bundle":{"createUpdaterArtifacts":false}}'
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: linux-${{ matrix.arch }}
           path: |
@@ -165,7 +165,7 @@ jobs:
           su builder -c 'cd ~/pkg && makepkg --noconfirm --nodeps'
           mkdir -p out && cp /home/builder/pkg/*.pkg.tar.zst out/
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: linux-arch
           path: out/*.pkg.tar.zst
@@ -224,7 +224,7 @@ jobs:
           Get-Content latest.json
           Get-ChildItem dist | ForEach-Object { "$($_.Name)  $([math]::Round($_.Length / 1MB, 1)) MB" }
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: github.ref_type != 'tag'
         with:
           archive: false
@@ -271,7 +271,7 @@ jobs:
       run:
         shell: pwsh
     steps:
-      - uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # v2.87.22
+      - uses: taiki-e/install-action@f7e5d7c961414b23f5b25b2da9294395d08513ad # v2.87.26
         with:
           tool: cargo-binstall
 

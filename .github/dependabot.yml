@@ -7,8 +7,18 @@ updates:
     groups:
       tauri:
         patterns: ["tauri*", "wry", "tao"]
+    ignore:
+      - dependency-name: "glib"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "gtk"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "gtk-layer-shell"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
     open-pull-requests-limit: 5
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
