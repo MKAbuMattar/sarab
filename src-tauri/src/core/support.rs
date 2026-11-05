@@ -84,7 +84,7 @@ mod tests {
         let zip_path = export_logs(&d, &d).unwrap();
         let mut z = zip::ZipArchive::new(std::fs::File::open(&zip_path).unwrap()).unwrap();
         let mut names: Vec<String> = (0..z.len())
-            .map(|i| z.by_index(i).unwrap().name().to_string())
+            .map(|i| z.by_index(i).unwrap().name().unwrap().to_string())
             .collect();
         names.sort();
         assert_eq!(names, ["sarab.log", "settings.json"]);
