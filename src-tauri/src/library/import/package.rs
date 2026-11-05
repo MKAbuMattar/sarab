@@ -9,7 +9,7 @@ pub fn import_zip(lib: &Path, zip_path: &Path, max_bytes: u64) -> Result<Wallpap
     for i in 0..zip.len() {
         let f = zip.by_index(i).map_err(|e| e.to_string())?;
         if f.enclosed_name().is_none() {
-            return Err(format!("unsafe path in zip: {}", f.name()));
+            return Err(format!("unsafe path in zip: {}", f.name().unwrap_or_default()));
         }
         total += f.size();
     }
