@@ -77,7 +77,7 @@ jobs:
           ./scripts/check.ps1 static
           ./scripts/check.ps1 brand
 
-      - uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283 # v2.87.29
+      - uses: taiki-e/install-action@b80e2bb2635f28eb98b9fce1e2f0887e1535c6b2 # v2.90.0
         with:
           tool: cargo-binstall
 
@@ -136,7 +136,7 @@ jobs:
         working-directory: src-tauri
         run: cargo test --locked --target ${{ matrix.target }}
 
-      - uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283 # v2.87.29
+      - uses: taiki-e/install-action@b80e2bb2635f28eb98b9fce1e2f0887e1535c6b2 # v2.90.0
         with:
           tool: cargo-binstall
 
@@ -221,7 +221,7 @@ jobs:
         with:
           workspaces: src-tauri
 
-      - uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283 # v2.87.29
+      - uses: taiki-e/install-action@b80e2bb2635f28eb98b9fce1e2f0887e1535c6b2 # v2.90.0
         with:
           tool: cargo-binstall
 
